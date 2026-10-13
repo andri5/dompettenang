@@ -2,43 +2,107 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
-  deploy-production:
+  gate:
+    name: Build gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      # Repo currently has no root package-lock; use npm install.
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build API
+        run: npm --workspace apps/api run build
+
+      - name: Build Web
+        run: npm --workspace apps/web run build
+        env:
+          VITE_API_URL: /api/v1
+          VITE_SITE_URL: https://dompet-tenang.web.id
+
+  deploy:
+    name: Deploy to Sumopod VPS
+    needs: gate
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://dompettenang.example.com
-    
+      url: https://dompet-tenang.web.id
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build all apps
-      run: npm run build --workspaces --if-present
-    
-    - name: Run production checks
-      run: |
-        echo "Running security checks..."
-        echo "Running performance checks..."
-    
-    # TODO: Add deployment steps based on your hosting platform
-    # Examples:
-    # - Deploy to Heroku
-    # - Deploy to Vercel
-    # - Deploy to AWS/Azure
-    # - Deploy Docker images to registry
-    # - Run database migrations
-    
-    - name: Notify deployment success
-      run: echo "Production deployment completed"
+      - uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Add host to known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          USER_NAME="${PROD_SSH_USER:?Set secret PROD_SSH_USER}"
+          PORT="${PROD_SSH_PORT:-22}"
+
+          ssh -p "${PORT}" \
+            -o StrictHostKeyChecking=yes \
+            "${USER_NAME}@${HOST}" \
+            'bash -s' <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          cd "${APP_DIR}"
+          # Ensure deploy script from current main after pull — run via bash from repo
+          git fetch origin main || git fetch origin master
+          if git show-ref --verify --quiet refs/remotes/origin/main; then
+            BRANCH=main
+          else
+            BRANCH=master
+          fi
+          git checkout "${BRANCH}"
+          git pull --ff-only origin "${BRANCH}"
+          chmod +x deploy/remote-deploy.sh
+          APP_DIR="${APP_DIR}" BRANCH="${BRANCH}" ./deploy/remote-deploy.sh
+          EOF
+
+      - name: Public health check (best effort)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL --connect-timeout 5 --max-time 20 \
+              https://dompet-tenang.web.id/api/v1/health; then
+              echo "Public health OK"
+              exit 0
+            fi
+            echo "Public health attempt ${i}/6 failed, retrying..."
+            sleep 5
+          done
+          echo "Public HTTPS health still failing — check DNS/TLS on VPS. Deploy job already completed remote script."
+          exit 1

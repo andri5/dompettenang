@@ -109,7 +109,7 @@ npm run mobile
 
 ## Documentation
 
-- [Deploy ke Sumopod (VPS + bayar + DNS)](./docs/DEPLOY_SUMOPOD.md)
+- [Deploy ke Sumopod (VPS + bayar + DNS + autodeploy)](./docs/DEPLOY_SUMOPOD.md)
 - [Backend](./apps/api/README.md)
 - [Web](./apps/web/README.md)
 - [Contributing](./CONTRIBUTING.md)

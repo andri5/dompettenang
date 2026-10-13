@@ -265,10 +265,95 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 
 ---
 
+## 10. Autodeploy production (GitHub Actions + SSH)
+
+Setelah VPS jalan manual sekali, production bisa di-update otomatis:
+
+```text
+Merge/push ke main → GitHub Actions → SSH VPS → git pull + docker compose up --build
+```
+
+Branch `feature/*` **tidak** auto-deploy. Hanya **`main`** (atau `master`) + tombol **Run workflow** manual.
+
+Workflow: [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml)  
+Script VPS: [`deploy/remote-deploy.sh`](../deploy/remote-deploy.sh)
+
+### 10.1 Setup SSH deploy key (sekali)
+
+Di laptop (generate key khusus CI, jangan pakai password login harian):
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-dompettenang-prod" -f ./dompettenang-prod-deploy -N ""
+```
+
+Akan ada:
+- `dompettenang-prod-deploy` → **private** (masuk GitHub Secret)
+- `dompettenang-prod-deploy.pub` → **public** (pasang di VPS)
+
+Di VPS (sebagai root):
+
+```bash
+# Rekomendasi: deploy sebagai root (sederhana untuk docker compose)
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+echo "ISI_ISI_PUBLIC_KEY_SATU_BARIS" >> /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+
+# Pastikan repo di main
+cd /opt/dompettenang
+git fetch origin
+git checkout main || git checkout -b main origin/main
+git pull --ff-only origin main
+chmod +x deploy/remote-deploy.sh
+```
+
+Tes dari laptop:
+
+```bash
+ssh -i ./dompettenang-prod-deploy root@43.133.135.215 'cd /opt/dompettenang && git status'
+```
+
+### 10.2 GitHub Secrets
+
+Repo GitHub → **Settings** → **Secrets and variables** → **Actions**  
+(atau Environment **production** — disarankan):
+
+| Secret | Contoh nilai |
+|--------|----------------|
+| `PROD_SSH_HOST` | `43.133.135.215` |
+| `PROD_SSH_USER` | `root` |
+| `PROD_SSH_KEY` | isi penuh file private key (`-----BEGIN OPENSSH PRIVATE KEY-----` …) |
+| `PROD_SSH_PORT` | `22` (opsional; default 22) |
+
+Jangan commit private key ke git. Hapus file lokal setelah secrets tersimpan jika perlu.
+
+Opsional aman: Environment `production` → **Required reviewers** sebelum deploy.
+
+### 10.3 Alur kerja harian
+
+1. Push ke `feature/...`
+2. Buka PR ke `main`, tunggu CI hijau
+3. Merge ke `main` → workflow **Deploy to Production** jalan otomatis
+4. Atau **Actions** → **Deploy to Production** → **Run workflow**
+
+### 10.4 Troubleshooting autodeploy
+
+| Gejala | Cek |
+|--------|-----|
+| Permission denied (publickey) | Public key di `authorized_keys`, secret `PROD_SSH_KEY` lengkap |
+| Host key verification failed | Step `ssh-keyscan` / IP berubah |
+| docker: permission denied | Pakai `PROD_SSH_USER=root` atau user di group `docker` |
+| Health check gagal | DNS/SSL; `docker compose ... logs api` di VPS |
+| ff-only pull gagal | Jangan commit lokal di VPS; `git status` harus clean |
+
+---
+
 ## File terkait di repo
 
 - [`deploy/docker-compose.prod.yml`](../deploy/docker-compose.prod.yml)
 - [`deploy/Caddyfile`](../deploy/Caddyfile)
 - [`deploy/.env.production.example`](../deploy/.env.production.example)
+- [`deploy/remote-deploy.sh`](../deploy/remote-deploy.sh)
+- [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml)
 - [`apps/api/Dockerfile`](../apps/api/Dockerfile)
 - [`apps/web/Dockerfile`](../apps/web/Dockerfile)
