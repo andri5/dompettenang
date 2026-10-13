@@ -28,7 +28,7 @@ Monorepo:
 - **Admin** — Panel penuh di web (flags, traffic, activity, legal); ringkas di mobile
 - **Responsif** — Desktop sidebar + mobile bottom nav
 
-> **Catatan:** Staging/production deploy belum disiapkan di lingkungan ini. Admin lengkap (flags, activity, traffic detail) fokus di web; mobile admin mencakup stats, users (role + hapus), feedback, dan legal. Visit analytics aktif di web & mobile.
+> **Production:** deploy ke Sumopod VPS — lihat [docs/DEPLOY_SUMOPOD.md](./docs/DEPLOY_SUMOPOD.md) (cara bayar, domain, Docker). Admin lengkap di web; mobile admin ringkas. Visit analytics aktif di web & mobile.
 
 ## Quick Start
 
@@ -109,6 +109,7 @@ npm run mobile
 
 ## Documentation
 
+- [Deploy ke Sumopod (VPS + bayar + DNS)](./docs/DEPLOY_SUMOPOD.md)
 - [Backend](./apps/api/README.md)
 - [Web](./apps/web/README.md)
 - [Contributing](./CONTRIBUTING.md)
@@ -123,4 +124,4 @@ MIT — see [LICENSE](./LICENSE)
 
 ## Support
 
-Buka issue di [GitHub Issues](https://github.com/andri5/Dompet Tenang/issues).
+Buka issue di [GitHub Issues](https://github.com/andri5/duitdiary/issues).

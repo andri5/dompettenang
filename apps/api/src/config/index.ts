@@ -65,8 +65,13 @@ export const config = {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
   },
 
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  appUrl: process.env.APP_URL || process.env.CORS_ORIGIN || 'http://localhost:5173',
+  // Comma-separated origins supported, e.g. https://a.id,https://www.a.id
+  corsOrigin: (() => {
+    const raw = process.env.CORS_ORIGIN || 'http://localhost:5173';
+    const list = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    return list.length <= 1 ? list[0] || 'http://localhost:5173' : list;
+  })(),
+  appUrl: process.env.APP_URL || process.env.CORS_ORIGIN?.split(',')[0]?.trim() || 'http://localhost:5173',
 
   /**
    * Cookie auth (web). Mobile continues to use Authorization Bearer.

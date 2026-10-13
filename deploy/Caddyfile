@@ -1,0 +1,25 @@
+# Same-origin: browser → https://DOMAIN/api/v1 → API
+#               browser → https://DOMAIN/*     → Web
+# This keeps HttpOnly cookies working with SameSite=Lax.
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

@@ -1,0 +1,37 @@
+# Dompet Tenang API — production image
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json ./
+COPY prisma ./prisma/
+RUN npm install
+
+COPY tsconfig.json ./
+COPY src ./src/
+RUN npx prisma generate && npm run build
+
+# Keep prisma CLI for db push on start
+RUN npm install prisma@5.22.0 --save-exact
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN addgroup -S app && adduser -S app -G app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
+RUN chmod +x ./docker-entrypoint.sh \
+  && mkdir -p /app/uploads/avatars /app/uploads/receipts \
+  && chown -R app:app /app
+
+USER app
+EXPOSE 3001
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
