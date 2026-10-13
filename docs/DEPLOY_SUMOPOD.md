@@ -322,10 +322,18 @@ Repo GitHub → **Settings** → **Secrets and variables** → **Actions**
 |--------|----------------|
 | `PROD_SSH_HOST` | `43.133.135.215` |
 | `PROD_SSH_USER` | `root` |
-| `PROD_SSH_KEY` | isi penuh file private key (`-----BEGIN OPENSSH PRIVATE KEY-----` …) |
+| `PROD_SSH_KEY` | isi penuh file **private** key (`dompettenang-prod-deploy` **tanpa** `.pub`) |
 | `PROD_SSH_PORT` | `22` (opsional; default 22) |
 
+**Isi `PROD_SSH_KEY` dengan benar:**
+1. Buka file **private** (nama tanpa `.pub`)
+2. Harus diawali `-----BEGIN OPENSSH PRIVATE KEY-----` dan diakhiri `-----END OPENSSH PRIVATE KEY-----`
+3. Copy **seluruh** isi (banyak baris), tempel ke secret — **jangan** bungkus dengan tanda kutip
+4. **Jangan** paste isi `.pub` (satu baris `ssh-ed25519 AAAA...`) — itu public key
+
 Jangan commit private key ke git. Hapus file lokal setelah secrets tersimpan jika perlu.
+
+Kalau Actions error `error in libcrypto` / `Error loading key`: secret key corrupt atau salah file — hapus secret `PROD_SSH_KEY`, buat ulang, paste private key lagi.
 
 Opsional aman: Environment `production` → **Required reviewers** sebelum deploy.
 

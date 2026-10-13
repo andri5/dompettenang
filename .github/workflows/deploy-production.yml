@@ -47,21 +47,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
-
-      - name: Add host to known_hosts
+      - name: Prepare SSH key and known_hosts
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
         run: |
           set -euo pipefail
           HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
           PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Normalize Windows CRLF / accidental quotes from secret paste
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key file contents"
+            echo "Expected a line like: -----BEGIN OPENSSH PRIVATE KEY-----"
+            echo "Do NOT paste the .pub public key."
+            exit 1
+          fi
+
           ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy over SSH
         env:
@@ -74,7 +89,9 @@ jobs:
           USER_NAME="${PROD_SSH_USER:?Set secret PROD_SSH_USER}"
           PORT="${PROD_SSH_PORT:-22}"
 
-          ssh -p "${PORT}" \
+          ssh -i ~/.ssh/id_deploy \
+            -p "${PORT}" \
+            -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             "${USER_NAME}@${HOST}" \
             'bash -s' <<'EOF'
