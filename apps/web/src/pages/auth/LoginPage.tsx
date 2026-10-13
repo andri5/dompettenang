@@ -65,7 +65,11 @@ export function LoginPage() {
 
   return (
     <PageTransition>
-      <SEO title="Masuk" description="Login ke akun Dompet Tenang untuk mengelola keuangan pribadimu." canonical="/login" noIndex />
+      <SEO
+        title="Masuk"
+        description="Login ke akun Dompet Tenang untuk mengelola keuangan pribadimu dengan aman."
+        canonical="/login"
+      />
       <AuthLayout title="Masuk" subtitle="Lanjutkan pencatatan keuanganmu">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (

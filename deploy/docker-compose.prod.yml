@@ -67,6 +67,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api/v1
+        VITE_SITE_URL: https://${DOMAIN}
     restart: unless-stopped
     networks:
       - internal

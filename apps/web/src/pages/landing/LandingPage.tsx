@@ -26,6 +26,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
+import { SITE_NAME, SITE_URL, absoluteUrl } from '@/lib/site';
 import { useAuthStore } from '@/stores';
 import { SEO } from '@/components/SEO';
 import api from '@/lib/api';
@@ -108,22 +109,43 @@ export function LandingPage() {
     staleTime: 60_000,
   });
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'Dompet Tenang',
-    description: 'Aplikasi pencatatan keuangan pribadi untuk mengelola pemasukan, pengeluaran, budget, dan target tabungan.',
-    applicationCategory: 'FinanceApplication',
-    operatingSystem: 'Web, Android',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'IDR' },
-  };
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      url: SITE_URL,
+      inLanguage: 'id-ID',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: absoluteUrl('/favicon.svg'),
+      description:
+        'Aplikasi pencatatan keuangan pribadi untuk mengelola pemasukan, pengeluaran, budget, dan target tabungan.',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: SITE_NAME,
+      url: SITE_URL,
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web, Android, iOS',
+      inLanguage: 'id-ID',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'IDR' },
+      description:
+        'Catat pemasukan & pengeluaran, atur budget bulanan, dan pantau target tabungan dengan Dompet Tenang.',
+    },
+  ];
 
   return (
     <div className="min-h-dvh bg-[#0a1628] text-white selection:bg-accent/30">
       <SEO
-        title="Catat Keuangan Pribadi"
-        description="Dompet Tenang — Aplikasi pencatatan keuangan pribadi. Catat pemasukan, pengeluaran, budget, dan target tabungan dengan mudah dan cepat."
-        keywords="catat keuangan, aplikasi keuangan pribadi, pencatatan pengeluaran, budget planner, target tabungan, Dompet Tenang"
+        title="Catat Keuangan Pribadi Gratis"
+        description="Dompet Tenang — aplikasi pencatatan keuangan pribadi gratis. Catat pemasukan & pengeluaran, atur budget, pantau tabungan. Mulai hari ini."
+        keywords="aplikasi keuangan gratis, catat pengeluaran, pencatatan keuangan pribadi, budget bulanan, target tabungan, Dompet Tenang, expense tracker Indonesia"
         canonical="/"
         jsonLd={jsonLd}
       />

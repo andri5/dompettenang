@@ -120,8 +120,9 @@ export function RegisterPage() {
   return (
     <PageTransition>
       <SEO
-        title="Daftar"
-        description="Buat akun Dompet Tenang gratis. Mulai catat keuangan pribadimu sekarang."
+        title="Daftar Gratis"
+        description="Buat akun Dompet Tenang gratis. Mulai catat pemasukan, pengeluaran, budget, dan tabungan dalam hitungan detik."
+        keywords="daftar Dompet Tenang, aplikasi keuangan gratis, buat akun catat pengeluaran"
         canonical="/register"
       />
       <AuthLayout compact title="Buat akun" subtitle="Gratis · siap dipakai dalam hitungan detik">
