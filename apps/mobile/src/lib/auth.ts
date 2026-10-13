@@ -15,6 +15,7 @@ export type User = {
   role?: 'USER' | 'ADMIN';
   gender?: Gender | null;
   birthDate?: string | null;
+  createdAt?: string | Date | null;
 };
 
 export type AuthResult = {

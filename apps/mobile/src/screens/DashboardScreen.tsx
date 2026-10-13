@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { getBudgetStatus, type BudgetStatus } from '../lib/budget';
 import { checkAndNotifyBudgetAlert } from '../lib/notifications';
 import { runRecurringDue } from '../lib/recurring';
 import { useFeatureEnabled } from '../lib/featureFlags';
+import { shouldShowWelcome, markWelcomeShown, WELCOME_COPY } from '../lib/welcome';
 import { exportTransactionsCsv } from '../lib/exportSummary';
 import { buildDashboardInsights, getInsightToneColor } from '../lib/dashboardInsights';
 import { formatIDR, formatIDRCompact, formatDateShort } from '../lib/format';
@@ -38,6 +39,7 @@ import {
   PrivacyEyeToggle,
 } from '../components/motion';
 import { PageLoader } from '../components/PageStatus';
+import { useDialog } from '../components/AppDialog';
 import { radii, type ThemeColors } from '../theme';
 import { useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
@@ -110,6 +112,7 @@ export function DashboardScreen({ user }: { user: User }) {
   const insightToneColor = useMemo(() => getInsightToneColor(colors), [colors]);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const { showDialog } = useDialog();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [market, setMarket] = useState<MarketQuotes | null>(null);
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
@@ -163,6 +166,35 @@ export function DashboardScreen({ user }: { user: User }) {
       void load();
     }, [load])
   );
+
+  // Delay past focus remounts so we don't clear pending without showing the dialog.
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const show = await shouldShowWelcome(user);
+        if (cancelled || !show) return;
+        showDialog({
+          variant: 'success',
+          title: WELCOME_COPY.title,
+          message: user.name
+            ? `Halo ${user.name.split(' ')[0]}! ${WELCOME_COPY.message}`
+            : WELCOME_COPY.message,
+          confirmLabel: WELCOME_COPY.confirmLabel,
+          cancelLabel: 'Nanti saja',
+          showCancel: true,
+          onConfirm: () => navigation.navigate('TransactionForm', {}),
+        });
+        await markWelcomeShown(user.id);
+      })();
+    }, 450);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // Intentionally keyed by identity fields, not the whole user object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- showDialog/navigation are stable enough for one-shot welcome
+  }, [user.id, user.name, user.createdAt]);
 
   const recent = [
     ...(summary?.recentIncomes || []).map((t) => ({ ...t, type: 'INCOME' as const })),

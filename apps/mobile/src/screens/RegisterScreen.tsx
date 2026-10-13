@@ -15,6 +15,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { register } from '../lib/auth';
 import { GENDER_OPTIONS, type Gender } from '../lib/gender';
+import { markWelcomePending, markWelcomePendingSync } from '../lib/welcome';
 import { useAuth, type RootStackParamList } from '../authContext';
 import { authErrorMessage, AUTH_SAFE } from '../lib/authErrors';
 import { useCaptchaConfig } from '../lib/captcha';
@@ -120,6 +121,8 @@ export function RegisterScreen({ navigation }: Props) {
         birthDate,
         captchaToken: captchaToken ?? undefined,
       });
+      markWelcomePendingSync();
+      await markWelcomePending();
       setUser(result.user);
     } catch (e: unknown) {
       setError(authErrorMessage(e, AUTH_SAFE.registerFailed));

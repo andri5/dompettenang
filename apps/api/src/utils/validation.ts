@@ -82,6 +82,26 @@ export const updateProfileSchema = z.object({
   birthDate: birthDateSchema.optional().nullable(),
 });
 
+export const adminUpdateUserSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Nama minimal 2 karakter')
+    .max(100, 'Nama maksimal 100 karakter')
+    .optional(),
+  email: z
+    .string()
+    .email('Format email tidak valid')
+    .max(255, 'Email terlalu panjang')
+    .optional(),
+  currency: z
+    .string()
+    .length(3, 'Mata uang harus 3 karakter')
+    .optional(),
+  gender: genderSchema.optional().nullable(),
+  birthDate: birthDateSchema.optional().nullable(),
+  role: z.enum(['USER', 'ADMIN']).optional(),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: strongPassword,
@@ -266,6 +286,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

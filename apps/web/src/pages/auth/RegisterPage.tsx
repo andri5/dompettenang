@@ -19,6 +19,7 @@ import { ROUTES } from '@/lib/constants';
 import { SEO } from '@/components/SEO';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 import { GENDER_OPTIONS } from '@/lib/gender';
+import { markWelcomePending } from '@/lib/welcome';
 import { cn } from '@/lib/utils';
 
 export function RegisterPage() {
@@ -69,7 +70,7 @@ export function RegisterPage() {
         birthDate: data.birthDate,
         ...(captchaToken ? { captchaToken } : {}),
       });
-      toast.success('Selamat datang di Dompet Tenang', 'Pendaftaran berhasil!');
+      markWelcomePending();
       navigate(ROUTES.DASHBOARD);
     } catch (err) {
       const errorMessage = authErrorMessage(err, AUTH_SAFE.registerFailed);

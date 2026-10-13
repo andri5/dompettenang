@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   TrendingDown,
@@ -17,6 +17,7 @@ import {
   FileText,
   Eye,
   EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -41,11 +42,13 @@ import {
   CardHeader,
   CardTitle,
   CategoryIcon,
+  Modal,
 } from '@/components/ui';
 import { useDashboard, useExpenses, useFeatureEnabled } from '@/hooks';
 import { useToast } from '@/hooks/useToast';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
+import { consumeWelcomePending, WELCOME_COPY } from '@/lib/welcome';
 import { useAuthStore } from '@/stores';
 import { SEO } from '@/components/SEO';
 import { runRecurringDue } from '@/services/recurring.service';
@@ -199,10 +202,12 @@ function CategorySummaryPanel({
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const toast = useToast();
   const showMarket = useFeatureEnabled('market_widget');
   const showRecurring = useFeatureEnabled('recurring_transactions');
   const [period, setPeriod] = useState<Period>('month');
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [isExporting, setIsExporting] = useState<ExportFormat | null>(null);
   const [amountsVisible, setAmountsVisible] = useState(() => {
     try {
@@ -221,6 +226,13 @@ export function DashboardPage() {
       /* ignore */
     }
   }, [amountsVisible]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (consumeWelcomePending(user.id)) {
+      setWelcomeOpen(true);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || !showRecurring) return;
@@ -345,6 +357,47 @@ export function DashboardPage() {
     <PageTransition>
       <SEO title="Dashboard" description="Ringkasan keuangan pribadimu — pemasukan, pengeluaran, dan analisis." noIndex />
       <MainLayout>
+        <Modal
+          isOpen={welcomeOpen}
+          onClose={() => setWelcomeOpen(false)}
+          title={WELCOME_COPY.title}
+          size="sm"
+          showBrand
+        >
+          <div className="space-y-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <p className="text-sm leading-relaxed text-muted">
+              {user?.name ? (
+                <>
+                  Halo <span className="font-semibold text-ink">{user.name.split(' ')[0]}</span>!{' '}
+                </>
+              ) : null}
+              {WELCOME_COPY.message}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                variant="gradient"
+                className="w-full"
+                onClick={() => {
+                  setWelcomeOpen(false);
+                  navigate(ROUTES.EXPENSE_NEW);
+                }}
+              >
+                {WELCOME_COPY.confirmLabel}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setWelcomeOpen(false)}
+              >
+                Nanti saja
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
         <PageHeader
           eyebrow={new Date().toLocaleDateString('id-ID', {
             weekday: 'long',

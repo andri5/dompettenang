@@ -1,6 +1,7 @@
 import { Router } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma.js';
-import { authMiddleware, adminMiddleware } from '../middlewares/index.js';
+import { authMiddleware, adminMiddleware, validate } from '../middlewares/index.js';
 import { paramString } from '../utils/params.js';
 import type { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
@@ -10,6 +11,10 @@ import {
   listLegalDocuments,
   updateLegalDocument,
 } from '../services/legal.service.js';
+import {
+  adminUpdateUserSchema,
+  type AdminUpdateUserInput,
+} from '../utils/validation.js';
 
 const router = Router();
 
@@ -40,12 +45,116 @@ router.get('/users', async (_req: Request, res: Response) => {
       email: true,
       role: true,
       currency: true,
+      gender: true,
+      birthDate: true,
       createdAt: true,
       _count: { select: { expenses: true, savingsGoals: true, budgets: true } },
     },
     orderBy: { createdAt: 'desc' },
   });
-  res.json({ success: true, data: users });
+  res.json({
+    success: true,
+    data: users.map((u) => ({
+      ...u,
+      birthDate: u.birthDate ? u.birthDate.toISOString().slice(0, 10) : null,
+    })),
+  });
+});
+
+router.patch('/users/:id', validate(adminUpdateUserSchema), async (req: Request, res: Response) => {
+  const id = paramString(req.params.id);
+  const body = req.body as AdminUpdateUserInput;
+  const currentAdmin = (req as AuthenticatedRequest).user!;
+
+  if (
+    Object.keys(body).length === 0 ||
+    Object.values(body).every((v) => v === undefined)
+  ) {
+    res.status(400).json({ success: false, message: 'Tidak ada data yang diubah' });
+    return;
+  }
+
+  if (currentAdmin.userId === id && body.role && body.role !== 'ADMIN') {
+    res.status(400).json({ success: false, message: 'Tidak bisa menurunkan role diri sendiri' });
+    return;
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true },
+  });
+  if (!existing) {
+    res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+    return;
+  }
+
+  if (body.email && body.email.toLowerCase() !== existing.email.toLowerCase()) {
+    const clash = await prisma.user.findUnique({
+      where: { email: body.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (clash) {
+      res.status(400).json({ success: false, message: 'Email sudah digunakan user lain' });
+      return;
+    }
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(body.email !== undefined ? { email: body.email.trim().toLowerCase() } : {}),
+        ...(body.currency !== undefined ? { currency: body.currency.toUpperCase() } : {}),
+        ...(body.gender !== undefined ? { gender: body.gender } : {}),
+        ...(body.birthDate !== undefined
+          ? {
+              birthDate:
+                body.birthDate === null
+                  ? null
+                  : new Date(`${body.birthDate}T00:00:00.000Z`),
+            }
+          : {}),
+        ...(body.role !== undefined ? { role: body.role } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        currency: true,
+        gender: true,
+        birthDate: true,
+        createdAt: true,
+      },
+    });
+
+    void auditService.log({
+      userId: currentAdmin.userId,
+      actorRole: currentAdmin.role,
+      action: 'UPDATE_USER',
+      entityType: 'user',
+      entityId: id,
+      summary: `Update user ${user.email}`,
+      metadata: {
+        fields: Object.keys(body).filter((k) => body[k as keyof AdminUpdateUserInput] !== undefined),
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...user,
+        birthDate: user.birthDate ? user.birthDate.toISOString().slice(0, 10) : null,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(400).json({ success: false, message: 'Email sudah digunakan user lain' });
+      return;
+    }
+    res.status(500).json({ success: false, message: 'Gagal memperbarui user' });
+  }
 });
 
 router.patch('/users/:id/role', async (req: Request, res: Response) => {
