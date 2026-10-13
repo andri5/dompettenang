@@ -350,18 +350,20 @@ export class AuthService {
     email: string;
     avatar: string | null;
     currency: string;
-    gender?: 'MALE' | 'FEMALE' | null;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
     birthDate?: Date | null;
     role?: string;
     createdAt: Date;
   }): UserResponse {
+    const gender =
+      user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : null;
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       avatar: user.avatar,
       currency: user.currency,
-      gender: user.gender ?? null,
+      gender,
       birthDate: user.birthDate
         ? user.birthDate.toISOString().slice(0, 10)
         : null,
