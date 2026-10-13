@@ -23,7 +23,10 @@ jobs:
 
       # Repo currently has no root package-lock; use npm install.
       - name: Install dependencies
-        run: npm install
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Generate Prisma client
+        run: npx --workspace apps/api prisma generate
 
       - name: Build API
         run: npm --workspace apps/api run build
