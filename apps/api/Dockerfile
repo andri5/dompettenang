@@ -1,7 +1,12 @@
 # Dompet Tenang API — production image
-FROM node:20-alpine AS builder
+# Use Debian slim (not Alpine) so Prisma OpenSSL engines work reliably.
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json ./
 COPY prisma ./prisma/
@@ -14,12 +19,16 @@ RUN npx prisma generate && npm run build
 # Keep prisma CLI for db push on start
 RUN npm install prisma@5.22.0 --save-exact
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup -S app && adduser -S app -G app
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system app \
+  && useradd --system --gid app --create-home app
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
