@@ -46,6 +46,13 @@ export function SEO({
       <meta name="author" content={SITE_NAME} />
       <meta name="robots" content={robots} />
       <meta name="googlebot" content={robots} />
+      <meta
+        name="google-site-verification"
+        content={
+          (import.meta.env.VITE_GOOGLE_SITE_VERIFICATION as string | undefined) ||
+          '14ZNQGuDZmCY9mWwdvf8LhD68MrizVYNzEr0UxhFga0'
+        }
+      />
       <link rel="canonical" href={canonicalUrl} />
 
       <meta property="og:locale" content="id_ID" />
