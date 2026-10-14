@@ -10,6 +10,18 @@ export const SITE_URL = (
   (typeof window !== 'undefined' ? window.location.origin : 'https://dompet-tenang.web.id')
 ).replace(/\/$/, '');
 
+/** Public Android APK (hosted on VPS via Caddy /download/*). */
+export const ANDROID_APK_URL = (
+  (import.meta.env.VITE_ANDROID_APK_URL as string | undefined) ||
+  '/download/dompet-tenang.apk'
+).trim();
+
+/** Expo / EAS builds page for internal testers. */
+export const EXPO_BUILDS_URL = (
+  (import.meta.env.VITE_EXPO_BUILDS_URL as string | undefined) ||
+  'https://expo.dev/accounts/andri5/projects/duitdiary/builds'
+).trim();
+
 export const DEFAULT_SEO_DESCRIPTION =
   'Aplikasi pencatatan keuangan pribadi gratis. Catat pemasukan & pengeluaran, atur budget, pantau tabungan — tenang kelola dompetmu setiap hari.';
 

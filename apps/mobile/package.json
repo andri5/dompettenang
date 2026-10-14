@@ -19,6 +19,7 @@
     "expo-secure-store": "~57.0.1",
     "expo-sharing": "~57.0.13",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.26",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
@@ -40,7 +41,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:apk": "npx eas-cli build -p android --profile release",
-    "build:apk:prod-api": "npx eas-cli build -p android --profile release-prod-api"
+    "build:apk:prod-api": "npx eas-cli build -p android --profile release-prod-api",
+    "builds:open": "echo Open https://expo.dev/accounts/andri5/projects/duitdiary/builds"
   },
   "private": true
 }

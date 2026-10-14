@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Text,
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   View,
   ScrollView,
@@ -85,8 +86,30 @@ export function RegisterScreen({ navigation }: Props) {
   const [captchaReset, setCaptchaReset] = useState(0);
   const { config: captcha, required: captchaRequired, error: captchaConfigError, loading: captchaLoading } =
     useCaptchaConfig();
+  const scrollRef = useRef<ScrollView>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const bounds = useMemo(() => birthBounds(), []);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
+  const scrollFieldIntoView = () => {
+    // Delay so layout settles after keyboard + focus
+    requestAnimationFrame(() => {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    });
+  };
 
   const isStrongPassword = (pwd: string) => {
     return pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /\d/.test(pwd);
@@ -139,29 +162,38 @@ export function RegisterScreen({ navigation }: Props) {
     setBirthDate(toYmd(date));
   };
 
+  const bottomPad =
+    Math.max(insets.bottom, 16) + 24 + (Platform.OS === 'android' ? keyboardHeight : 0);
+
   return (
     <KeyboardAvoidingView
-      style={[styles.wrap, { paddingTop: Math.max(insets.top, 12) }]}
+      style={[styles.wrap, { paddingTop: Math.max(insets.top, 8) }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
     >
       <View style={styles.glowA} pointerEvents="none" />
       <View style={styles.glowB} pointerEvents="none" />
 
       <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
         contentContainerStyle={{
           paddingHorizontal: r.pagePadding,
-          paddingBottom: Math.max(insets.bottom, 16) + 20,
-          paddingTop: 8,
+          paddingBottom: bottomPad,
+          paddingTop: 4,
+          flexGrow: 1,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        showsVerticalScrollIndicator
       >
         <FadeInUp>
           <ScalePress onPress={() => navigation.navigate('Login')} style={styles.back}>
             <Ionicons name="arrow-back" size={r.ms(16)} color={colors.brand} />
             <Text style={styles.backText}>Kembali ke masuk</Text>
           </ScalePress>
-          <BrandMark size="lg" />
+          <BrandMark size="md" />
           <Text style={styles.title}>Buat akun</Text>
           <Text style={styles.sub}>Mulai catat pemasukan & pengeluaran dari HP</Text>
         </FadeInUp>
@@ -180,6 +212,7 @@ export function RegisterScreen({ navigation }: Props) {
             placeholder="Nama lengkap"
             value={name}
             onChangeText={setName}
+            onFocus={scrollFieldIntoView}
           />
 
           <FormLabel>Email</FormLabel>
@@ -191,6 +224,7 @@ export function RegisterScreen({ navigation }: Props) {
             placeholder="nama@email.com"
             value={email}
             onChangeText={setEmail}
+            onFocus={scrollFieldIntoView}
           />
 
           <FormLabel>Jenis kelamin</FormLabel>
@@ -221,12 +255,11 @@ export function RegisterScreen({ navigation }: Props) {
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor={colors.faint}
                 style={styles.dateNativeInput}
-                // @ts-expect-error web-only input type
-                type="date"
-                // @ts-expect-error web-only
-                min={toYmd(bounds.min)}
-                // @ts-expect-error web-only
-                max={toYmd(bounds.max)}
+                {...({
+                  type: 'date',
+                  min: toYmd(bounds.min),
+                  max: toYmd(bounds.max),
+                } as Record<string, string>)}
               />
             </View>
           ) : (
@@ -277,6 +310,7 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={setPassword}
             autoComplete="new-password"
             textContentType="newPassword"
+            onFocus={scrollFieldIntoView}
           />
           <Text style={styles.hint}>Contoh: RapatKamis7!</Text>
 
@@ -339,7 +373,8 @@ export function RegisterScreen({ navigation }: Props) {
 
 function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) {
   return StyleSheet.create({
-    wrap: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
+    wrap: { flex: 1, backgroundColor: colors.bg },
+    scroll: { flex: 1 },
     glowA: {
       position: 'absolute',
       top: -40,
@@ -363,7 +398,7 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 16,
+      marginBottom: 10,
       backgroundColor: colors.brandSoft,
       borderRadius: 999,
       paddingHorizontal: 12,
@@ -373,21 +408,21 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
     },
     backText: { color: colors.brand, fontWeight: '800', fontSize: r.ms(13) },
     title: {
-      marginTop: 18,
-      fontSize: r.ms(32),
+      marginTop: 10,
+      fontSize: r.ms(26),
       fontWeight: '800',
       color: colors.text,
-      letterSpacing: -0.6,
+      letterSpacing: -0.5,
     },
     sub: {
-      marginTop: 6,
-      marginBottom: 18,
+      marginTop: 4,
+      marginBottom: 12,
       color: colors.muted,
-      fontSize: r.ms(15),
-      lineHeight: r.ms(22),
+      fontSize: r.ms(14),
+      lineHeight: r.ms(20),
     },
     card: {
-      padding: 16,
+      padding: 14,
       borderRadius: 20,
       marginBottom: 10,
     },

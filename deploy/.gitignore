@@ -1,3 +1,8 @@
 .env.production
 *.pem
 *.key
+# APK artifacts (upload ke VPS via deploy/publish-apk.sh — jangan commit)
+downloads/*.apk
+downloads/*.aab
+!downloads/.gitkeep
+!downloads/README.md

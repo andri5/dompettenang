@@ -26,7 +26,13 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
-import { SITE_NAME, SITE_URL, absoluteUrl } from '@/lib/site';
+import {
+  SITE_NAME,
+  SITE_URL,
+  ANDROID_APK_URL,
+  EXPO_BUILDS_URL,
+  absoluteUrl,
+} from '@/lib/site';
 import { useAuthStore } from '@/stores';
 import { SEO } from '@/components/SEO';
 import api from '@/lib/api';
@@ -518,6 +524,44 @@ export function LandingPage() {
       {/* ---- FEEDBACK FORM ---- */}
       <FeedbackSection />
 
+      {/* ---- ANDROID DOWNLOAD ---- */}
+      <section id="download" className="relative py-20 sm:py-28">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-0 top-10 h-[280px] w-[280px] rounded-full bg-[#5eead4]/10 blur-[100px]" />
+        </div>
+        <div className="relative mx-auto max-w-2xl px-4 text-center sm:px-5">
+          <Smartphone className="mx-auto mb-5 h-10 w-10 text-accent" />
+          <h2 className="font-display text-3xl font-extrabold sm:text-4xl">
+            Download Android
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-white/50">
+            Install APK Dompet Tenang di HP. Gratis, tanpa Play Store. Izinkan “sumber tidak
+            dikenal” saat install.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href={ANDROID_APK_URL}
+              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-[#1cc8b4] px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/30 transition hover:shadow-2xl hover:shadow-accent/40"
+            >
+              Download APK
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+            </a>
+            <a
+              href={EXPO_BUILDS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 px-6 py-4 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:text-white"
+            >
+              Build internal (tester)
+              <ChevronRight className="h-4 w-4" />
+            </a>
+          </div>
+          <p className="mx-auto mt-5 max-w-sm text-xs text-white/35">
+            Link tester Expo untuk build terbaru. Publik memakai tombol Download APK di atas.
+          </p>
+        </div>
+      </section>
+
       {/* ---- CTA ---- */}
       <section className="relative py-20 sm:py-28">
         <div className="pointer-events-none absolute inset-0">
@@ -550,7 +594,10 @@ export function LandingPage() {
             <Wallet className="h-4 w-4 text-accent" />
             <span className="text-sm font-semibold text-white/70">Dompet Tenang</span>
           </div>
-          <div className="flex items-center gap-6 text-xs text-white/40">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/40">
+            <a href="#download" className="transition hover:text-white/70">
+              Download Android
+            </a>
             <Link to={ROUTES.TERMS} className="transition hover:text-white/70">
               Syarat & Ketentuan
             </Link>

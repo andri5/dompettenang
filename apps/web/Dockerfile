@@ -5,8 +5,12 @@ WORKDIR /app
 
 ARG VITE_API_URL=/api/v1
 ARG VITE_SITE_URL=https://dompet-tenang.web.id
+ARG VITE_ANDROID_APK_URL=/download/dompet-tenang.apk
+ARG VITE_EXPO_BUILDS_URL=https://expo.dev/accounts/andri5/projects/duitdiary/builds
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SITE_URL=$VITE_SITE_URL
+ENV VITE_ANDROID_APK_URL=$VITE_ANDROID_APK_URL
+ENV VITE_EXPO_BUILDS_URL=$VITE_EXPO_BUILDS_URL
 
 COPY package.json ./
 RUN npm install

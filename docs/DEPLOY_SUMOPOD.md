@@ -365,3 +365,4 @@ Opsional aman: Environment `production` → **Required reviewers** sebelum deplo
 - [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml)
 - [`apps/api/Dockerfile`](../apps/api/Dockerfile)
 - [`apps/web/Dockerfile`](../apps/web/Dockerfile)
+- [`docs/MOBILE_DISTRIBUTE.md`](./MOBILE_DISTRIBUTE.md) — distribusi APK (Expo internal + download website)

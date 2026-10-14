@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Dompet Tenang",
-    "slug": "dompettenang",
+    "slug": "duitdiary",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -19,7 +19,8 @@
     "android": {
       "package": "com.dompettenang.app",
       "label": "Dompet Tenang",
-      "versionCode": 2,
+      "versionCode": 4,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0f9b8e",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -63,6 +64,12 @@
       },
       "appEnv": "release"
     },
-    "owner": "andri5"
+    "owner": "andri5",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a6631937-6819-4b60-89ba-955f6e84db9d"
+    }
   }
 }

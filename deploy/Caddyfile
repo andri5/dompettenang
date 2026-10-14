@@ -15,6 +15,15 @@
 		reverse_proxy api:3001
 	}
 
+	# Static APK / artifacts (mounted at /srv/downloads)
+	# e.g. https://DOMAIN/download/dompet-tenang.apk
+	handle_path /download/* {
+		root * /srv/downloads
+		header X-Content-Type-Options nosniff
+		header Content-Disposition "attachment"
+		file_server
+	}
+
 	handle {
 		reverse_proxy web:80
 	}
