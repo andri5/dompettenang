@@ -61,7 +61,7 @@ cd d:\duitdiary\apps\mobile
 npx eas-cli update --channel production --message "fix: register keyboard"
 ```
 
-APK yang sudah terpasang (build `release-prod-api`, channel `production`) akan menarik update saat dibuka (butuh jaringan).
+APK yang sudah terpasang (build `release-prod-api`, channel `production`) akan menarik update saat dibuka (butuh jaringan). App menampilkan banner **“Ada pembaruan siap dipasang — Ketuk untuk sinkronkan fitur terbaru”**; user ketuk → app reload dengan fitur baru (tanpa install ulang).
 
 **Perlu APK baru** jika: icon, permission, native module, `app.json` penting, atau versi major.
 

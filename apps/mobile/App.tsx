@@ -21,6 +21,7 @@ import { isMaintenanceMode } from './src/lib/maintenance';
 import { PageLoader } from './src/components/PageStatus';
 import { AppStatusProvider } from './src/components/AppStatusProvider';
 import { DialogProvider } from './src/components/AppDialog';
+import { AppUpdateBanner } from './src/components/AppUpdateBanner';
 import { ThemeProvider, useTheme } from './src/themeContext';
 import type { ThemeColors } from './src/theme';
 import { AuthContext, type RootStackParamList } from './src/authContext';
@@ -117,31 +118,34 @@ function AppInner() {
     <AuthContext.Provider value={{ user, setUser }}>
       <DialogProvider>
         <AppStatusProvider>
-          <StatusBar style={colors.statusBar} />
-          <NavigationContainer
-            ref={navRef}
-            linking={linking}
-            onReady={() => {
-              trackNavigationState(navRef.current?.getRootState());
-            }}
-            onStateChange={(state) => {
-              trackNavigationState(state);
-            }}
-          >
-            {user ? (
-              <MainNavigator user={user} onLogout={() => setUser(null)} />
-            ) : (
-              <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Welcome">
-                <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="Register" component={RegisterScreen} />
-                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-                <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-                <Stack.Screen name="Terms" component={TermsScreen} />
-                <Stack.Screen name="Privacy" component={PrivacyScreen} />
-              </Stack.Navigator>
-            )}
-          </NavigationContainer>
+          <View style={styles.appRoot}>
+            <StatusBar style={colors.statusBar} />
+            <NavigationContainer
+              ref={navRef}
+              linking={linking}
+              onReady={() => {
+                trackNavigationState(navRef.current?.getRootState());
+              }}
+              onStateChange={(state) => {
+                trackNavigationState(state);
+              }}
+            >
+              {user ? (
+                <MainNavigator user={user} onLogout={() => setUser(null)} />
+              ) : (
+                <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Welcome">
+                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                  <Stack.Screen name="Login" component={LoginScreen} />
+                  <Stack.Screen name="Register" component={RegisterScreen} />
+                  <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                  <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+                  <Stack.Screen name="Terms" component={TermsScreen} />
+                  <Stack.Screen name="Privacy" component={PrivacyScreen} />
+                </Stack.Navigator>
+              )}
+            </NavigationContainer>
+            <AppUpdateBanner />
+          </View>
         </AppStatusProvider>
       </DialogProvider>
     </AuthContext.Provider>
@@ -160,6 +164,7 @@ export default function App() {
 
 function createStyles(_colors: ThemeColors) {
   return StyleSheet.create({
+    appRoot: { flex: 1 },
     boot: {
       flex: 1,
       alignItems: 'center',
