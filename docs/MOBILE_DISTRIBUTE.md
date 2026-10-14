@@ -1,90 +1,99 @@
 # Distribusi Mobile Dompet Tenang (gratis)
 
-Dua jalur tanpa Play Store:
+| Jalur | Untuk siapa | Cara update |
+|-------|-------------|-------------|
+| **Website APK** | Publik | Install ulang APK dari situs |
+| **Expo internal** | Tester | Link/QR build EAS |
+| **EAS Update (OTA)** | User yang sudah install APK | Update JS otomatis tanpa install ulang |
 
-| Jalur | Untuk siapa | Biaya |
-|-------|-------------|--------|
-| **Expo internal** | Tester / kamu sendiri | Rp 0 |
-| **Download di website** | Publik | Rp 0 |
+URL publik APK:
+
+```text
+https://dompet-tenang.web.id/download/dompet-tenang.apk
+```
 
 ---
 
-## 1. Expo internal (tester)
+## 1. Auto-upload APK ke server (disarankan)
 
-Profile build: `release-prod-api` → `distribution: "internal"` (APK).
+Workflow: [`.github/workflows/publish-android-apk.yml`](../.github/workflows/publish-android-apk.yml)
+
+Alur: **EAS build APK → download artifact → SCP ke VPS** → file muncul di `/download/dompet-tenang.apk`.
+
+### Satu kali: secret GitHub
+
+Repo → **Settings** → **Secrets and variables** → **Actions**:
+
+| Secret | Isi |
+|--------|-----|
+| `EXPO_TOKEN` | Buat di https://expo.dev/settings/access-tokens (hak build) |
+| `PROD_SSH_HOST` | sudah ada (deploy web) |
+| `PROD_SSH_USER` | sudah ada |
+| `PROD_SSH_KEY` | sudah ada |
+| `PROD_SSH_PORT` | opsional (22) |
+| `PROD_APP_DIR` | opsional, default `/opt/dompettenang` |
+
+Pastikan folder downloads di VPS ada dan Caddy sudah mount `deploy/downloads` (sudah di compose).
+
+### Kapan jalan otomatis
+
+- **Push ke `main`** yang mengubah `apps/mobile/**` → build APK baru + upload  
+- **Manual:** Actions → **Publish Android APK** → Run workflow  
+  - `build-and-publish` — build EAS lalu upload (~15–40 menit)  
+  - `publish-latest` — upload APK EAS terakhir tanpa build ulang (cepat)
+
+Setelah hijau, cek:
+
+```text
+https://dompet-tenang.web.id/download/dompet-tenang.apk
+```
+
+Harus HTTP 200. User unduh dari landing **Download Android**.
+
+---
+
+## 2. Update “realtime” tanpa APK baru (OTA)
+
+Kalau perubahan hanya JS/UI (bukan native/icon/permission), publish **EAS Update**:
+
+```powershell
+cd d:\duitdiary\apps\mobile
+npx eas-cli update --channel production --message "fix: register keyboard"
+```
+
+APK yang sudah terpasang (build `release-prod-api`, channel `production`) akan menarik update saat dibuka (butuh jaringan).
+
+**Perlu APK baru** jika: icon, permission, native module, `app.json` penting, atau versi major.
+
+---
+
+## 3. Expo internal (tester cepat)
 
 ```powershell
 cd d:\duitdiary\apps\mobile
 npm run build:apk:prod-api
 ```
 
-Setelah selesai:
-
-1. Buka https://expo.dev/accounts/andri5/projects/duitdiary/builds  
-2. Pilih build terbaru → **Install** / scan QR di HP Android  
-3. Bagikan link build itu ke tester (mereka perlu akun Expo jika diminta, atau unduh APK dari halaman build)
-
-Ini cocok untuk QA cepat. Link artifact Expo bisa kedaluwarsa setelah beberapa minggu — untuk publik pakai jalur website.
+Lalu buka https://expo.dev/accounts/andri5/projects/duitdiary/builds — install via QR/link.
 
 ---
 
-## 2. Download APK di website
-
-URL publik:
-
-```text
-https://dompet-tenang.web.id/download/dompet-tenang.apk
-```
-
-Tombol **Download Android** ada di landing page (`#download`).
-
-### Satu kali: pastikan folder downloads di VPS
-
-Di server (path repo, sesuaikan):
-
-```bash
-mkdir -p /opt/duitdiary/deploy/downloads
-# Caddy sudah mount ./downloads → /srv/downloads
-cd /opt/duitdiary
-docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d caddy
-```
-
-Kalau compose belum pernah di-recreate setelah perubahan Caddy/volume, jalankan ulang service `caddy` (atau full stack).
-
-### Tiap rilis APK baru
-
-**Opsi A — dari laptop (setelah download APK dari Expo):**
+## 4. Upload manual (cadangan)
 
 ```powershell
 cd d:\duitdiary
-$env:DEPLOY_HOST = "root@43.133.135.215"   # ganti IP/user VPS kamu
-bash deploy/publish-apk.sh "C:\Users\...\Downloads\app-release.apk"
+$env:DEPLOY_HOST = "root@IP_VPS"
+bash deploy/publish-apk.sh "PATH\ke\app-release.apk"
 ```
 
-**Opsi B — manual di VPS:**
-
-```bash
-# di VPS
-scp ./dompet-tenang.apk root@VPS:/opt/duitdiary/deploy/downloads/dompet-tenang.apk
-```
-
-Lalu tes di browser/HP:
-
-```text
-https://dompet-tenang.web.id/download/dompet-tenang.apk
-```
-
-### Web deploy
-
-Push perubahan landing + compose ke `main` agar tombol Download muncul di production (autodeploy). APK sendiri **tidak** ikut git — hanya diupload ke VPS.
+Atau `scp` ke `$APP_DIR/deploy/downloads/dompet-tenang.apk`.
 
 ---
 
-## 3. Checklist rilis mobile (ringkas)
+## 5. Checklist
 
-1. `npm run build:apk:prod-api`  
-2. Tes install dari Expo (internal)  
-3. Upload APK → `deploy/publish-apk.sh`  
-4. Cek tombol Download di https://dompet-tenang.web.id/#download  
-
-Play Store (berbayar) bisa ditambahkan nanti dengan profile EAS `production` (AAB).
+1. Secret `EXPO_TOKEN` terisi  
+2. Merge/push perubahan mobile ke `main` **atau** Run **Publish Android APK**  
+3. Tunggu workflow hijau  
+4. Tes download di website  
+5. Untuk patch JS kecil: `eas update --channel production` (tanpa rebuild APK)
