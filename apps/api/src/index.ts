@@ -18,6 +18,7 @@ import { config } from './config/index.js';
 import routes from './routes/index.js';
 import { errorMiddleware } from './middlewares/index.js';
 import { authRateLimiter, apiRateLimiter } from './middlewares/rateLimit.middleware.js';
+import { ensureDefaultCategories } from './services/defaultCategories.service.js';
 
 // Initialize Express application
 const app = express();
@@ -129,18 +130,29 @@ app.use((req, res) => {
 
 const PORT = config.port;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('╔═══════════════════════════════════════════════════════╗');
-  console.log('║                                                       ║');
-  console.log('║   🚀 Dompet Tenang API Server                       ║');
-  console.log('║   ─────────────────────────────────────────────────   ║');
-  console.log(`║   📡 Running on: http://0.0.0.0:${PORT}                ║`);
-  console.log(`║   🌍 Environment: ${config.nodeEnv.padEnd(28)}║`);
-  console.log('║   📚 API Docs: /api/v1/health                        ║');
-  console.log('║                                                       ║');
-  console.log('╚═══════════════════════════════════════════════════════╝');
-  console.log('');
-});
+async function start() {
+  try {
+    await ensureDefaultCategories();
+    console.log('[boot] Default categories ready');
+  } catch (err) {
+    console.error('[boot] Failed to ensure default categories:', err);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log('╔═══════════════════════════════════════════════════════╗');
+    console.log('║                                                       ║');
+    console.log('║   🚀 Dompet Tenang API Server                       ║');
+    console.log('║   ─────────────────────────────────────────────────   ║');
+    console.log(`║   📡 Running on: http://0.0.0.0:${PORT}                ║`);
+    console.log(`║   🌍 Environment: ${config.nodeEnv.padEnd(28)}║`);
+    console.log('║   📚 API Docs: /api/v1/health                        ║');
+    console.log('║                                                       ║');
+    console.log('╚═══════════════════════════════════════════════════════╝');
+    console.log('');
+  });
+}
+
+void start();
 
 export default app;
