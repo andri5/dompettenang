@@ -17,10 +17,13 @@
 
 	# Static APK / artifacts (mounted at /srv/downloads)
 	# e.g. https://DOMAIN/download/dompet-tenang.apk
+	# Missing files fall back to branded 404.html (not API JSON).
 	handle_path /download/* {
 		root * /srv/downloads
 		header X-Content-Type-Options nosniff
-		header Content-Disposition "attachment"
+		@apk path *.apk *.aab
+		header @apk Content-Disposition "attachment"
+		try_files {path} /404.html
 		file_server
 	}
 
