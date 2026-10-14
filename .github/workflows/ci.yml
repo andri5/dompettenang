@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm install --workspaces --include-workspace-root
 
+      - name: Generate Prisma client
+        run: npx --workspace apps/api prisma generate
+
       - name: Lint code
         run: npm run lint --workspaces --if-present
         continue-on-error: true
@@ -60,6 +63,9 @@ jobs:
         run: npm install --workspaces --include-workspace-root
 
       - name: Validate Prisma schema
+        env:
+          # validate only needs a syntactically valid URL (no DB connection)
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
         run: npx --workspace apps/api prisma validate
 
   e2e-tests:
