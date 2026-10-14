@@ -30,7 +30,6 @@ import {
   SITE_NAME,
   SITE_URL,
   ANDROID_APK_URL,
-  EXPO_BUILDS_URL,
   absoluteUrl,
 } from '@/lib/site';
 import { useAuthStore } from '@/stores';
@@ -538,7 +537,7 @@ export function LandingPage() {
             Install APK Dompet Tenang di HP. Gratis, tanpa Play Store. Izinkan “sumber tidak
             dikenal” saat install.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-10 flex justify-center">
             <a
               href={ANDROID_APK_URL}
               className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-[#1cc8b4] px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/30 transition hover:shadow-2xl hover:shadow-accent/40"
@@ -546,19 +545,7 @@ export function LandingPage() {
               Download APK
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
             </a>
-            <a
-              href={EXPO_BUILDS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 px-6 py-4 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:text-white"
-            >
-              Build internal (tester)
-              <ChevronRight className="h-4 w-4" />
-            </a>
           </div>
-          <p className="mx-auto mt-5 max-w-sm text-xs text-white/35">
-            Link tester Expo untuk build terbaru. Publik memakai tombol Download APK di atas.
-          </p>
         </div>
       </section>
 
