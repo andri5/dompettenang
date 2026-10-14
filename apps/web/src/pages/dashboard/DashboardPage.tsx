@@ -445,7 +445,7 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={toggleAmountsVisible}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-surface px-3 py-2 text-sm font-semibold text-muted ring-1 ring-line transition hover:bg-mist hover:text-ink"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-surface p-2 text-sm font-semibold text-muted ring-1 ring-line transition hover:bg-mist hover:text-ink sm:px-3 sm:py-2"
               aria-label={
                 amountsVisible ? 'Sembunyikan nominal' : 'Tampilkan nominal'
               }
@@ -455,8 +455,12 @@ export function DashboardPage() {
                   : 'Tampilkan nominal'
               }
             >
-              {amountsVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              <span>
+              {amountsVisible ? (
+                <Eye className="h-4 w-4" />
+              ) : (
+                <EyeOff className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
                 {amountsVisible ? 'Sembunyikan nominal' : 'Tampilkan nominal'}
               </span>
             </button>
