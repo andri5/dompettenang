@@ -48,11 +48,15 @@ jobs:
         with:
           node-version: '22.x'
 
+      - name: Install workspace dependencies
+        run: npm install --workspaces --include-workspace-root
+
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
 
       - name: Resolve mode
         id: mode
@@ -67,8 +71,12 @@ jobs:
       - name: Build APK on EAS
         if: steps.mode.outputs.mode == 'build-and-publish'
         working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
+          # Ensure local node_modules resolve Expo config plugins before upload
+          test -d node_modules/expo-secure-store || test -d ../../node_modules/expo-secure-store
           eas build \
             --platform android \
             --profile release-prod-api \
@@ -81,6 +89,8 @@ jobs:
       - name: Resolve latest finished APK URL
         id: apk
         working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           # Prefer JSON from the build we just ran; otherwise query latest finished Android build
