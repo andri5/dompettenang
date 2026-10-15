@@ -269,6 +269,32 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 
 ---
 
+## 9b. Staging website (same VPS)
+
+Staging URL: **https://staging.dompet-tenang.web.id**  
+Stack terpisah (`docker-compose.staging.yml`) + DB sendiri, Caddy production mem-proxy subdomain `staging.*`.
+
+### Setup sekali
+
+1. **DNS** (Sumopod Domains → DNS Management):  
+   Type `A`, Name `staging`, Value = IP VPS (sama seperti apex).
+2. GitHub → **Actions** → **Bootstrap staging env** → Run workflow  
+   (membuat `deploy/.env.staging` di VPS; butuh secrets `PROD_SSH_*` + SMTP/bank yang sudah ada).
+3. **Actions** → **Deploy to Staging** → Run workflow  
+   (juga auto saat push ke `feature/testing-qa` atau `develop`).
+
+### File terkait
+
+- [`deploy/docker-compose.staging.yml`](../deploy/docker-compose.staging.yml)
+- [`deploy/.env.staging.example`](../deploy/.env.staging.example)
+- [`deploy/remote-deploy-staging.sh`](../deploy/remote-deploy-staging.sh)
+- [`.github/workflows/deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
+- [`.github/workflows/bootstrap-staging-env.yml`](../.github/workflows/bootstrap-staging-env.yml)
+
+Staging memakai header `X-Robots-Tag: noindex` agar tidak terindeks search engine.
+
+---
+
 ## 10. Autodeploy production (GitHub Actions + SSH)
 
 Setelah VPS jalan manual sekali, production bisa di-update otomatis:
