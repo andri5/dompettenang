@@ -27,7 +27,6 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useAuth } from '../authContext';
 import { hasProAccess } from '../lib/plan';
 import { WEB_UPGRADE_URL } from '../lib/webUrl';
-import { useDialog } from '../components/AppDialog';
 import type { MainStackParamList } from '../navigation/types';
 
 export function SummaryScreen() {
@@ -36,7 +35,6 @@ export function SummaryScreen() {
   const styles = useMemo(() => createStyles(colors, r), [colors, r]);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { showDialog } = useDialog();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,32 +102,29 @@ export function SummaryScreen() {
             <Text style={styles.title}>Ringkasan</Text>
             <Text style={styles.sub}>Pemasukan & pengeluaran periode ini</Text>
           </View>
-          {summary ? (
+          {summary && hasProAccess(user) ? (
             <ScalePress
               style={styles.shareBtn}
               onPress={() => {
-                if (!hasProAccess(user)) {
-                  showDialog({
-                    title: 'Fitur Pro',
-                    message:
-                      'Bagikan laporan tersedia di Dompet Tenang Pro Lifetime (Rp 29.000). Upgrade lewat website.',
-                    confirmLabel: 'Upgrade',
-                    cancelLabel: 'Nanti',
-                    showCancel: true,
-                    onConfirm: () => void Linking.openURL(WEB_UPGRADE_URL),
-                  });
-                  return;
-                }
                 void shareSummaryReport(summary, period);
               }}
             >
               <Ionicons name="share-outline" size={18} color={colors.brand} />
-              <Text style={styles.shareText}>
-                Bagikan{hasProAccess(user) ? '' : ' · Pro'}
-              </Text>
+              <Text style={styles.shareText}>Bagikan</Text>
             </ScalePress>
           ) : null}
         </View>
+        {summary && !hasProAccess(user) ? (
+          <Pressable
+            onPress={() => void Linking.openURL(WEB_UPGRADE_URL)}
+            hitSlop={6}
+            style={{ marginTop: 6, alignSelf: 'flex-start' }}
+          >
+            <Text style={{ color: colors.faint, fontSize: 12, fontWeight: '600' }}>
+              Bagikan laporan tersedia di Pro →
+            </Text>
+          </Pressable>
+        ) : null}
       </FadeInUp>
 
       <FadeInUp delay={40}>

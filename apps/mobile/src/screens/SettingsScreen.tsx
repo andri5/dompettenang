@@ -305,11 +305,19 @@ export function SettingsScreen({ navigation }: Props) {
             ) : null}
             {!hasProAccess(user) ? (
               <ScalePress
-                style={styles.upgradeBtn}
+                style={styles.proTeaser}
                 onPress={() => void Linking.openURL(WEB_UPGRADE_URL)}
               >
-                <Ionicons name="diamond-outline" size={16} color="#fff" />
-                <Text style={styles.upgradeBtnText}>Upgrade Pro Lifetime</Text>
+                <View style={styles.proTeaserIcon}>
+                  <Ionicons name="diamond-outline" size={16} color={colors.brand} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.proTeaserTitle}>Dompet Tenang Pro</Text>
+                  <Text style={styles.proTeaserSub}>
+                    Export PDF & bagikan laporan — sekali bayar lifetime
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.faint} />
               </ScalePress>
             ) : null}
           </View>
@@ -925,21 +933,36 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
       fontWeight: '600',
       paddingHorizontal: 12,
     },
-    upgradeBtn: {
+    proTeaser: {
       marginTop: 12,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      backgroundColor: colors.brand,
+      gap: 10,
+      backgroundColor: colors.brandSoft,
       borderRadius: 14,
-      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.brandSoftBorder,
+      paddingHorizontal: 12,
       paddingVertical: 10,
     },
-    upgradeBtnText: {
-      color: colors.onBrand,
+    proTeaserIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    proTeaserTitle: {
+      color: colors.text,
       fontWeight: '800',
       fontSize: 13,
+    },
+    proTeaserSub: {
+      color: colors.faint,
+      fontSize: 11,
+      fontWeight: '500',
+      marginTop: 2,
     },
     sectionCard: {
       backgroundColor: colors.surface,

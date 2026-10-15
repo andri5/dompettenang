@@ -51,7 +51,7 @@ const helpSections: HelpSection[] = [
       'Bagian AI Saran & Notice memberi peringatan jika pengeluaran melebihi pemasukan, atau apresiasi jika ada surplus.',
       'Daftar transaksi terbaru memudahkan akses cepat ke catatan terakhir.',
     ],
-    tip: 'Di Dashboard, gunakan Export Excel atau Export PDF untuk mengunduh ringkasan + daftar transaksi sesuai filter periode.',
+    tip: 'Di Dashboard, Export Excel tersedia untuk semua akun. Export PDF adalah fitur Pro.',
     link: { to: ROUTES.DASHBOARD, label: 'Buka Dashboard' },
   },
   {

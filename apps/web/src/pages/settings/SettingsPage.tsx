@@ -462,10 +462,15 @@ export function SettingsPage() {
               {!hasProAccess(user) ? (
                 <Link
                   to={ROUTES.UPGRADE}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white shadow-md shadow-accent/20 transition hover:brightness-95"
+                  className="mt-3 block max-w-md rounded-2xl border border-line bg-mist/50 px-3 py-2.5 transition hover:border-accent/40 hover:bg-accent-soft/40"
                 >
-                  <Crown className="h-4 w-4" />
-                  Upgrade Pro Lifetime
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
+                    <Crown className="h-4 w-4 text-accent" />
+                    Dompet Tenang Pro
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted">
+                    Export PDF & bagikan laporan — sekali bayar lifetime. Lihat detail →
+                  </span>
                 </Link>
               ) : null}
               {user?.createdAt && (

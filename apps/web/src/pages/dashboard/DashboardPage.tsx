@@ -475,34 +475,42 @@ export function DashboardPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-              isLoading={isExporting === 'excel'}
-              disabled={!summary || !!isExporting}
-              onClick={() => handleExport('excel')}
-            >
-              Export Excel
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              leftIcon={<FileText className="h-4 w-4" />}
-              isLoading={isExporting === 'pdf'}
-              disabled={!summary || !!isExporting}
-              onClick={() => handleExport('pdf')}
-              title={
-                hasProAccess(user)
-                  ? 'Export PDF'
-                  : 'Fitur Pro — Export PDF'
-              }
-            >
-              Export PDF{hasProAccess(user) ? '' : ' · Pro'}
-            </Button>
+          <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                leftIcon={<FileSpreadsheet className="h-4 w-4" />}
+                isLoading={isExporting === 'excel'}
+                disabled={!summary || !!isExporting}
+                onClick={() => handleExport('excel')}
+              >
+                Export Excel
+              </Button>
+              {hasProAccess(user) ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<FileText className="h-4 w-4" />}
+                  isLoading={isExporting === 'pdf'}
+                  disabled={!summary || !!isExporting}
+                  onClick={() => handleExport('pdf')}
+                  title="Export PDF"
+                >
+                  Export PDF
+                </Button>
+              ) : null}
+            </div>
+            {!hasProAccess(user) ? (
+              <Link
+                to={ROUTES.UPGRADE}
+                className="text-right text-[11px] font-medium text-muted transition hover:text-accent"
+              >
+                Butuh Export PDF? Tersedia di Pro →
+              </Link>
+            ) : null}
           </div>
         </div>
 
