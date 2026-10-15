@@ -15,7 +15,6 @@ import {
   PiggyBank,
   Target,
   Camera,
-  BarChart3,
   Shield,
   Smartphone,
   ArrowRight,
@@ -24,6 +23,10 @@ import {
   TrendingUp,
   Zap,
   CheckCircle2,
+  Crown,
+  FileSpreadsheet,
+  FileText,
+  Share2,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import {
@@ -55,37 +58,60 @@ const FEATURES = [
     title: 'Catat Transaksi',
     desc: 'Pemasukan & pengeluaran tercatat rapi dalam satu tempat.',
     tone: 'bg-accent-soft text-accent',
+    tier: 'free' as const,
   },
   {
     icon: PiggyBank,
     title: 'Budget Bulanan',
     desc: 'Atur limit pengeluaran dan pantau biar tetap on-track.',
     tone: 'bg-violet-100 text-violet-600',
+    tier: 'free' as const,
   },
   {
     icon: Target,
     title: 'Target Tabungan',
     desc: 'Set goal saving dan lihat progresmu naik terus.',
     tone: 'bg-amber-100 text-amber-600',
+    tier: 'free' as const,
   },
   {
     icon: Camera,
     title: 'Foto Struk',
-    desc: 'Snap struk belanja, langsung tercatat otomatis.',
+    desc: 'Lampirkan foto/PDF struk di transaksi (opsional).',
     tone: 'bg-lime-100 text-lime-600',
+    tier: 'free' as const,
   },
   {
-    icon: BarChart3,
-    title: 'Laporan & Export',
-    desc: 'Ringkasan keuangan visual yang mudah dipahami.',
+    icon: FileSpreadsheet,
+    title: 'Export Excel',
+    desc: 'Unduh ringkasan + daftar transaksi kapan saja — gratis.',
     tone: 'bg-cyan-100 text-cyan-600',
+    tier: 'free' as const,
   },
   {
     icon: Shield,
     title: 'Aman & Privat',
     desc: 'Data keuanganmu terenkripsi dan hanya kamu yang akses.',
     tone: 'bg-rose-100 text-rose-500',
+    tier: 'free' as const,
   },
+];
+
+const FREE_PLAN_ITEMS = [
+  'Catat pemasukan & pengeluaran',
+  'Dashboard & grafik ringkasan',
+  'Budget bulanan',
+  'Target tabungan',
+  'Transaksi otomatis',
+  'Upload struk',
+  'Export Excel',
+];
+
+const PRO_PLAN_ITEMS = [
+  'Semua fitur Free',
+  'Export laporan PDF',
+  'Bagikan ringkasan dari mobile',
+  'Sekali bayar — lifetime',
 ];
 
 type LandingTestimonial = {
@@ -139,9 +165,23 @@ export function LandingPage() {
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web, Android, iOS',
       inLanguage: 'id-ID',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'IDR' },
+      offers: [
+        {
+          '@type': 'Offer',
+          name: 'Free',
+          price: '0',
+          priceCurrency: 'IDR',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Pro Lifetime',
+          price: '29000',
+          priceCurrency: 'IDR',
+          description: 'Export PDF dan bagikan laporan — sekali bayar.',
+        },
+      ],
       description:
-        'Catat pemasukan & pengeluaran, atur budget bulanan, dan pantau target tabungan dengan Dompet Tenang.',
+        'Catat pemasukan & pengeluaran, atur budget bulanan, dan pantau target tabungan. Gratis, dengan Pro Lifetime opsional.',
     },
   ];
 
@@ -149,8 +189,8 @@ export function LandingPage() {
     <div className="min-h-dvh bg-[#0a1628] text-white selection:bg-accent/30">
       <SEO
         title="Catat Keuangan Pribadi Gratis"
-        description="Dompet Tenang — aplikasi pencatatan keuangan pribadi gratis. Catat pemasukan & pengeluaran, atur budget, pantau tabungan. Mulai hari ini."
-        keywords="aplikasi keuangan gratis, catat pengeluaran, pencatatan keuangan pribadi, budget bulanan, target tabungan, Dompet Tenang, expense tracker Indonesia"
+        description="Dompet Tenang — pencatatan keuangan gratis (transaksi, budget, tabungan, export Excel). Pro Lifetime opsional untuk Export PDF & bagikan laporan."
+        keywords="aplikasi keuangan gratis, catat pengeluaran, pencatatan keuangan pribadi, budget bulanan, target tabungan, Dompet Tenang Pro, export PDF, expense tracker Indonesia"
         canonical="/"
         jsonLd={jsonLd}
       />
@@ -215,7 +255,7 @@ export function LandingPage() {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-3 py-1.5 text-[11px] font-semibold text-accent sm:px-4 sm:text-xs"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Gratis untuk semua orang
+              Gratis untuk mulai · Pro Lifetime opsional
             </motion.div>
 
             <motion.h1
@@ -234,8 +274,8 @@ export function LandingPage() {
               custom={2}
               className="mx-auto mt-6 max-w-xl text-base text-white/60 sm:text-lg"
             >
-              Catat pemasukan, pengeluaran, budget, dan target tabungan — semuanya dalam satu
-              aplikasi yang cepat, intuitif, dan aman.
+              Catat pemasukan, pengeluaran, budget, dan target tabungan secara gratis. Upgrade
+              Pro hanya jika butuh Export PDF & bagikan laporan.
             </motion.p>
 
             <motion.div
@@ -324,17 +364,18 @@ export function LandingPage() {
               custom={0}
               className="mb-3 text-xs font-bold uppercase tracking-widest text-accent"
             >
-              Fitur Lengkap
+              Fitur Free
             </motion.p>
             <motion.h2
               variants={fadeUp}
               custom={1}
               className="font-display text-3xl font-extrabold sm:text-4xl"
             >
-              Semua yang kamu butuhkan
+              Inti pencatatan, gratis
             </motion.h2>
             <motion.p variants={fadeUp} custom={2} className="mx-auto mt-4 max-w-lg text-white/50">
-              Dompet Tenang dirancang untuk membantu siapa saja mengelola keuangan pribadi dengan mudah.
+              Semua yang dipakai sehari-hari terbuka tanpa bayar. Pro hanya untuk export PDF &
+              bagikan laporan.
             </motion.p>
           </motion.div>
 
@@ -349,15 +390,119 @@ export function LandingPage() {
                 viewport={{ once: true, margin: '-40px' }}
                 className="group rounded-3xl border border-white/[0.06] bg-white/[0.03] p-6 transition hover:border-accent/20 hover:bg-white/[0.05]"
               >
-                <div
-                  className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${f.tone}`}
-                >
-                  <f.icon className="h-5 w-5" />
+                <div className="mb-4 flex items-start justify-between gap-2">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ${f.tone}`}
+                  >
+                    <f.icon className="h-5 w-5" />
+                  </div>
+                  <span className="rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
+                    Free
+                  </span>
                 </div>
                 <h3 className="mb-1.5 font-display text-base font-bold">{f.title}</h3>
                 <p className="text-sm leading-relaxed text-white/50">{f.desc}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---- FREE VS PRO ---- */}
+      <section id="harga" className="relative py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl px-4 sm:px-5">
+          <motion.div
+            className="mb-14 text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+          >
+            <motion.p
+              variants={fadeUp}
+              custom={0}
+              className="mb-3 text-xs font-bold uppercase tracking-widest text-accent"
+            >
+              Harga
+            </motion.p>
+            <motion.h2
+              variants={fadeUp}
+              custom={1}
+              className="font-display text-3xl font-extrabold sm:text-4xl"
+            >
+              Free cukup · Pro opsional
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={2} className="mx-auto mt-4 max-w-lg text-white/50">
+              Mulai gratis. Upgrade Pro Lifetime hanya jika kamu butuh PDF & bagikan laporan.
+            </motion.p>
+          </motion.div>
+
+          <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+            <motion.div
+              variants={fadeUp}
+              custom={0}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-40px' }}
+              className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-8"
+            >
+              <p className="text-xs font-bold uppercase tracking-widest text-white/40">Free</p>
+              <p className="mt-2 font-display text-3xl font-extrabold">Rp 0</p>
+              <p className="mt-1 text-sm text-white/50">Selamanya · tanpa iklan</p>
+              <ul className="mt-6 space-y-2.5">
+                {FREE_PLAN_ITEMS.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-white/70">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to={isLoggedIn ? ROUTES.DASHBOARD : ROUTES.REGISTER}
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/5"
+              >
+                {isLoggedIn ? 'Buka Dashboard' : 'Daftar gratis'}
+              </Link>
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              custom={1}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-40px' }}
+              className="relative rounded-3xl border border-accent/30 bg-gradient-to-b from-accent/15 to-white/[0.03] p-6 sm:p-8"
+            >
+              <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold text-white">
+                <Crown className="h-3 w-3" />
+                Early bird
+              </div>
+              <p className="text-xs font-bold uppercase tracking-widest text-accent">Pro Lifetime</p>
+              <p className="mt-2 font-display text-3xl font-extrabold">Rp 29.000</p>
+              <p className="mt-1 text-sm text-white/50">Sekali bayar · akses seumur hidup</p>
+              <ul className="mt-6 space-y-2.5">
+                {PRO_PLAN_ITEMS.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-white/70">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-white/45">
+                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1">
+                  <FileText className="h-3 w-3" /> Export PDF
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1">
+                  <Share2 className="h-3 w-3" /> Bagikan laporan
+                </span>
+              </div>
+              <Link
+                to={isLoggedIn ? ROUTES.UPGRADE : ROUTES.REGISTER}
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-[#1cc8b4] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-accent/25 transition hover:brightness-105"
+              >
+                {isLoggedIn ? 'Upgrade Pro' : 'Daftar, lalu Upgrade'}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -421,12 +566,12 @@ export function LandingPage() {
                 </h2>
                 <div className="mt-8 space-y-4">
                   {[
-                    'Gratis tanpa iklan',
+                    'Gratis tanpa iklan untuk fitur inti',
                     'Tampilan modern & responsif',
                     'Tersedia web & mobile',
                     'Data terenkripsi & privat',
                     'Budget alerts otomatis',
-                    'Export laporan kapan saja',
+                    'Export Excel gratis · PDF di Pro',
                   ].map((t) => (
                     <div key={t} className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-accent" />
@@ -582,6 +727,9 @@ export function LandingPage() {
             <span className="text-sm font-semibold text-white/70">Dompet Tenang</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/40">
+            <a href="#harga" className="transition hover:text-white/70">
+              Free & Pro
+            </a>
             <a href="#download" className="transition hover:text-white/70">
               Download Android
             </a>
