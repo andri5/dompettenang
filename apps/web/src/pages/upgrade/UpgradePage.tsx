@@ -142,8 +142,9 @@ export function UpgradePage() {
       />
       <MainLayout>
         <PageHeader
+          eyebrow="Pro"
           title="Upgrade Pro"
-          subtitle="Sekali bayar — akses Pro seumur hidup (early bird)"
+          description="Sekali bayar — akses Pro seumur hidup (early bird)"
         />
 
         <div className="mx-auto max-w-2xl space-y-6">
