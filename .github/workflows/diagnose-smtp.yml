@@ -82,56 +82,70 @@ jobs:
           grep -E '^SMTP_' "${ENV_FILE}" | sed -E 's/(PASS|USER)=.*/\1=***/' || true
 
           echo ""
-          echo "==> Values seen by API container"
+          echo "==> Values seen by API container + SMTP verify/send"
           cd "${APP_DIR}"
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
-            node -e '
-              const keys=["SMTP_ENABLED","SMTP_HOST","SMTP_PORT","SMTP_SECURE","SMTP_USER","SMTP_FROM"];
-              for (const k of keys) {
-                const v=process.env[k]||"";
-                console.log(k+"="+(k.includes("PASS")||k.includes("USER")? (v?"(set)":"(empty)") : v));
-              }
-              console.log("SMTP_PASS="+(process.env.SMTP_PASS?"(set len="+String(process.env.SMTP_PASS).length+")":"(empty)"));
-            '
+          # Write a small script into the api container and run with awaited promises
+          # (inline node -e + unawaited promises was exiting early).
+          SCRIPT_B64=$(printf '%s' '
+const nodemailer = require("nodemailer");
+(async () => {
+  const keys = ["SMTP_ENABLED","SMTP_HOST","SMTP_PORT","SMTP_SECURE","SMTP_USER","SMTP_FROM"];
+  for (const k of keys) {
+    const v = process.env[k] || "";
+    const hide = k.includes("PASS") || k.includes("USER");
+    console.log(k + "=" + (hide ? (v ? "(set)" : "(empty)") : v));
+  }
+  console.log("SMTP_PASS=" + (process.env.SMTP_PASS ? "(set len=" + String(process.env.SMTP_PASS).length + ")" : "(empty)"));
 
-          echo ""
-          echo "==> Nodemailer verify()"
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
-            node -e '
-              const nodemailer=require("nodemailer");
-              const host=process.env.SMTP_HOST||"";
-              const port=Number(process.env.SMTP_PORT||465);
-              const secure=String(process.env.SMTP_SECURE||"") === "true" || port===465;
-              const user=process.env.SMTP_USER||"";
-              const pass=process.env.SMTP_PASS||"";
-              if(!host||!user||!pass){ console.error("FAIL: SMTP host/user/pass incomplete"); process.exit(2); }
-              const tx=nodemailer.createTransport({host,port,secure,auth:{user,pass}});
-              tx.verify().then(()=>{ console.log("OK: SMTP verify succeeded", {host,port,secure}); })
-                .catch((e)=>{ console.error("FAIL: SMTP verify", e && (e.response||e.message||e)); process.exit(3); });
-            '
+  const host = process.env.SMTP_HOST || "";
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secure = String(process.env.SMTP_SECURE || "") === "true" || port === 465;
+  const user = process.env.SMTP_USER || "";
+  const pass = process.env.SMTP_PASS || "";
+  const from = process.env.SMTP_FROM || user;
+  const to = process.env.SEND_TEST_TO || "";
 
-          if [[ -n "${SEND_TEST_TO}" ]]; then
-            echo ""
-            echo "==> Sending test mail to ${SEND_TEST_TO}"
-            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
-              node -e '
-                const nodemailer=require("nodemailer");
-                const to=process.argv[1];
-                const host=process.env.SMTP_HOST||"";
-                const port=Number(process.env.SMTP_PORT||465);
-                const secure=String(process.env.SMTP_SECURE||"") === "true" || port===465;
-                const user=process.env.SMTP_USER||"";
-                const pass=process.env.SMTP_PASS||"";
-                const from=process.env.SMTP_FROM||user;
-                const tx=nodemailer.createTransport({host,port,secure,auth:{user,pass}});
-                tx.sendMail({from,to,subject:"[Dompet Tenang] SMTP test",text:"Ini email uji SMTP dari VPS Dompet Tenang."})
-                  .then((info)=>{ console.log("OK: sent", info.messageId); })
-                  .catch((e)=>{ console.error("FAIL: send", e && (e.response||e.message||e)); process.exit(4); });
-              ' "${SEND_TEST_TO}"
-          else
-            echo ""
-            echo "==> Skip test send (no send_test_to input)"
-          fi
+  if (!host || !user || !pass) {
+    console.error("FAIL: SMTP host/user/pass incomplete");
+    process.exit(2);
+  }
+
+  const tx = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  try {
+    await tx.verify();
+    console.log("OK: SMTP verify succeeded", JSON.stringify({ host, port, secure }));
+  } catch (e) {
+    console.error("FAIL: SMTP verify", e && (e.response || e.message || e));
+    process.exit(3);
+  }
+
+  if (!to) {
+    console.log("Skip test send (no send_test_to input)");
+    return;
+  }
+  console.log("Sending test mail to " + to);
+  try {
+    const info = await tx.sendMail({
+      from,
+      to,
+      subject: "[Dompet Tenang] SMTP test",
+      text: "Ini email uji SMTP dari VPS Dompet Tenang.",
+    });
+    console.log("OK: sent " + (info.messageId || ""));
+  } catch (e) {
+    console.error("FAIL: send", e && (e.response || e.message || e));
+    process.exit(4);
+  }
+})().catch((e) => {
+  console.error("FAIL: unexpected", e);
+  process.exit(1);
+});
+' | base64 -w0)
+
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T \
+            -e SEND_TEST_TO="${SEND_TEST_TO}" \
+            api \
+            sh -c "echo ${SCRIPT_B64} | base64 -d > /tmp/smtp-diagnose.mjs && node /tmp/smtp-diagnose.mjs"
 
           echo ""
           echo "==> Recent API logs (password-reset / SMTP / mail)"
