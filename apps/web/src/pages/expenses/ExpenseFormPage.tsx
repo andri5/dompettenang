@@ -23,6 +23,7 @@ import { expenseSchema } from '@/lib/validations';
 import type { ExpenseFormData } from '@/lib/validations';
 import { useExpense, useExpenseMutations, useCategories } from '@/hooks';
 import { formatDateForInput } from '@/lib/utils';
+import { formatAmountInput, parseAmountInput } from '@/lib/amountInput';
 import { ROUTES } from '@/lib/constants';
 import type { TransactionType } from '@/types';
 
@@ -37,6 +38,7 @@ export function ExpenseFormPage() {
   const isIncome = type === 'INCOME';
   const listRoute = isIncome ? ROUTES.INCOMES : ROUTES.EXPENSES;
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [amountDisplay, setAmountDisplay] = useState('');
 
   const { data: expense, isLoading: isExpenseLoading } = useExpense(id || '', type);
   const { data: categories, isLoading: isCategoriesLoading } = useCategories(type);
@@ -73,6 +75,7 @@ export function ExpenseFormPage() {
         categoryId: expense.categoryId,
         receiptUrl: expense.receiptUrl ?? null,
       });
+      setAmountDisplay(formatAmountInput(String(Math.round(expense.amount))));
     }
   }, [expense, reset]);
 
@@ -168,12 +171,25 @@ export function ExpenseFormPage() {
                 </div>
                 <Input
                   id="amount"
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  placeholder="Masukkan jumlah atau pakai kalkulator"
+                  placeholder="Contoh: 50.000"
                   error={errors.amount?.message}
                   rightIcon={<Calculator className="h-4 w-4" />}
-                  {...register('amount', { valueAsNumber: true })}
+                  value={amountDisplay}
+                  onChange={(e) => {
+                    const formatted = formatAmountInput(e.target.value);
+                    setAmountDisplay(formatted);
+                    const parsed = parseAmountInput(formatted);
+                    if (parsed > 0) {
+                      setValue('amount', parsed, { shouldValidate: true, shouldDirty: true });
+                    } else {
+                      setValue('amount', undefined as unknown as number, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
+                    }
+                  }}
                   onFocus={(e) => {
                     e.target.select();
                   }}
@@ -189,6 +205,7 @@ export function ExpenseFormPage() {
                     : undefined
                 }
                 onApply={(amount) => {
+                  setAmountDisplay(formatAmountInput(String(Math.round(amount))));
                   setValue('amount', amount, { shouldValidate: true, shouldDirty: true });
                 }}
               />

@@ -25,7 +25,7 @@ Angka bersifat **perkiraan** — selalu cek harga live di dashboard Sumopod / re
 | VPS Sumopod 2 vCPU / 2 GB | ~Rp 36.000 – 60.000 | /bulan | Cukup untuk MVP Dompet Tenang |
 | VPS 2 vCPU / 4 GB (opsional) | ~Rp 85.000 – 90.000 | /bulan | Jika RAM ketat |
 | Turnstile Cloudflare | Rp 0 | — | Tier gratis |
-| SMTP Gmail App Password | Rp 0 | — | Pakai akun Gmail + App Password |
+| SMTP Sumopod (Email Credit) | per email | — | Dashboard → Email SMTP; top-up Email Credit |
 | SSL Let’s Encrypt | Rp 0 | — | Otomatis via Caddy |
 
 **Contoh bulan pertama (kasar):**
@@ -186,7 +186,7 @@ openssl rand -base64 48
 ```
 
 - `CORS_ORIGIN` / `APP_URL` — `https://dompettenang.id`
-- `SMTP_*` — App Password Gmail (bukan password biasa)
+- `SMTP_*` — Sumopod Email SMTP (`smtp.sumopod.com:465` SSL). Buat credential di Dashboard → **Email SMTP** → Credentials. Lihat [docs Sumopod SMTP](https://docs.sumopod.com/guides/smtp/create-smtp).
 - `TURNSTILE_*` — key production dari Cloudflare Turnstile
 - `PRO_LIFETIME_PRICE` — default `29000` (Pro Lifetime early bird)
 - `PRO_BANK_NAME` / `PRO_BANK_ACCOUNT` / `PRO_BANK_HOLDER` — rekening untuk transfer manual (wajib agar `/upgrade` bisa dipakai)
@@ -194,6 +194,32 @@ openssl rand -base64 48
 Setelah user transfer + unggah bukti, approve di **Admin → Pro**.
 
 Jangan commit file `deploy/.env.production`.
+
+### SMTP Sumopod (lupa password)
+
+1. Dashboard Sumopod → **Email SMTP** → tab **Credentials** → **Create Credential**
+2. Catat host/user/pass yang ditampilkan (`smtp.sumopod.com`, port `465` SSL)
+3. Top-up **Email Credit** bila saldo kosong
+4. (Opsional) tab **Custom Domain** — verifikasi DKIM/SPF supaya `SMTP_FROM` pakai domainmu
+5. Isi di `deploy/.env.production`:
+
+```env
+SMTP_ENABLED=true
+SMTP_HOST=smtp.sumopod.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM="Dompet Tenang <noreply@domain-anda.com>"
+```
+
+6. Restart API agar env terbaca:
+
+```bash
+docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d api
+```
+
+7. Tes **Lupa password** di web — cek inbox + log Sumopod Email SMTP.
 
 ---
 

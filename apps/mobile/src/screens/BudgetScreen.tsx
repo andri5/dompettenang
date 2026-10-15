@@ -19,6 +19,7 @@ import {
 } from '../lib/budget';
 import { getCategories, type Category } from '../lib/finance';
 import { formatIDR } from '../lib/format';
+import { formatAmountInput, parseAmountInput } from '../lib/amountInput';
 import { AppTextInput, PrimaryButton } from '../components/ui';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { FadeInUp, PopIn } from '../components/motion';
@@ -32,8 +33,7 @@ import type { MainStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<MainStackParamList, 'Budget'>;
 
 function parseAmount(raw: string): number {
-  const n = Number(raw.replace(/\./g, '').replace(',', '.'));
-  return Number.isFinite(n) ? n : 0;
+  return parseAmountInput(raw);
 }
 
 function ProgressBar({
@@ -88,10 +88,12 @@ export function BudgetScreen({ navigation }: Props) {
       ]);
       setStatus(budget);
       setCategories(cats);
-      setTotalBudget(budget.hasBudget ? String(budget.totalBudget) : '');
+      setTotalBudget(
+        budget.hasBudget ? formatAmountInput(String(Math.round(budget.totalBudget))) : ''
+      );
       const next: Record<string, string> = {};
       budget.categoryBudgets.forEach((row) => {
-        next[row.categoryId] = String(row.budgetAmount);
+        next[row.categoryId] = formatAmountInput(String(Math.round(row.budgetAmount)));
       });
       setCategoryAmounts(next);
     } finally {
@@ -228,9 +230,9 @@ export function BudgetScreen({ navigation }: Props) {
           <Text style={styles.cardLabel}>Total budget</Text>
           <AppTextInput
             value={totalBudget}
-            onChangeText={(v) => setTotalBudget(v.replace(/[^0-9]/g, ''))}
+            onChangeText={(v) => setTotalBudget(formatAmountInput(v))}
             keyboardType="numeric"
-            placeholder="Contoh: 5000000"
+            placeholder="Contoh: 5.000.000"
           />
 
           <Text style={[styles.cardLabel, { marginTop: 14 }]}>Limit per kategori (opsional)</Text>
@@ -242,7 +244,10 @@ export function BudgetScreen({ navigation }: Props) {
                 <AppTextInput
                   value={categoryAmounts[cat.id] ?? ''}
                   onChangeText={(v) =>
-                    setCategoryAmounts((prev) => ({ ...prev, [cat.id]: v.replace(/[^0-9]/g, '') }))
+                    setCategoryAmounts((prev) => ({
+                      ...prev,
+                      [cat.id]: formatAmountInput(v),
+                    }))
                   }
                   keyboardType="numeric"
                   placeholder="Limit"

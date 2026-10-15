@@ -10,6 +10,7 @@ import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/useToast';
 import { formatCurrency } from '@/lib/utils';
+import { formatAmountInput, parseAmountInput } from '@/lib/amountInput';
 import {
   createRecurringTransaction,
   getRecurringTransactions,
@@ -54,7 +55,7 @@ export function RecurringPage() {
   }, []);
 
   const handleCreate = async () => {
-    const parsed = Number(amount.replace(/\./g, '').replace(',', '.'));
+    const parsed = parseAmountInput(amount);
     if (!categoryId || !parsed || parsed <= 0) {
       toast.error('Lengkapi kategori dan jumlah');
       return;
@@ -118,7 +119,12 @@ export function RecurringPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-muted">Jumlah</label>
-                <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" />
+                <Input
+                  value={amount}
+                  onChange={(e) => setAmount(formatAmountInput(e.target.value))}
+                  inputMode="numeric"
+                  placeholder="Contoh: 150.000"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-muted">Frekuensi</label>

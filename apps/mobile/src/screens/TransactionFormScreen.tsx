@@ -24,6 +24,7 @@ import {
 } from '../lib/finance';
 import { authImageSource, uploadReceipt } from '../lib/upload';
 import { formatDateShort, todayISO } from '../lib/format';
+import { formatAmountInput, parseAmountInput } from '../lib/amountInput';
 import { enqueueOfflineAction, isDeviceOnline } from '../lib/offlineQueue';
 import { Ionicons } from '@expo/vector-icons';
 import { AmountCalculator } from '../components/AmountCalculator';
@@ -40,7 +41,7 @@ import type { MainStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<MainStackParamList, 'TransactionForm'>;
 
 function parseAmount(raw: string): number {
-  return Number(String(raw).replace(/\./g, '').replace(',', '.'));
+  return parseAmountInput(raw);
 }
 
 function isoToDate(iso: string): Date {
@@ -115,7 +116,7 @@ export function TransactionFormScreen({ navigation, route }: Props) {
         const tx = await getTransaction(editId);
         if (cancelled) return;
         setType(tx.type);
-        setAmount(String(Math.round(tx.amount)));
+        setAmount(formatAmountInput(String(Math.round(tx.amount))));
         setNote(tx.description || '');
         setDate(tx.date.slice(0, 10));
         setCategoryId(tx.categoryId);
@@ -452,9 +453,9 @@ export function TransactionFormScreen({ navigation, route }: Props) {
               <AppTextInput
                 icon="cash-outline"
                 keyboardType="numeric"
-                placeholder="50000"
+                placeholder="50.000"
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(v) => setAmount(formatAmountInput(v))}
                 style={{ marginBottom: 0 }}
               />
             </View>
@@ -467,7 +468,7 @@ export function TransactionFormScreen({ navigation, route }: Props) {
           visible={calcOpen}
           onClose={() => setCalcOpen(false)}
           initialValue={parseAmount(amount) || undefined}
-          onApply={(value) => setAmount(String(value))}
+          onApply={(value) => setAmount(formatAmountInput(String(Math.round(value))))}
         />
 
         <FadeInUp delay={80}>

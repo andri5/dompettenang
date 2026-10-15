@@ -27,6 +27,7 @@ import {
 } from '../lib/savings';
 import { useAuth } from '../authContext';
 import { hasProAccess } from '../lib/plan';
+import { formatAmountInput, parseAmountInput } from '../lib/amountInput';
 import { ProFeatureLock } from '../components/ProFeatureLock';
 
 function fmtN(n: number) {
@@ -99,7 +100,7 @@ export function SavingsScreen() {
   const openEdit = (goal: SavingsGoal) => {
     setEditGoal(goal);
     setName(goal.name);
-    setTarget(String(Math.round(goal.targetAmount)));
+    setTarget(formatAmountInput(String(Math.round(goal.targetAmount))));
     setDeadline(goal.deadline || '');
   };
 
@@ -127,7 +128,7 @@ export function SavingsScreen() {
     if (!editGoal) return;
     const unchanged =
       name.trim() === editGoal.name &&
-      target === String(Math.round(editGoal.targetAmount)) &&
+      parseAmountInput(target) === Math.round(editGoal.targetAmount) &&
       (deadline || '') === (editGoal.deadline || '');
 
     if (unchanged) {
@@ -170,7 +171,7 @@ export function SavingsScreen() {
   };
 
   const handleCreate = async () => {
-    const parsed = Number(target);
+    const parsed = parseAmountInput(target);
     if (!name.trim() || !parsed) {
       showDialog({
         variant: 'warning',
@@ -211,7 +212,7 @@ export function SavingsScreen() {
 
   const handleUpdate = async () => {
     if (!editGoal) return;
-    const parsed = Number(target);
+    const parsed = parseAmountInput(target);
     if (!name.trim() || !parsed) {
       showDialog({
         variant: 'warning',
@@ -261,7 +262,7 @@ export function SavingsScreen() {
 
   const handleAdd = async () => {
     if (!addGoal) return;
-    const parsed = Number(addAmt);
+    const parsed = parseAmountInput(addAmt);
     if (!parsed || parsed <= 0) {
       showDialog({
         variant: 'warning',
@@ -478,7 +479,7 @@ export function SavingsScreen() {
           placeholder="Contoh: 5000000"
           keyboardType="numeric"
           value={target}
-          onChangeText={(v) => setTarget(v.replace(/[^0-9]/g, ''))}
+          onChangeText={(v) => setTarget(formatAmountInput(v))}
         />
         <FormLabel>Deadline (opsional)</FormLabel>
         <AppTextInput
@@ -517,7 +518,7 @@ export function SavingsScreen() {
           placeholder="Contoh: 5000000"
           keyboardType="numeric"
           value={target}
-          onChangeText={(v) => setTarget(v.replace(/[^0-9]/g, ''))}
+          onChangeText={(v) => setTarget(formatAmountInput(v))}
         />
         <FormLabel>Deadline (opsional)</FormLabel>
         <AppTextInput
@@ -545,7 +546,7 @@ export function SavingsScreen() {
           placeholder="Masukkan nominal"
           keyboardType="numeric"
           value={addAmt}
-          onChangeText={(v) => setAddAmt(v.replace(/[^0-9]/g, ''))}
+          onChangeText={(v) => setAddAmt(formatAmountInput(v))}
         />
       </FormDialog>
     </View>

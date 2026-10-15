@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
 import { Button, Input, Card, EmptyState, Modal, ModalFooter } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { formatAmountInput, parseAmountInput } from '@/lib/amountInput';
 import { useToast } from '@/hooks/useToast';
 import {
   getSavingsGoals,
@@ -49,7 +50,7 @@ export function SavingsPage() {
   const openEdit = (goal: SavingsGoal) => {
     setEditGoal(goal);
     setName(goal.name);
-    setTarget(String(Math.round(goal.targetAmount)));
+    setTarget(formatAmountInput(String(Math.round(goal.targetAmount))));
     setDeadline(goal.deadline || '');
   };
 
@@ -114,7 +115,7 @@ export function SavingsPage() {
   });
 
   const handleCreate = () => {
-    const parsed = Number(target.replace(/\./g, '').replace(',', '.'));
+    const parsed = parseAmountInput(target);
     if (!name.trim() || !parsed || parsed <= 0) {
       toast.error('Nama dan target harus diisi');
       return;
@@ -128,7 +129,7 @@ export function SavingsPage() {
 
   const handleUpdate = () => {
     if (!editGoal) return;
-    const parsed = Number(target.replace(/\./g, '').replace(',', '.'));
+    const parsed = parseAmountInput(target);
     if (!name.trim() || !parsed || parsed <= 0) {
       toast.error('Nama dan target harus diisi');
       return;
@@ -149,7 +150,7 @@ export function SavingsPage() {
 
   const handleAdd = () => {
     if (!addModal) return;
-    const parsed = Number(addAmount.replace(/\./g, '').replace(',', '.'));
+    const parsed = parseAmountInput(addAmount);
     if (!parsed || parsed <= 0) {
       toast.error('Jumlah harus lebih dari 0');
       return;
@@ -280,10 +281,10 @@ export function SavingsPage() {
             />
             <Input
               label="Target nominal"
-              placeholder="Contoh: 10000000"
+              placeholder="Contoh: 10.000.000"
               inputMode="numeric"
               value={target}
-              onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={(e) => setTarget(formatAmountInput(e.target.value))}
             />
             <Input
               label="Deadline (opsional)"
@@ -310,10 +311,10 @@ export function SavingsPage() {
             />
             <Input
               label="Target nominal"
-              placeholder="Contoh: 10000000"
+              placeholder="Contoh: 10.000.000"
               inputMode="numeric"
               value={target}
-              onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={(e) => setTarget(formatAmountInput(e.target.value))}
             />
             {editGoal ? (
               <p className="text-xs text-muted">
@@ -342,10 +343,10 @@ export function SavingsPage() {
           </p>
           <Input
             label="Jumlah"
-            placeholder="Contoh: 500000"
+            placeholder="Contoh: 500.000"
             inputMode="numeric"
             value={addAmount}
-            onChange={(e) => setAddAmount(e.target.value.replace(/[^0-9]/g, ''))}
+            onChange={(e) => setAddAmount(formatAmountInput(e.target.value))}
           />
           <ModalFooter>
             <Button variant="ghost" onClick={() => setAddModal(null)}>Batal</Button>

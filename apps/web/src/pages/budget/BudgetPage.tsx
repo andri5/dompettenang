@@ -11,6 +11,7 @@ import { useBudget } from '@/hooks/useBudget';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/useToast';
 import { formatCurrency, cn } from '@/lib/utils';
+import { formatAmountInput, parseAmountInput } from '@/lib/amountInput';
 import { BudgetProgress } from './components/BudgetProgress';
 
 function currentMonthValue() {
@@ -44,10 +45,12 @@ export function BudgetPage() {
 
   useEffect(() => {
     if (!budget) return;
-    setTotalBudget(budget.hasBudget ? String(budget.totalBudget) : '');
+    setTotalBudget(
+      budget.hasBudget ? formatAmountInput(String(Math.round(budget.totalBudget))) : ''
+    );
     const next: Record<string, string> = {};
     budget.categoryBudgets.forEach((row) => {
-      next[row.categoryId] = String(row.budgetAmount);
+      next[row.categoryId] = formatAmountInput(String(Math.round(row.budgetAmount)));
     });
     setCategoryAmounts(next);
   }, [budget, month]);
@@ -58,7 +61,7 @@ export function BudgetPage() {
   );
 
   const handleSave = async () => {
-    const parsedTotal = Number(totalBudget.replace(/\./g, '').replace(',', '.'));
+    const parsedTotal = parseAmountInput(totalBudget);
     if (!parsedTotal || parsedTotal <= 0) {
       toast.error('Total budget harus lebih dari 0');
       return;
@@ -68,7 +71,7 @@ export function BudgetPage() {
       .map((cat) => {
         const raw = categoryAmounts[cat.id]?.trim();
         if (!raw) return null;
-        const amount = Number(raw.replace(/\./g, '').replace(',', '.'));
+        const amount = parseAmountInput(raw);
         if (!amount || amount <= 0) return null;
         return { categoryId: cat.id, amount };
       })
@@ -137,12 +140,9 @@ export function BudgetPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  placeholder="Contoh: 5000000"
+                  placeholder="Contoh: 5.000.000"
                   value={totalBudget}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/[^0-9]/g, '');
-                    setTotalBudget(v);
-                  }}
+                  onChange={(e) => setTotalBudget(formatAmountInput(e.target.value))}
                 />
               </div>
 
@@ -178,13 +178,12 @@ export function BudgetPage() {
                           placeholder="Limit kategori"
                           value={categoryAmounts[cat.id] ?? ''}
                           onChange={(e) => {
-                            const v = e.target.value.replace(/[^0-9]/g, '');
+                            const v = formatAmountInput(e.target.value);
                             setCategoryAmounts((prev) => ({
                               ...prev,
                               [cat.id]: v,
                             }));
-                          }
-                          }
+                          }}
                         />
                       </div>
                     </div>

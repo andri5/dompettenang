@@ -18,6 +18,7 @@ import {
 } from '../lib/recurring';
 import { getCategories, type Category } from '../lib/finance';
 import { formatIDR, todayISO } from '../lib/format';
+import { formatAmountInput, parseAmountInput } from '../lib/amountInput';
 import { AppTextInput, PrimaryButton } from '../components/ui';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { FadeInUp, ScalePress } from '../components/motion';
@@ -40,8 +41,7 @@ const FREQUENCIES = [
 ];
 
 function parseAmount(raw: string): number {
-  const n = Number(raw.replace(/\./g, '').replace(',', '.'));
-  return Number.isFinite(n) ? n : 0;
+  return parseAmountInput(raw);
 }
 
 export function RecurringScreen({ navigation }: Props) {
@@ -176,7 +176,12 @@ export function RecurringScreen({ navigation }: Props) {
               ))}
             </ScrollView>
             <Text style={styles.label}>Jumlah</Text>
-            <AppTextInput value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="Jumlah" />
+            <AppTextInput
+              value={amount}
+              onChangeText={(v) => setAmount(formatAmountInput(v))}
+              keyboardType="numeric"
+              placeholder="150.000"
+            />
             <Text style={styles.label}>Frekuensi</Text>
             <View style={styles.freqRow}>
               {FREQUENCIES.map((f) => (

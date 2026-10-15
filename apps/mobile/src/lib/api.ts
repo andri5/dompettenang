@@ -33,7 +33,9 @@ function hostFromExpo(): string | null {
   return host;
 }
 
-/** Prefer env, then Expo LAN host, then emulator defaults. */
+const PRODUCTION_API_URL = 'https://dompet-tenang.web.id/api/v1';
+
+/** Prefer env, then Expo LAN host, then production (never trap physical phones on 10.0.2.2). */
 function resolveApiBaseUrl() {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
   if (fromEnv) {
@@ -46,16 +48,20 @@ function resolveApiBaseUrl() {
 
     const expoHost = hostFromExpo();
     if (expoHost) return `http://${expoHost}:3001/api/v1`;
+
+    // Physical device + local env without Expo host → production so 4G / other Wi‑Fi still works.
+    if (Constants.isDevice) return PRODUCTION_API_URL;
     return fromEnv;
   }
 
   const expoHost = hostFromExpo();
   if (expoHost) return `http://${expoHost}:3001/api/v1`;
 
-  if (Platform.OS === 'android') {
+  // Android emulator only: host loopback alias. Real phones fall back to production.
+  if (Platform.OS === 'android' && !Constants.isDevice) {
     return 'http://10.0.2.2:3001/api/v1';
   }
-  return 'http://localhost:3001/api/v1';
+  return PRODUCTION_API_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
