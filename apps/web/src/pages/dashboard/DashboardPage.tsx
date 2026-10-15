@@ -206,7 +206,8 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const showMarket = useFeatureEnabled('market_widget');
-  const showRecurring = useFeatureEnabled('recurring_transactions');
+  const showRecurring =
+    useFeatureEnabled('recurring_transactions') && hasProAccess(user);
   const [period, setPeriod] = useState<Period>('month');
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [isExporting, setIsExporting] = useState<ExportFormat | null>(null);

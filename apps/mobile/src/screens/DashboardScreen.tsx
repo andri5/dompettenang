@@ -24,6 +24,7 @@ import { getBudgetStatus, type BudgetStatus } from '../lib/budget';
 import { checkAndNotifyBudgetAlert } from '../lib/notifications';
 import { runRecurringDue } from '../lib/recurring';
 import { useFeatureEnabled } from '../lib/featureFlags';
+import { hasProAccess } from '../lib/plan';
 import { shouldShowWelcome, markWelcomeShown, WELCOME_COPY } from '../lib/welcome';
 import { exportTransactionsCsv } from '../lib/exportSummary';
 import { buildDashboardInsights, getInsightToneColor } from '../lib/dashboardInsights';
@@ -122,7 +123,8 @@ export function DashboardScreen({ user }: { user: User }) {
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [amountsVisible, setAmountsVisible] = useState(true);
   const showMarket = useFeatureEnabled('market_widget');
-  const showRecurring = useFeatureEnabled('recurring_transactions');
+  const showRecurring =
+    useFeatureEnabled('recurring_transactions') && hasProAccess(user);
 
   const showAmount = (n: number) => (amountsVisible ? formatIDR(n) : HIDDEN_AMOUNT);
   const formatIHSG = (n: number) =>

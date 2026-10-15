@@ -72,7 +72,7 @@ const FEATURES = [
     title: 'Target Tabungan',
     desc: 'Set goal saving dan lihat progresmu naik terus.',
     tone: 'bg-amber-100 text-amber-600',
-    tier: 'free' as const,
+    tier: 'pro' as const,
   },
   {
     icon: Camera,
@@ -101,14 +101,15 @@ const FREE_PLAN_ITEMS = [
   'Catat pemasukan & pengeluaran',
   'Dashboard & grafik ringkasan',
   'Budget bulanan',
-  'Target tabungan',
-  'Transaksi otomatis',
   'Upload struk',
   'Export Excel',
+  'Tema & profil',
 ];
 
 const PRO_PLAN_ITEMS = [
   'Semua fitur Free',
+  'Target tabungan',
+  'Transaksi otomatis',
   'Export laporan PDF',
   'Bagikan ringkasan dari mobile',
   'Sekali bayar — lifetime',
@@ -274,8 +275,8 @@ export function LandingPage() {
               custom={2}
               className="mx-auto mt-6 max-w-xl text-base text-white/60 sm:text-lg"
             >
-              Catat pemasukan, pengeluaran, budget, dan target tabungan secara gratis. Upgrade
-              Pro hanya jika butuh Export PDF & bagikan laporan.
+              Catat transaksi, budget, dan export Excel gratis. Upgrade Pro untuk tabungan,
+              transaksi otomatis, Export PDF, dan bagikan laporan.
             </motion.p>
 
             <motion.div
@@ -374,8 +375,8 @@ export function LandingPage() {
               Inti pencatatan, gratis
             </motion.h2>
             <motion.p variants={fadeUp} custom={2} className="mx-auto mt-4 max-w-lg text-white/50">
-              Semua yang dipakai sehari-hari terbuka tanpa bayar. Pro hanya untuk export PDF &
-              bagikan laporan.
+              Catat, budget, dan export Excel gratis. Target tabungan, transaksi otomatis, PDF &
+              bagikan laporan ada di Pro.
             </motion.p>
           </motion.div>
 
@@ -396,8 +397,14 @@ export function LandingPage() {
                   >
                     <f.icon className="h-5 w-5" />
                   </div>
-                  <span className="rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
-                    Free
+                  <span
+                    className={
+                      f.tier === 'pro'
+                        ? 'rounded-full border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300'
+                        : 'rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent'
+                    }
+                  >
+                    {f.tier === 'pro' ? 'Pro' : 'Free'}
                   </span>
                 </div>
                 <h3 className="mb-1.5 font-display text-base font-bold">{f.title}</h3>
@@ -432,7 +439,8 @@ export function LandingPage() {
               Free cukup · Pro opsional
             </motion.h2>
             <motion.p variants={fadeUp} custom={2} className="mx-auto mt-4 max-w-lg text-white/50">
-              Mulai gratis. Upgrade Pro Lifetime hanya jika kamu butuh PDF & bagikan laporan.
+              Mulai gratis (termasuk budget). Upgrade Pro untuk tabungan, otomatis, PDF & bagikan
+              laporan.
             </motion.p>
           </motion.div>
 
@@ -489,10 +497,13 @@ export function LandingPage() {
               </ul>
               <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-white/45">
                 <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1">
+                  <Target className="h-3 w-3" /> Tabungan
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1">
                   <FileText className="h-3 w-3" /> Export PDF
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1">
-                  <Share2 className="h-3 w-3" /> Bagikan laporan
+                  <Share2 className="h-3 w-3" /> Bagikan
                 </span>
               </div>
               <Link

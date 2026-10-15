@@ -191,9 +191,11 @@ export function UpgradePage() {
 
                 <ul className="mt-6 space-y-2.5 text-sm text-ink">
                   {[
+                    'Target tabungan',
+                    'Transaksi otomatis',
                     'Export laporan PDF',
                     'Bagikan ringkasan dari mobile',
-                    'Akses Pro tanpa langganan bulanan',
+                    'Budget tetap gratis di Free',
                     'Harga early bird — bisa naik nanti',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2">

@@ -314,7 +314,7 @@ export function SettingsScreen({ navigation }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.proTeaserTitle}>Dompet Tenang Pro</Text>
                   <Text style={styles.proTeaserSub}>
-                    Export PDF & bagikan laporan — sekali bayar lifetime
+                    Tabungan, otomatis, PDF & bagikan — sekali bayar lifetime
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.faint} />

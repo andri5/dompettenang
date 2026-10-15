@@ -469,7 +469,8 @@ export function SettingsPage() {
                     Dompet Tenang Pro
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
-                    Export PDF & bagikan laporan — sekali bayar lifetime. Lihat detail →
+                    Tabungan, transaksi otomatis, PDF & bagikan laporan — sekali bayar. Lihat
+                    detail →
                   </span>
                 </Link>
               ) : null}

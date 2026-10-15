@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { recurringService } from '../services/recurring.service.js';
-import { authMiddleware, validate } from '../middlewares/index.js';
+import { authMiddleware, requireProMiddleware, validate } from '../middlewares/index.js';
 import { sendCreated, sendError, sendNotFound, sendSuccess } from '../utils/response.js';
 import { paramString } from '../utils/params.js';
 import type { AuthenticatedRequest } from '../types/index.js';
@@ -18,6 +18,7 @@ const createRecurringSchema = z.object({
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireProMiddleware);
 
 router.get('/', async (req, res) => {
   try {

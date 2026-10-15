@@ -3,7 +3,7 @@
  */
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { ProtectedRoute, PublicRoute } from '@/components/auth';
+import { ProtectedRoute, PublicRoute, ProFeatureGate } from '@/components/auth';
 import {
   LoginPage,
   RegisterPage,
@@ -155,7 +155,12 @@ const appRoutes = [
     path: ROUTES.RECURRING,
     element: (
       <ProtectedRoute>
-        <RecurringPage />
+        <ProFeatureGate
+          title="Transaksi Otomatis"
+          description="Jadwalkan pemasukan/pengeluaran rutin — fitur Pro"
+        >
+          <RecurringPage />
+        </ProFeatureGate>
       </ProtectedRoute>
     ),
   },
@@ -163,7 +168,12 @@ const appRoutes = [
     path: ROUTES.SAVINGS,
     element: (
       <ProtectedRoute>
-        <SavingsPage />
+        <ProFeatureGate
+          title="Target Tabungan"
+          description="Pantau progres saving goals — fitur Pro"
+        >
+          <SavingsPage />
+        </ProFeatureGate>
       </ProtectedRoute>
     ),
   },

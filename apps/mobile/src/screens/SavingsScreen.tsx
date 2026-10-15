@@ -25,6 +25,9 @@ import {
   deleteSavingsGoal,
   type SavingsGoal,
 } from '../lib/savings';
+import { useAuth } from '../authContext';
+import { hasProAccess } from '../lib/plan';
+import { ProFeatureLock } from '../components/ProFeatureLock';
 
 function fmtN(n: number) {
   return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
@@ -36,6 +39,8 @@ export function SavingsScreen() {
   const styles = useMemo(() => createStyles(colors, r), [colors, r]);
   const insets = useSafeAreaInsets();
   const { showDialog } = useDialog();
+  const { user } = useAuth();
+  const isPro = hasProAccess(user);
 
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +65,11 @@ export function SavingsScreen() {
   };
 
   const load = useCallback(async () => {
+    if (!isPro) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await getSavingsGoals();
       setGoals(data);
@@ -69,13 +79,22 @@ export function SavingsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isPro]);
 
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load])
   );
+
+  if (!isPro) {
+    return (
+      <ProFeatureLock
+        title="Target Tabungan"
+        message="Fitur Pro Lifetime. Budget bulanan tetap gratis. Upgrade untuk pantau goal saving."
+      />
+    );
+  }
 
   const openEdit = (goal: SavingsGoal) => {
     setEditGoal(goal);

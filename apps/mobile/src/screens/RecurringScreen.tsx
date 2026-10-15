@@ -26,6 +26,9 @@ import { useDialog } from '../components/AppDialog';
 import { radii, type ThemeColors } from '../theme';
 import { useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
+import { useAuth } from '../authContext';
+import { hasProAccess } from '../lib/plan';
+import { ProFeatureLock } from '../components/ProFeatureLock';
 import type { MainStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Recurring'>;
@@ -47,6 +50,8 @@ export function RecurringScreen({ navigation }: Props) {
   const styles = useMemo(() => createStyles(colors, r), [colors, r]);
   const insets = useSafeAreaInsets();
   const { showDialog } = useDialog();
+  const { user } = useAuth();
+  const isPro = hasProAccess(user);
 
   const [rows, setRows] = useState<RecurringTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -61,6 +66,11 @@ export function RecurringScreen({ navigation }: Props) {
   const [note, setNote] = useState('');
 
   const load = useCallback(async (silent = false) => {
+    if (!isPro) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     if (!silent) setLoading(true);
     try {
       const [list, cats] = await Promise.all([
@@ -74,11 +84,20 @@ export function RecurringScreen({ navigation }: Props) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isPro]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  if (!isPro) {
+    return (
+      <ProFeatureLock
+        title="Transaksi Otomatis"
+        message="Fitur Pro Lifetime. Jadwalkan pemasukan/pengeluaran rutin setelah upgrade."
+      />
+    );
+  }
 
   const handleSave = async () => {
     const parsed = parseAmount(amount);

@@ -36,6 +36,7 @@ import { UserAvatar } from '@/components/ui';
 import { useFeatureEnabled } from '@/hooks';
 import type { FeatureFlagKey } from '@/hooks';
 import { fetchProRequestsSummary } from '@/services/billing.service';
+import { hasProAccess } from '@/lib/plan';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -62,6 +63,7 @@ const primaryNav: Array<{
   shortLabel: string;
   path: string;
   flag?: FeatureFlagKey;
+  pro?: boolean;
 }> = [
   {
     icon: LayoutDashboard,
@@ -81,6 +83,7 @@ const primaryNav: Array<{
     shortLabel: 'Tabungan',
     path: ROUTES.SAVINGS,
     flag: 'savings_goals',
+    pro: true,
   },
   {
     icon: Repeat,
@@ -88,6 +91,7 @@ const primaryNav: Array<{
     shortLabel: 'Otomatis',
     path: ROUTES.RECURRING,
     flag: 'recurring_transactions',
+    pro: true,
   },
   {
     icon: FolderOpen,
@@ -114,9 +118,22 @@ const moreMenuItems: Array<{
   label: string;
   path: string;
   flag?: FeatureFlagKey;
+  pro?: boolean;
 }> = [
-  { icon: Target, label: 'Target Tabungan', path: ROUTES.SAVINGS, flag: 'savings_goals' },
-  { icon: Repeat, label: 'Transaksi Otomatis', path: ROUTES.RECURRING, flag: 'recurring_transactions' },
+  {
+    icon: Target,
+    label: 'Target Tabungan',
+    path: ROUTES.SAVINGS,
+    flag: 'savings_goals',
+    pro: true,
+  },
+  {
+    icon: Repeat,
+    label: 'Transaksi Otomatis',
+    path: ROUTES.RECURRING,
+    flag: 'recurring_transactions',
+    pro: true,
+  },
   { icon: FolderOpen, label: 'Kategori', path: ROUTES.CATEGORIES },
   { icon: CircleHelp, label: 'Bantuan', path: ROUTES.HELP },
   { icon: Settings, label: 'Akun', path: ROUTES.SETTINGS },
@@ -142,6 +159,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const showSavings = useFeatureEnabled('savings_goals');
   const showRecurring = useFeatureEnabled('recurring_transactions');
   const showAdminPanel = useFeatureEnabled('admin_panel');
+  const isPro = hasProAccess(user);
   const { data: proSummary } = useQuery({
     queryKey: ['admin', 'pro-requests', 'summary'],
     queryFn: fetchProRequestsSummary,
@@ -352,7 +370,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                 >
                   <item.icon className="h-4 w-4" />
                 </span>
-                {isSidebarOpen && <span>{item.label}</span>}
+                {isSidebarOpen && (
+                  <span className="flex flex-1 items-center justify-between gap-2">
+                    {item.label}
+                    {item.pro && !isPro ? (
+                      <span className="rounded-md bg-accent/20 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                        Pro
+                      </span>
+                    ) : null}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -598,8 +625,18 @@ export function MainLayout({ children }: MainLayoutProps) {
                     >
                       <item.icon className="h-4 w-4" />
                     </span>
-                    <span className={cn('text-sm font-semibold', active ? 'text-accent' : 'text-ink')}>
+                    <span
+                      className={cn(
+                        'flex flex-1 items-center justify-between gap-2 text-sm font-semibold',
+                        active ? 'text-accent' : 'text-ink'
+                      )}
+                    >
                       {item.label}
+                      {item.pro && !isPro ? (
+                        <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                          Pro
+                        </span>
+                      ) : null}
                     </span>
                   </Link>
                 );

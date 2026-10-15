@@ -15,6 +15,7 @@ import { radii, spacing, type ThemeColors } from '../theme';
 import { useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useFeatureEnabled } from '../lib/featureFlags';
+import { hasProAccess } from '../lib/plan';
 import type { MainStackParamList } from '../navigation/types';
 
 export function ProfileScreen({
@@ -32,6 +33,7 @@ export function ProfileScreen({
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const showSavings = useFeatureEnabled('savings_goals');
   const showRecurring = useFeatureEnabled('recurring_transactions');
+  const isPro = hasProAccess(user);
 
   const handleLogout = () => {
     showDialog({
@@ -53,7 +55,9 @@ export function ProfileScreen({
       ? {
           key: 'recurring',
           title: 'Transaksi Otomatis',
-          sub: 'Atur pengeluaran & pemasukan rutin',
+          sub: isPro
+            ? 'Atur pengeluaran & pemasukan rutin'
+            : 'Fitur Pro — jadwalkan transaksi rutin',
           icon: 'repeat-outline' as const,
           soft: true,
           onPress: () => navigation.navigate('Recurring'),
@@ -71,7 +75,9 @@ export function ProfileScreen({
       ? {
           key: 'savings',
           title: 'Target Tabungan',
-          sub: 'Atur target saving & pantau progres',
+          sub: isPro
+            ? 'Atur target saving & pantau progres'
+            : 'Fitur Pro — pantau goal saving',
           icon: 'flag-outline' as const,
           soft: true,
           onPress: () => navigation.navigate('Savings'),
