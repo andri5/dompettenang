@@ -89,7 +89,7 @@ jobs:
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T \
             -e SEND_TEST_TO="${SEND_TEST_TO}" \
             api \
-            sh -c "printf '%s' '${SCRIPT_B64}' | base64 -d > /tmp/smtp-diagnose.mjs && node /tmp/smtp-diagnose.mjs"
+            sh -c "printf '%s' '${SCRIPT_B64}' | base64 -d > /tmp/smtp-diagnose.cjs && node /tmp/smtp-diagnose.cjs"
 
           echo ""
           echo "==> Recent API logs (password-reset / SMTP / mail)"
