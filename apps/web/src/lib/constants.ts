@@ -27,7 +27,7 @@ export function getUploadContentPath(path?: string | null): string | null {
     return path;
   }
   const normalized = path.startsWith('/') ? path : `/${path}`;
-  const match = normalized.match(/^\/uploads\/(receipts|avatars)\/([^/?#]+)$/);
+  const match = normalized.match(/^\/uploads\/(receipts|avatars|proofs)\/([^/?#]+)$/);
   if (match) {
     return `/uploads/content/${match[1]}/${match[2]}`;
   }
@@ -153,7 +153,9 @@ export const ROUTES = {
   ADMIN_FLAGS: '/admin/flags',
   ADMIN_ACTIVITY: '/admin/activity',
   ADMIN_LEGAL: '/admin/legal',
+  ADMIN_PRO: '/admin/pro',
   SETTINGS: '/settings',
+  UPGRADE: '/upgrade',
   HELP: '/help',
   TERMS: '/terms',
   PRIVACY: '/privacy',

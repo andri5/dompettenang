@@ -26,7 +26,9 @@ import {
   AdminFlags,
   AdminActivity,
   AdminLegal,
+  AdminProRequests,
   SettingsPage,
+  UpgradePage,
   HelpPage,
   TermsPage,
   PrivacyPage,
@@ -174,6 +176,14 @@ const appRoutes = [
     ),
   },
   {
+    path: ROUTES.UPGRADE,
+    element: (
+      <ProtectedRoute>
+        <UpgradePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: ROUTES.HELP,
     element: (
       <ProtectedRoute>
@@ -204,6 +214,7 @@ const appRoutes = [
       { path: 'flags', element: <AdminFlags /> },
       { path: 'activity', element: <AdminActivity /> },
       { path: 'legal', element: <AdminLegal /> },
+      { path: 'pro', element: <AdminProRequests /> },
     ],
   },
   {

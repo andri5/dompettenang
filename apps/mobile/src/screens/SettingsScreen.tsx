@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ import { useTheme, useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useFeatureEnabled } from '../lib/featureFlags';
 import { hasProAccess } from '../lib/plan';
+import { WEB_UPGRADE_URL } from '../lib/webUrl';
 import type { MainStackParamList } from '../navigation/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -300,6 +302,15 @@ export function SettingsScreen({ navigation }: Props) {
               <Text style={styles.heroProHint}>
                 Admin otomatis mendapat akses Pro tanpa berlangganan.
               </Text>
+            ) : null}
+            {!hasProAccess(user) ? (
+              <ScalePress
+                style={styles.upgradeBtn}
+                onPress={() => void Linking.openURL(WEB_UPGRADE_URL)}
+              >
+                <Ionicons name="diamond-outline" size={16} color="#fff" />
+                <Text style={styles.upgradeBtnText}>Upgrade Pro Lifetime</Text>
+              </ScalePress>
             ) : null}
           </View>
         </FadeInUp>
@@ -913,6 +924,22 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
       fontSize: 11,
       fontWeight: '600',
       paddingHorizontal: 12,
+    },
+    upgradeBtn: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: colors.brand,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    upgradeBtnText: {
+      color: colors.onBrand,
+      fontWeight: '800',
+      fontSize: 13,
     },
     sectionCard: {
       backgroundColor: colors.surface,

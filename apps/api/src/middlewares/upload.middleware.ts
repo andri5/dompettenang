@@ -9,8 +9,9 @@ import { config } from '../config/index.js';
 
 const receiptsDir = path.resolve(config.upload.dir, 'receipts');
 const avatarsDir = path.resolve(config.upload.dir, 'avatars');
+const proofsDir = path.resolve(config.upload.dir, 'proofs');
 
-for (const dir of [receiptsDir, avatarsDir]) {
+for (const dir of [receiptsDir, avatarsDir, proofsDir]) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -74,5 +75,20 @@ export const avatarUpload = multer({
   },
 });
 
+export const proofUpload = multer({
+  storage: makeStorage(proofsDir),
+  limits: {
+    fileSize: config.upload.maxFileSize,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!IMAGE_MIME.has(file.mimetype) && file.mimetype !== 'application/pdf') {
+      cb(new Error('Hanya file gambar atau PDF yang diizinkan untuk bukti transfer'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
 export const RECEIPTS_DIR = receiptsDir;
 export const AVATARS_DIR = avatarsDir;
+export const PROOFS_DIR = proofsDir;

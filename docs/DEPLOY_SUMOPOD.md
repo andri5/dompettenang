@@ -188,6 +188,10 @@ openssl rand -base64 48
 - `CORS_ORIGIN` / `APP_URL` — `https://dompettenang.id`
 - `SMTP_*` — App Password Gmail (bukan password biasa)
 - `TURNSTILE_*` — key production dari Cloudflare Turnstile
+- `PRO_LIFETIME_PRICE` — default `29000` (Pro Lifetime early bird)
+- `PRO_BANK_NAME` / `PRO_BANK_ACCOUNT` / `PRO_BANK_HOLDER` — rekening untuk transfer manual (wajib agar `/upgrade` bisa dipakai)
+
+Setelah user transfer + unggah bukti, approve di **Admin → Pro**.
 
 Jangan commit file `deploy/.env.production`.
 

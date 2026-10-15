@@ -20,8 +20,10 @@ export {
   AdminFlags,
   AdminActivity,
   AdminLegal,
+  AdminProRequests,
 } from './admin';
 export { SettingsPage } from './settings';
+export { UpgradePage } from './upgrade';
 export { HelpPage } from './help';
 export { TermsPage, PrivacyPage } from './legal';
 export { NotFoundPage, MaintenancePage } from './status';

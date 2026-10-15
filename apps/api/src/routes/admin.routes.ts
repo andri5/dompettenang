@@ -15,6 +15,11 @@ import {
   adminUpdateUserSchema,
   type AdminUpdateUserInput,
 } from '../utils/validation.js';
+import {
+  approveRequest,
+  listAdminRequests,
+  rejectRequest,
+} from '../services/billing.service.js';
 
 const router = Router();
 
@@ -444,6 +449,56 @@ router.put('/legal/:key', async (req: Request, res: Response) => {
       return;
     }
     res.status(500).json({ success: false, message: 'Gagal menyimpan dokumen' });
+  }
+});
+
+router.get('/pro-requests', async (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+  const data = await listAdminRequests(status);
+  res.json({ success: true, data });
+});
+
+router.post('/pro-requests/:id/approve', async (req: Request, res: Response) => {
+  try {
+    const id = paramString(req.params.id);
+    const adminNote =
+      typeof req.body?.adminNote === 'string' ? req.body.adminNote.slice(0, 500) : undefined;
+    const data = await approveRequest(id, adminNote);
+    const admin = (req as AuthenticatedRequest).user!;
+    await auditService.log({
+      userId: admin.userId,
+      actorRole: 'ADMIN',
+      action: 'APPROVE_PRO_PURCHASE',
+      entityType: 'pro_purchase_request',
+      entityId: id,
+      summary: `Approve Pro purchase ${id}`,
+    });
+    res.json({ success: true, data, message: 'Pro diaktifkan' });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Gagal approve';
+    res.status(400).json({ success: false, message });
+  }
+});
+
+router.post('/pro-requests/:id/reject', async (req: Request, res: Response) => {
+  try {
+    const id = paramString(req.params.id);
+    const adminNote =
+      typeof req.body?.adminNote === 'string' ? req.body.adminNote.slice(0, 500) : undefined;
+    const data = await rejectRequest(id, adminNote);
+    const admin = (req as AuthenticatedRequest).user!;
+    await auditService.log({
+      userId: admin.userId,
+      actorRole: 'ADMIN',
+      action: 'REJECT_PRO_PURCHASE',
+      entityType: 'pro_purchase_request',
+      entityId: id,
+      summary: `Reject Pro purchase ${id}`,
+    });
+    res.json({ success: true, data, message: 'Permintaan ditolak' });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Gagal menolak';
+    res.status(400).json({ success: false, message });
   }
 });
 

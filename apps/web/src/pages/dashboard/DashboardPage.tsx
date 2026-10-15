@@ -278,8 +278,9 @@ export function DashboardPage() {
 
     if (format === 'pdf' && !hasProAccess(user)) {
       toast.error(
-        'Export PDF tersedia di Dompet Tenang Pro. Admin otomatis punya akses Pro.'
+        'Export PDF tersedia di Dompet Tenang Pro Lifetime (Rp 29.000).'
       );
+      navigate(ROUTES.UPGRADE);
       return;
     }
 

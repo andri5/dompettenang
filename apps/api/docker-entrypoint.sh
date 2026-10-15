@@ -3,7 +3,7 @@ set -e
 
 # Named volume /app/uploads is often root-owned on first mount.
 # Entrypoint runs as root, fixes perms, then drops to user `app`.
-mkdir -p /app/uploads/avatars /app/uploads/receipts
+mkdir -p /app/uploads/avatars /app/uploads/receipts /app/uploads/proofs
 chown -R app:app /app/uploads
 chmod -R u+rwX /app/uploads
 

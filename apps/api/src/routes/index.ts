@@ -13,6 +13,7 @@ import adminRoutes from './admin.routes.js';
 import featureFlagsRoutes from './featureFlags.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import legalRoutes from './legal.routes.js';
+import billingRoutes from './billing.routes.js';
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.use('/recurring', recurringRoutes);
 router.use('/savings', savingsRoutes);
 router.use('/feedback', feedbackRoutes);
 router.use('/admin', adminRoutes);
+router.use('/billing', billingRoutes);
 router.use('/', featureFlagsRoutes);
 router.use('/', analyticsRoutes);
 router.use('/', legalRoutes);

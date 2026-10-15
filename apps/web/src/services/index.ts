@@ -9,3 +9,4 @@ export * from './expense.service';
 export * from './dashboard.service';
 export * from './budget.service';
 export * from './recurring.service';
+export * from './billing.service';

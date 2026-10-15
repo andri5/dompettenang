@@ -113,6 +113,14 @@ export const config = {
     siteKey: process.env.TURNSTILE_SITE_KEY || '',
     secretKey: process.env.TURNSTILE_SECRET_KEY || '',
   },
+
+  /** Manual Pro Lifetime purchase (transfer bank) */
+  billing: {
+    lifetimePrice: parseInt(process.env.PRO_LIFETIME_PRICE || '29000', 10),
+    bankName: process.env.PRO_BANK_NAME || '',
+    bankAccount: process.env.PRO_BANK_ACCOUNT || '',
+    bankHolder: process.env.PRO_BANK_HOLDER || '',
+  },
 } as const;
 
 export type Config = typeof config;

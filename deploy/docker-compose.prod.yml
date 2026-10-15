@@ -56,6 +56,10 @@ services:
       EXPOSE_PASSWORD_RESET_URL: 'false'
       TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      PRO_LIFETIME_PRICE: ${PRO_LIFETIME_PRICE:-29000}
+      PRO_BANK_NAME: ${PRO_BANK_NAME:-}
+      PRO_BANK_ACCOUNT: ${PRO_BANK_ACCOUNT:-}
+      PRO_BANK_HOLDER: ${PRO_BANK_HOLDER:-}
     volumes:
       - uploads_data:/app/uploads
     networks:

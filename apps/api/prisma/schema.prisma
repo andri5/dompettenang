@@ -32,6 +32,13 @@ enum Plan {
   PRO
 }
 
+enum ProPurchaseStatus {
+  PENDING
+  PROOF_SUBMITTED
+  APPROVED
+  REJECTED
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -67,8 +74,29 @@ model User {
   featureFlags         FeatureFlag[]
   legalDocuments       LegalDocument[]
   feedback              Feedback?
+  proPurchaseRequests   ProPurchaseRequest[]
 
   @@map("users")
+}
+
+// ==================== PRO PURCHASE (manual transfer) ====================
+model ProPurchaseRequest {
+  id           String             @id @default(uuid())
+  userId       String             @map("user_id")
+  amount       Int
+  transferNote String             @map("transfer_note") @db.VarChar(64)
+  status       ProPurchaseStatus  @default(PENDING)
+  proofPath    String?            @map("proof_path") @db.VarChar(500)
+  adminNote    String?            @map("admin_note") @db.VarChar(500)
+  reviewedAt   DateTime?          @map("reviewed_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("pro_purchase_requests")
 }
 
 // ==================== REFRESH TOKENS ====================

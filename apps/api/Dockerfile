@@ -37,7 +37,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x ./docker-entrypoint.sh \
-  && mkdir -p /app/uploads/avatars /app/uploads/receipts \
+  && mkdir -p /app/uploads/avatars /app/uploads/receipts /app/uploads/proofs \
   && chown -R app:app /app
 
 # Start as root so entrypoint can chown the uploads volume, then drop to `app`.

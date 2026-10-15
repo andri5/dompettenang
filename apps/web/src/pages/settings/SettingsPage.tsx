@@ -18,8 +18,9 @@ import {
   MessageSquare,
   Send,
   Star,
+  Crown,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
 import { Button, Card, CardHeader, CardTitle, Badge, UserAvatar, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -457,6 +458,15 @@ export function SettingsPage() {
                 <p className="mt-1 text-xs font-medium text-accent">
                   Admin otomatis mendapat akses Pro tanpa berlangganan.
                 </p>
+              ) : null}
+              {!hasProAccess(user) ? (
+                <Link
+                  to={ROUTES.UPGRADE}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white shadow-md shadow-accent/20 transition hover:brightness-95"
+                >
+                  <Crown className="h-4 w-4" />
+                  Upgrade Pro Lifetime
+                </Link>
               ) : null}
               {user?.createdAt && (
                 <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted">

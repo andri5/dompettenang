@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -25,6 +26,7 @@ import { useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAuth } from '../authContext';
 import { hasProAccess } from '../lib/plan';
+import { WEB_UPGRADE_URL } from '../lib/webUrl';
 import { useDialog } from '../components/AppDialog';
 import type { MainStackParamList } from '../navigation/types';
 
@@ -110,8 +112,11 @@ export function SummaryScreen() {
                   showDialog({
                     title: 'Fitur Pro',
                     message:
-                      'Bagikan laporan tersedia di Dompet Tenang Pro. Admin otomatis punya akses Pro.',
-                    confirmLabel: 'Mengerti',
+                      'Bagikan laporan tersedia di Dompet Tenang Pro Lifetime (Rp 29.000). Upgrade lewat website.',
+                    confirmLabel: 'Upgrade',
+                    cancelLabel: 'Nanti',
+                    showCancel: true,
+                    onConfirm: () => void Linking.openURL(WEB_UPGRADE_URL),
                   });
                   return;
                 }

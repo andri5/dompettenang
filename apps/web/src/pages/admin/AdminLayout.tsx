@@ -9,6 +9,7 @@ import {
   Flag,
   ScrollText,
   FileText,
+  Crown,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 const NAV = [
   { icon: LayoutDashboard, label: 'Overview', path: ROUTES.ADMIN },
   { icon: Users, label: 'Users', path: ROUTES.ADMIN_USERS },
+  { icon: Crown, label: 'Pro', path: ROUTES.ADMIN_PRO },
   { icon: MessageSquare, label: 'Feedback', path: ROUTES.ADMIN_FEEDBACK },
   { icon: Eye, label: 'Traffic', path: ROUTES.ADMIN_TRAFFIC },
   { icon: Flag, label: 'Flags', path: ROUTES.ADMIN_FLAGS },

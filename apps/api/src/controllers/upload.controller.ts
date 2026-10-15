@@ -3,7 +3,7 @@ import fs from 'fs';
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma.js';
 import { sendCreated, sendError, sendNotFound, sendForbidden } from '../utils/response.js';
-import { AVATARS_DIR, RECEIPTS_DIR } from '../middlewares/upload.middleware.js';
+import { AVATARS_DIR, PROOFS_DIR, RECEIPTS_DIR } from '../middlewares/upload.middleware.js';
 import type { AuthenticatedRequest } from '../types/index.js';
 
 export class UploadController {
@@ -106,13 +106,14 @@ export class UploadController {
       const kind = String(req.params.kind || '');
       const filename = path.basename(String(req.params.filename || ''));
 
-      if (!['receipts', 'avatars'].includes(kind) || !filename) {
+      if (!['receipts', 'avatars', 'proofs'].includes(kind) || !filename) {
         sendNotFound(res, 'File not found');
         return;
       }
 
       const publicPath = `/uploads/${kind}/${filename}`;
-      const diskRoot = kind === 'receipts' ? RECEIPTS_DIR : AVATARS_DIR;
+      const diskRoot =
+        kind === 'receipts' ? RECEIPTS_DIR : kind === 'avatars' ? AVATARS_DIR : PROOFS_DIR;
       const absolute = path.resolve(diskRoot, filename);
 
       if (!absolute.startsWith(path.resolve(diskRoot))) {
@@ -132,6 +133,20 @@ export class UploadController {
         });
         const ownedByName = filename.startsWith(`${authUser.userId}-`);
         if (!owner && !ownedByName) {
+          sendForbidden(res, 'You do not have access to this file');
+          return;
+        }
+      } else if (kind === 'proofs') {
+        const isAdmin = authUser.role === 'ADMIN';
+        const request = await prisma.proPurchaseRequest.findFirst({
+          where: {
+            proofPath: publicPath,
+            ...(isAdmin ? {} : { userId: authUser.userId }),
+          },
+          select: { id: true },
+        });
+        const ownedByName = filename.startsWith(`${authUser.userId}-`);
+        if (!request && !ownedByName && !isAdmin) {
           sendForbidden(res, 'You do not have access to this file');
           return;
         }
