@@ -1,19 +1,22 @@
 /**
- * Dompet Tenang - Admin: Pro purchase requests (manual transfer)
+ * Dompet Tenang - Admin: Pro purchase requests + bank settings
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Crown, ExternalLink, X } from 'lucide-react';
+import { Check, Crown, ExternalLink, Save, X } from 'lucide-react';
 import api from '@/lib/api';
-import { Card, EmptyState, Button, Badge } from '@/components/ui';
+import { Card, EmptyState, Button, Badge, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { getUploadContentPath } from '@/lib/constants';
 import {
   approveProRequest,
   fetchAdminProRequests,
+  fetchBillingSettings,
+  fetchProRequestsSummary,
   rejectProRequest,
+  saveBillingSettings,
   type AdminProPurchaseRequest,
   type ProPurchaseStatus,
 } from '@/services/billing.service';
@@ -42,10 +45,56 @@ export function AdminProRequests() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState('PROOF_SUBMITTED');
   const [noteById, setNoteById] = useState<Record<string, string>>({});
+  const [bankName, setBankName] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankHolder, setBankHolder] = useState('');
+  const [lifetimePrice, setLifetimePrice] = useState('29000');
+
+  const settingsQuery = useQuery({
+    queryKey: ['admin', 'billing-settings'],
+    queryFn: fetchBillingSettings,
+  });
+
+  const summaryQuery = useQuery({
+    queryKey: ['admin', 'pro-requests', 'summary'],
+    queryFn: fetchProRequestsSummary,
+    refetchInterval: 30_000,
+  });
+
+  useEffect(() => {
+    const s = settingsQuery.data;
+    if (!s) return;
+    setBankName(s.bankName || '');
+    setBankAccount(s.bankAccount || '');
+    setBankHolder(s.bankHolder || '');
+    setLifetimePrice(String(s.lifetimePrice || 29000));
+  }, [settingsQuery.data]);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['admin', 'pro-requests', filter],
     queryFn: () => fetchAdminProRequests(filter || undefined),
+    refetchInterval: 30_000,
+  });
+
+  const saveSettingsMut = useMutation({
+    mutationFn: () =>
+      saveBillingSettings({
+        bankName,
+        bankAccount,
+        bankHolder,
+        lifetimePrice: parseInt(lifetimePrice, 10) || 29000,
+      }),
+    onSuccess: (data) => {
+      qc.setQueryData(['admin', 'billing-settings'], data);
+      qc.invalidateQueries({ queryKey: ['billing', 'plans'] });
+      toast.success(
+        data.configured
+          ? 'Rekening Pro disimpan — tombol upgrade aktif'
+          : 'Disimpan, tapi lengkapi nama/no.rek/atas nama'
+      );
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) =>
+      toast.error(err?.response?.data?.message || 'Gagal menyimpan rekening'),
   });
 
   const approveMut = useMutation({
@@ -70,7 +119,9 @@ export function AdminProRequests() {
       toast.error(err?.response?.data?.message || 'Gagal menolak'),
   });
 
-  const pendingReview = items.filter((i) => i.status === 'PROOF_SUBMITTED').length;
+  const openCount = summaryQuery.data?.open ?? 0;
+  const reviewCount = summaryQuery.data?.proofSubmitted ?? 0;
+  const configured = settingsQuery.data?.configured ?? false;
 
   return (
     <div>
@@ -80,15 +131,68 @@ export function AdminProRequests() {
             Pro Requests
           </h1>
           <p className="text-sm text-muted">
-            Verifikasi transfer bank untuk aktivasi Pro Lifetime
+            Atur rekening transfer + verifikasi permintaan upgrade
           </p>
         </div>
-        {pendingReview > 0 && filter === 'PROOF_SUBMITTED' ? (
-          <div className="rounded-xl bg-accent-soft px-3 py-2 text-sm font-bold text-accent">
-            {pendingReview} menunggu review
+        {openCount > 0 ? (
+          <div className="rounded-xl bg-violet-100 px-3 py-2 text-sm font-bold text-violet-700">
+            {openCount} permintaan terbuka
+            {reviewCount > 0 ? ` · ${reviewCount} perlu review` : ''}
           </div>
         ) : null}
       </div>
+
+      <Card padding="md" className="mb-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display text-base font-bold text-ink">
+              Rekening pembayaran
+            </h2>
+            <p className="text-xs text-muted">
+              Wajib diisi agar tombol &quot;Mulai upgrade&quot; aktif di website
+            </p>
+          </div>
+          <Badge variant={configured ? 'success' : 'warning'}>
+            {configured ? 'Siap terima transfer' : 'Belum lengkap'}
+          </Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            label="Bank"
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            placeholder="BCA"
+          />
+          <Input
+            label="No. rekening"
+            value={bankAccount}
+            onChange={(e) => setBankAccount(e.target.value)}
+            placeholder="1234567890"
+          />
+          <Input
+            label="Atas nama"
+            value={bankHolder}
+            onChange={(e) => setBankHolder(e.target.value)}
+            placeholder="Nama pemilik"
+          />
+          <Input
+            label="Harga Lifetime (IDR)"
+            value={lifetimePrice}
+            onChange={(e) => setLifetimePrice(e.target.value.replace(/\D/g, ''))}
+            placeholder="29000"
+          />
+        </div>
+        <Button
+          type="button"
+          className="mt-4"
+          size="sm"
+          leftIcon={<Save className="h-3.5 w-3.5" />}
+          isLoading={saveSettingsMut.isPending}
+          onClick={() => saveSettingsMut.mutate()}
+        >
+          Simpan rekening
+        </Button>
+      </Card>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
@@ -104,6 +208,9 @@ export function AdminProRequests() {
             )}
           >
             {f.label}
+            {f.id === 'PROOF_SUBMITTED' && reviewCount > 0
+              ? ` (${reviewCount})`
+              : null}
           </button>
         ))}
       </div>
@@ -115,7 +222,11 @@ export function AdminProRequests() {
           <EmptyState
             icon={<Crown className="h-7 w-7" />}
             title="Belum ada permintaan"
-            description="Permintaan upgrade Pro dari user akan muncul di sini"
+            description={
+              configured
+                ? 'Permintaan upgrade Pro dari user akan muncul di sini'
+                : 'Simpan rekening di atas dulu, lalu user bisa mulai upgrade'
+            }
           />
         </Card>
       ) : (
@@ -166,8 +277,7 @@ function ProRequestCard({
 }) {
   const contentPath = getUploadContentPath(row.proofPath);
   const { url: proofUrl } = useAuthenticatedFileUrl(row.proofPath);
-  const canAct =
-    row.status === 'PENDING' || row.status === 'PROOF_SUBMITTED';
+  const canAct = row.status === 'PENDING' || row.status === 'PROOF_SUBMITTED';
 
   const openProof = async () => {
     if (proofUrl) {
@@ -180,12 +290,15 @@ function ProRequestCard({
       const blobUrl = URL.createObjectURL(res.data);
       window.open(blobUrl, '_blank', 'noopener,noreferrer');
     } catch {
-      /* toast handled by caller if needed */
+      /* ignore */
     }
   };
 
   return (
-    <Card padding="md">
+    <Card
+      padding="md"
+      className={cn(row.status === 'PROOF_SUBMITTED' && 'ring-2 ring-violet-300')}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

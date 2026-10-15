@@ -8,6 +8,7 @@ import {
   UserPlus,
   Eye,
   Activity,
+  Crown,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Card, Badge } from '@/components/ui';
@@ -20,6 +21,8 @@ interface Stats {
   feedback: number;
   savingsGoals: number;
   todayUsers: number;
+  proOpen?: number;
+  proProofSubmitted?: number;
 }
 
 interface TrafficData {
@@ -76,6 +79,17 @@ export function AdminOverview() {
       icon: Eye,
       tone: 'bg-fuchsia-100 text-fuchsia-600',
     },
+    {
+      label: 'Pro Request Terbuka',
+      value: data?.proOpen ?? 0,
+      icon: Crown,
+      tone: 'bg-amber-100 text-amber-700',
+      href: ROUTES.ADMIN_PRO,
+      hint:
+        (data?.proProofSubmitted ?? 0) > 0
+          ? `${data?.proProofSubmitted} perlu review bukti`
+          : undefined,
+    },
   ];
 
   return (
@@ -91,9 +105,24 @@ export function AdminOverview() {
         </Card>
       ) : (
         <>
+          {(data?.proProofSubmitted ?? 0) > 0 ? (
+            <Link
+              to={ROUTES.ADMIN_PRO}
+              className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 transition hover:bg-violet-100"
+            >
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-violet-700" />
+                <p className="text-sm font-semibold text-violet-800">
+                  {data?.proProofSubmitted} permintaan Pro menunggu review bukti transfer
+                </p>
+              </div>
+              <span className="text-xs font-bold text-violet-700">Buka →</span>
+            </Link>
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {cards.map((c) => (
-              <Card key={c.label} padding="md">
+            {cards.map((c) => {
+              const inner = (
                 <div className="flex items-center gap-3">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.tone}`}>
                     <c.icon className="h-5 w-5" />
@@ -103,10 +132,24 @@ export function AdminOverview() {
                     <p className="font-display text-xl font-extrabold text-ink">
                       {c.value.toLocaleString('id-ID')}
                     </p>
+                    {'hint' in c && c.hint ? (
+                      <p className="text-[11px] font-medium text-violet-600">{c.hint}</p>
+                    ) : null}
                   </div>
                 </div>
-              </Card>
-            ))}
+              );
+              return (
+                <Card key={c.label} padding="md">
+                  {'href' in c && c.href ? (
+                    <Link to={c.href} className="block">
+                      {inner}
+                    </Link>
+                  ) : (
+                    inner
+                  )}
+                </Card>
+              );
+            })}
           </div>
 
           <div className="mt-8">

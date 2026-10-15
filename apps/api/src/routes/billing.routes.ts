@@ -13,19 +13,20 @@ import {
 
 const router = Router();
 
-router.get('/plans', (_req: Request, res: Response) => {
-  res.json({ success: true, data: getPublicPlans() });
+router.get('/plans', async (_req: Request, res: Response) => {
+  const data = await getPublicPlans();
+  res.json({ success: true, data });
 });
 
 router.post('/purchase-request', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = (req as AuthenticatedRequest).user!;
     const data = await createPurchaseRequest(userId);
-    res.status(201).json({ success: true, data: { ...data, ...getPublicPlans() } });
+    const plans = await getPublicPlans();
+    res.status(201).json({ success: true, data: { ...data, ...plans } });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Gagal membuat permintaan';
-    const status = message.includes('sudah Pro') ? 400 : 400;
-    res.status(status).json({ success: false, message });
+    res.status(400).json({ success: false, message });
   }
 });
 

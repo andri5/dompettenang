@@ -326,3 +326,12 @@ model LegalDocument {
 
   @@map("legal_documents")
 }
+
+// Key-value settings (e.g. Pro bank details editable from Admin UI).
+model AppSetting {
+  key       String   @id @map("key") @db.VarChar(120)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}

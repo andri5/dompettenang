@@ -17,8 +17,11 @@ import {
 } from '../utils/validation.js';
 import {
   approveRequest,
+  countOpenProRequests,
+  getBillingSettings,
   listAdminRequests,
   rejectRequest,
+  updateBillingSettings,
 } from '../services/billing.service.js';
 
 const router = Router();
@@ -27,18 +30,29 @@ router.use(authMiddleware);
 router.use(adminMiddleware);
 
 router.get('/stats', async (_req: Request, res: Response) => {
-  const [userCount, txCount, feedbackCount, savingsCount, todayUsers] = await Promise.all([
-    prisma.user.count(),
-    prisma.expense.count(),
-    prisma.feedback.count(),
-    prisma.savingsGoal.count(),
-    prisma.user.count({
-      where: { createdAt: { gte: new Date(new Date().toISOString().split('T')[0]) } },
-    }),
-  ]);
+  const [userCount, txCount, feedbackCount, savingsCount, todayUsers, proOpen] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.expense.count(),
+      prisma.feedback.count(),
+      prisma.savingsGoal.count(),
+      prisma.user.count({
+        where: { createdAt: { gte: new Date(new Date().toISOString().split('T')[0]) } },
+      }),
+      countOpenProRequests(),
+    ]);
   res.json({
     success: true,
-    data: { users: userCount, transactions: txCount, feedback: feedbackCount, savingsGoals: savingsCount, todayUsers },
+    data: {
+      users: userCount,
+      transactions: txCount,
+      feedback: feedbackCount,
+      savingsGoals: savingsCount,
+      todayUsers,
+      proPending: proOpen.pending,
+      proProofSubmitted: proOpen.proofSubmitted,
+      proOpen: proOpen.open,
+    },
   });
 });
 
@@ -452,9 +466,53 @@ router.put('/legal/:key', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/billing-settings', async (_req: Request, res: Response) => {
+  const data = await getBillingSettings();
+  res.json({ success: true, data });
+});
+
+router.put('/billing-settings', async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+    const lifetimePrice =
+      typeof body.lifetimePrice === 'number'
+        ? body.lifetimePrice
+        : typeof body.lifetimePrice === 'string'
+          ? parseInt(body.lifetimePrice, 10)
+          : undefined;
+    const data = await updateBillingSettings({
+      lifetimePrice:
+        lifetimePrice !== undefined && Number.isFinite(lifetimePrice)
+          ? lifetimePrice
+          : undefined,
+      bankName: typeof body.bankName === 'string' ? body.bankName : undefined,
+      bankAccount: typeof body.bankAccount === 'string' ? body.bankAccount : undefined,
+      bankHolder: typeof body.bankHolder === 'string' ? body.bankHolder : undefined,
+    });
+    const admin = (req as AuthenticatedRequest).user!;
+    await auditService.log({
+      userId: admin.userId,
+      actorRole: 'ADMIN',
+      action: 'UPDATE_BILLING_SETTINGS',
+      entityType: 'app_setting',
+      entityId: 'pro_bank',
+      summary: 'Update Pro bank / harga settings',
+    });
+    res.json({ success: true, data, message: 'Pengaturan Pro disimpan' });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Gagal menyimpan';
+    res.status(400).json({ success: false, message });
+  }
+});
+
 router.get('/pro-requests', async (req: Request, res: Response) => {
   const status = typeof req.query.status === 'string' ? req.query.status : undefined;
   const data = await listAdminRequests(status);
+  res.json({ success: true, data });
+});
+
+router.get('/pro-requests/summary', async (_req: Request, res: Response) => {
+  const data = await countOpenProRequests();
   res.json({ success: true, data });
 });
 

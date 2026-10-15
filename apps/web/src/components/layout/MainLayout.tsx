@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -34,6 +35,7 @@ import { ROUTES } from '@/lib/constants';
 import { UserAvatar } from '@/components/ui';
 import { useFeatureEnabled } from '@/hooks';
 import type { FeatureFlagKey } from '@/hooks';
+import { fetchProRequestsSummary } from '@/services/billing.service';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -140,6 +142,13 @@ export function MainLayout({ children }: MainLayoutProps) {
   const showSavings = useFeatureEnabled('savings_goals');
   const showRecurring = useFeatureEnabled('recurring_transactions');
   const showAdminPanel = useFeatureEnabled('admin_panel');
+  const { data: proSummary } = useQuery({
+    queryKey: ['admin', 'pro-requests', 'summary'],
+    queryFn: fetchProRequestsSummary,
+    enabled: Boolean(user?.role === 'ADMIN' && showAdminPanel),
+    refetchInterval: 30_000,
+  });
+  const proOpenCount = proSummary?.open ?? 0;
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [transactionOpen, setTransactionOpen] = useState(() =>
     isTransactionActive(location.pathname)
@@ -351,7 +360,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Admin link */}
           {user?.role === 'ADMIN' && showAdminPanel && (
             <Link
-              to={ROUTES.ADMIN}
+              to={proOpenCount > 0 ? ROUTES.ADMIN_PRO : ROUTES.ADMIN}
               className={cn(
                 'group mt-2 flex items-center gap-3 rounded-2xl border border-violet-500/30 px-3 py-3 text-sm font-semibold transition-all',
                 location.pathname.startsWith('/admin')
@@ -362,15 +371,29 @@ export function MainLayout({ children }: MainLayoutProps) {
             >
               <span
                 className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+                  'relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
                   location.pathname.startsWith('/admin')
                     ? 'bg-violet-600 text-white'
                     : 'bg-violet-600/20 text-violet-300 group-hover:bg-violet-600/30'
                 )}
               >
                 <Shield className="h-4 w-4" />
+                {proOpenCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-ink">
+                    {proOpenCount > 99 ? '99+' : proOpenCount}
+                  </span>
+                ) : null}
               </span>
-              {isSidebarOpen && <span>Admin Panel</span>}
+              {isSidebarOpen && (
+                <span className="flex flex-1 items-center justify-between gap-2">
+                  Admin Panel
+                  {proOpenCount > 0 ? (
+                    <span className="rounded-full bg-amber-400/90 px-1.5 py-0.5 text-[10px] font-bold text-ink">
+                      Pro {proOpenCount}
+                    </span>
+                  ) : null}
+                </span>
+              )}
             </Link>
           )}
         </nav>

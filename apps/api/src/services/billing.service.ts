@@ -7,31 +7,141 @@ import { prisma } from '../utils/prisma.js';
 import { config } from '../config/index.js';
 import { hasProAccess } from '../utils/plan.js';
 
+const SETTING_KEYS = {
+  price: 'pro_lifetime_price',
+  bankName: 'pro_bank_name',
+  bankAccount: 'pro_bank_account',
+  bankHolder: 'pro_bank_holder',
+} as const;
+
 function transferCode(userId: string) {
   const short = userId.replace(/-/g, '').slice(0, 6).toUpperCase();
   const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
   return `DT-${short}-${rand}`;
 }
 
-export function getPublicPlans() {
+async function readSettingsMap() {
+  const rows = await prisma.appSetting.findMany({
+    where: { key: { in: Object.values(SETTING_KEYS) } },
+  });
+  return Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, string>;
+}
+
+export async function getBillingSettings() {
+  const map = await readSettingsMap();
+  const priceRaw = map[SETTING_KEYS.price]?.trim();
+  const priceFromDb = priceRaw ? parseInt(priceRaw, 10) : NaN;
+  const price =
+    Number.isFinite(priceFromDb) && priceFromDb > 0
+      ? priceFromDb
+      : config.billing.lifetimePrice;
+
+  const name = (map[SETTING_KEYS.bankName] || config.billing.bankName || '').trim();
+  const account = (map[SETTING_KEYS.bankAccount] || config.billing.bankAccount || '').trim();
+  const holder = (map[SETTING_KEYS.bankHolder] || config.billing.bankHolder || '').trim();
+
+  return {
+    lifetimePrice: price,
+    bankName: name,
+    bankAccount: account,
+    bankHolder: holder,
+    configured: Boolean(name && account && holder),
+    source: {
+      price: map[SETTING_KEYS.price] ? ('db' as const) : ('env' as const),
+      bank:
+        map[SETTING_KEYS.bankName] ||
+        map[SETTING_KEYS.bankAccount] ||
+        map[SETTING_KEYS.bankHolder]
+          ? ('db' as const)
+          : ('env' as const),
+    },
+  };
+}
+
+export async function updateBillingSettings(input: {
+  lifetimePrice?: number;
+  bankName?: string;
+  bankAccount?: string;
+  bankHolder?: string;
+}) {
+  const ops: Promise<unknown>[] = [];
+
+  if (typeof input.lifetimePrice === 'number' && input.lifetimePrice > 0) {
+    ops.push(
+      prisma.appSetting.upsert({
+        where: { key: SETTING_KEYS.price },
+        create: { key: SETTING_KEYS.price, value: String(Math.round(input.lifetimePrice)) },
+        update: { value: String(Math.round(input.lifetimePrice)) },
+      })
+    );
+  }
+  if (typeof input.bankName === 'string') {
+    const value = input.bankName.trim().slice(0, 80);
+    ops.push(
+      prisma.appSetting.upsert({
+        where: { key: SETTING_KEYS.bankName },
+        create: { key: SETTING_KEYS.bankName, value },
+        update: { value },
+      })
+    );
+  }
+  if (typeof input.bankAccount === 'string') {
+    const value = input.bankAccount.trim().slice(0, 64);
+    ops.push(
+      prisma.appSetting.upsert({
+        where: { key: SETTING_KEYS.bankAccount },
+        create: { key: SETTING_KEYS.bankAccount, value },
+        update: { value },
+      })
+    );
+  }
+  if (typeof input.bankHolder === 'string') {
+    const value = input.bankHolder.trim().slice(0, 120);
+    ops.push(
+      prisma.appSetting.upsert({
+        where: { key: SETTING_KEYS.bankHolder },
+        create: { key: SETTING_KEYS.bankHolder, value },
+        update: { value },
+      })
+    );
+  }
+
+  if (ops.length === 0) {
+    throw new Error('Tidak ada data yang diubah');
+  }
+
+  await Promise.all(ops);
+  return getBillingSettings();
+}
+
+export async function getPublicPlans() {
+  const settings = await getBillingSettings();
   return {
     lifetime: {
       id: 'lifetime',
       name: 'Pro Lifetime',
-      price: config.billing.lifetimePrice,
+      price: settings.lifetimePrice,
       currency: 'IDR',
       description: 'Sekali bayar — akses Pro selamanya (early bird).',
     },
     bank: {
-      name: config.billing.bankName || null,
-      account: config.billing.bankAccount || null,
-      holder: config.billing.bankHolder || null,
-      configured: Boolean(
-        config.billing.bankName &&
-          config.billing.bankAccount &&
-          config.billing.bankHolder
-      ),
+      name: settings.bankName || null,
+      account: settings.bankAccount || null,
+      holder: settings.bankHolder || null,
+      configured: settings.configured,
     },
+  };
+}
+
+export async function countOpenProRequests() {
+  const [pending, proofSubmitted] = await Promise.all([
+    prisma.proPurchaseRequest.count({ where: { status: 'PENDING' } }),
+    prisma.proPurchaseRequest.count({ where: { status: 'PROOF_SUBMITTED' } }),
+  ]);
+  return {
+    pending,
+    proofSubmitted,
+    open: pending + proofSubmitted,
   };
 }
 
@@ -46,7 +156,8 @@ export async function createPurchaseRequest(userId: string) {
     throw new Error('Akun kamu sudah Pro');
   }
 
-  if (!getPublicPlans().bank.configured) {
+  const plans = await getPublicPlans();
+  if (!plans.bank.configured) {
     throw new Error('Pembayaran Pro belum dikonfigurasi. Hubungi admin.');
   }
 
@@ -64,7 +175,7 @@ export async function createPurchaseRequest(userId: string) {
   const created = await prisma.proPurchaseRequest.create({
     data: {
       userId,
-      amount: config.billing.lifetimePrice,
+      amount: plans.lifetime.price,
       transferNote: transferCode(userId),
       status: 'PENDING',
     },

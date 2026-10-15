@@ -110,3 +110,42 @@ export async function rejectProRequest(
   );
   return res.data.data;
 }
+
+export interface BillingSettings {
+  lifetimePrice: number;
+  bankName: string;
+  bankAccount: string;
+  bankHolder: string;
+  configured: boolean;
+}
+
+export interface ProRequestsSummary {
+  pending: number;
+  proofSubmitted: number;
+  open: number;
+}
+
+export async function fetchBillingSettings(): Promise<BillingSettings> {
+  const res = await api.get<ApiResponse<BillingSettings>>('/admin/billing-settings');
+  return res.data.data;
+}
+
+export async function saveBillingSettings(payload: {
+  lifetimePrice?: number;
+  bankName?: string;
+  bankAccount?: string;
+  bankHolder?: string;
+}): Promise<BillingSettings> {
+  const res = await api.put<ApiResponse<BillingSettings>>(
+    '/admin/billing-settings',
+    payload
+  );
+  return res.data.data;
+}
+
+export async function fetchProRequestsSummary(): Promise<ProRequestsSummary> {
+  const res = await api.get<ApiResponse<ProRequestsSummary>>(
+    '/admin/pro-requests/summary'
+  );
+  return res.data.data;
+}
