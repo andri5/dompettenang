@@ -1,12 +1,17 @@
 #!/bin/sh
 set -e
 
+# Named volume /app/uploads is often root-owned on first mount.
+# Entrypoint runs as root, fixes perms, then drops to user `app`.
+mkdir -p /app/uploads/avatars /app/uploads/receipts
+chown -R app:app /app/uploads
+chmod -R u+rwX /app/uploads
+
 echo "[api] Waiting for database..."
-# Prisma will retry; give Postgres a short head start when compose starts together
 sleep 2
 
 echo "[api] Syncing schema (prisma db push)..."
-npx prisma db push --skip-generate
+runuser -u app -- env HOME=/home/app npx prisma db push --skip-generate
 
 echo "[api] Starting Dompet Tenang API..."
-exec node dist/index.js
+exec runuser -u app -- env HOME=/home/app node dist/index.js

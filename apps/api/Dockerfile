@@ -40,7 +40,8 @@ RUN chmod +x ./docker-entrypoint.sh \
   && mkdir -p /app/uploads/avatars /app/uploads/receipts \
   && chown -R app:app /app
 
-USER app
+# Start as root so entrypoint can chown the uploads volume, then drop to `app`.
+USER root
 EXPOSE 3001
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
