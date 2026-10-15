@@ -261,7 +261,7 @@ export function DashboardScreen({ user }: { user: User }) {
                 hitSlop={8}
               >
                 <Ionicons name="share-social-outline" size={16} color={colors.brand} />
-                <Text style={styles.exportBtnText}>Export</Text>
+                <Text style={styles.exportBtnText}>Export CSV</Text>
               </Pressable>
             )}
             <PrivacyEyeToggle

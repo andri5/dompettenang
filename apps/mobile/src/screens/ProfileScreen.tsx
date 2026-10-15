@@ -60,13 +60,14 @@ export function ProfileScreen({
             : 'Fitur Pro — jadwalkan transaksi rutin',
           icon: 'repeat-outline' as const,
           soft: true,
+          pro: !isPro,
           onPress: () => navigation.navigate('Recurring'),
         }
       : null,
     {
       key: 'budget',
       title: 'Budget',
-      sub: 'Limit pengeluaran bulanan',
+      sub: 'Limit pengeluaran bulanan (gratis)',
       icon: 'wallet-outline' as const,
       soft: true,
       onPress: () => navigation.navigate('Budget'),
@@ -80,6 +81,7 @@ export function ProfileScreen({
             : 'Fitur Pro — pantau goal saving',
           icon: 'flag-outline' as const,
           soft: true,
+          pro: !isPro,
           onPress: () => navigation.navigate('Savings'),
         }
       : null,
@@ -113,6 +115,7 @@ export function ProfileScreen({
     sub: string;
     icon: keyof typeof Ionicons.glyphMap;
     soft: boolean;
+    pro?: boolean;
     onPress: () => void;
   }>;
 
@@ -189,9 +192,16 @@ export function ProfileScreen({
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.menuTitle, item.soft && { color: colors.brandDark }]}>
-                {item.title}
-              </Text>
+              <View style={styles.menuTitleRow}>
+                <Text style={[styles.menuTitle, item.soft && { color: colors.brandDark }]}>
+                  {item.title}
+                </Text>
+                {item.pro ? (
+                  <View style={styles.proPill}>
+                    <Text style={styles.proPillText}>Pro</Text>
+                  </View>
+                ) : null}
+              </View>
               <Text style={styles.menuSub}>{item.sub}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -286,8 +296,27 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
       justifyContent: 'center',
     },
     menuIconSoft: { backgroundColor: colors.surface },
+    menuTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
     menuTitle: { fontWeight: '800', color: colors.text, fontSize: r.ms(14) },
     menuSub: { marginTop: 1, color: colors.muted, fontSize: r.ms(11) },
+    proPill: {
+      backgroundColor: colors.brandSoft,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderWidth: 1,
+      borderColor: colors.brandSoftBorder,
+    },
+    proPillText: {
+      color: colors.brandDark,
+      fontSize: 10,
+      fontWeight: '800',
+    },
   });
 }
 
