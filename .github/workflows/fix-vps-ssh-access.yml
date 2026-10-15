@@ -1,0 +1,139 @@
+# Perbaiki akses SSH root ke VPS (password gagal / hanya key CI yang jalan).
+#
+# Cara aman (disarankan): pasang public key laptop ke authorized_keys
+#   Actions → Fix VPS SSH access → Run workflow
+#   Isi client_pubkey = isi file *.pub (satu baris ssh-ed25519 AAAA...)
+#
+# Opsional: set new_root_password untuk reset password root + nyalakan PasswordAuthentication
+#   (pakai password kuat; setelah login, lebih baik pakai key saja)
+
+name: Fix VPS SSH access
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_pubkey:
+        description: 'Public key laptop (satu baris, isi file .pub)'
+        required: true
+        type: string
+      new_root_password:
+        description: 'Opsional — password root baru (kosongkan jika hanya pasang key)'
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  fix-ssh:
+    name: Install SSH key / reset root password
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key"
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Apply authorized_keys and optional password reset
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          CLIENT_PUBKEY: ${{ inputs.client_pubkey }}
+          NEW_ROOT_PASSWORD: ${{ inputs.new_root_password }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?}"
+          USER_NAME="${PROD_SSH_USER:?}"
+          PORT="${PROD_SSH_PORT:-22}"
+
+          PUB=$(printf '%s' "$CLIENT_PUBKEY" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if [[ -z "$PUB" ]]; then
+            echo "ERROR: client_pubkey kosong"
+            exit 1
+          fi
+          if ! printf '%s' "$PUB" | grep -qE '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256|sk-ssh-ed25519@openssh.com) '; then
+            echo "ERROR: client_pubkey tidak terlihat seperti OpenSSH public key"
+            exit 1
+          fi
+
+          B64_PUB=$(printf '%s' "$PUB" | base64 -w0)
+          B64_PASS=$(printf '%s' "${NEW_ROOT_PASSWORD:-}" | base64 -w0)
+
+          ssh -i ~/.ssh/id_deploy \
+            -p "${PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "${USER_NAME}@${HOST}" \
+            B64_PUB="$B64_PUB" \
+            B64_PASS="$B64_PASS" \
+            'bash -s' <<'EOF'
+          set -euo pipefail
+          PUB=$(printf '%s' "$B64_PUB" | base64 -d)
+          PASS=$(printf '%s' "$B64_PASS" | base64 -d || true)
+
+          mkdir -p /root/.ssh
+          chmod 700 /root/.ssh
+          touch /root/.ssh/authorized_keys
+          chmod 600 /root/.ssh/authorized_keys
+
+          if grep -Fqx "$PUB" /root/.ssh/authorized_keys; then
+            echo "==> Public key already present in authorized_keys"
+          else
+            printf '%s\n' "$PUB" >> /root/.ssh/authorized_keys
+            echo "==> Public key appended to authorized_keys"
+          fi
+
+          # Keep key login working; optionally allow password again
+          SSHd=/etc/ssh/sshd_config
+          if [[ -f "$SSHd" ]]; then
+            cp -a "$SSHd" "/etc/ssh/sshd_config.bak.$(date +%s)"
+            sed -i -E 's/^#?PubkeyAuthentication.*/PubkeyAuthentication yes/' "$SSHd"
+            sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin yes/' "$SSHd"
+            if grep -qE '^PubkeyAuthentication' "$SSHd"; then :; else echo 'PubkeyAuthentication yes' >> "$SSHd"; fi
+            if grep -qE '^PermitRootLogin' "$SSHd"; then :; else echo 'PermitRootLogin yes' >> "$SSHd"; fi
+
+            if [[ -n "$PASS" ]]; then
+              sed -i -E 's/^#?PasswordAuthentication.*/PasswordAuthentication yes/' "$SSHd"
+              if grep -qE '^PasswordAuthentication' "$SSHd"; then :; else echo 'PasswordAuthentication yes' >> "$SSHd"; fi
+              echo "root:$PASS" | chpasswd
+              echo "==> Root password updated + PasswordAuthentication enabled"
+            else
+              echo "==> Skipped password reset (new_root_password empty)"
+            fi
+
+            if command -v systemctl >/dev/null 2>&1; then
+              systemctl reload sshd 2>/dev/null || systemctl reload ssh 2>/dev/null || service ssh reload || true
+            else
+              service ssh reload 2>/dev/null || service sshd reload 2>/dev/null || true
+            fi
+            echo "==> sshd reloaded"
+          fi
+
+          echo "==> authorized_keys count: $(wc -l < /root/.ssh/authorized_keys)"
+          EOF
