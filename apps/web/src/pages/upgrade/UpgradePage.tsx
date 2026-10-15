@@ -142,7 +142,6 @@ export function UpgradePage() {
       />
       <MainLayout>
         <PageHeader
-          eyebrow="Pro"
           title="Upgrade Pro"
           description="Sekali bayar — akses Pro seumur hidup (early bird)"
         />
@@ -191,11 +190,9 @@ export function UpgradePage() {
 
                 <ul className="mt-6 space-y-2.5 text-sm text-ink">
                   {[
-                    'Target tabungan',
-                    'Transaksi otomatis',
                     'Export laporan PDF',
                     'Bagikan ringkasan dari mobile',
-                    'Budget tetap gratis di Free',
+                    'Akses Pro tanpa langganan bulanan',
                     'Harga early bird — bisa naik nanti',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2">
@@ -233,11 +230,7 @@ export function UpgradePage() {
 
                 {bank && !bank.configured ? (
                   <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    Rekening pembayaran belum dikonfigurasi. Admin perlu mengisi rekening di{' '}
-                    <Link to={ROUTES.ADMIN_PRO} className="font-bold underline">
-                      Admin → Pro
-                    </Link>
-                    .
+                    Rekening pembayaran belum dikonfigurasi. Hubungi admin.
                   </p>
                 ) : null}
 
