@@ -274,7 +274,9 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 Setelah VPS jalan manual sekali, production bisa di-update otomatis:
 
 ```text
-Merge/push ke main → GitHub Actions → SSH VPS → git pull + docker compose up --build
+Merge/push ke main → GitHub Actions → upload tarball ke VPS (tanpa `git pull` di server) → `docker compose up --build`
+
+> Catatan: VPS Sumopod sering gagal akses `github.com:443`. Deploy CI **tidak** bergantung pada `git pull` dari VPS.
 ```
 
 Branch `feature/*` **tidak** auto-deploy. Hanya **`main`** (atau `master`) + tombol **Run workflow** manual.

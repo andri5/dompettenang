@@ -78,7 +78,23 @@ jobs:
           ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Deploy over SSH
+      # VPS (Sumopod) often cannot reach github.com:443 — upload release from Actions instead of git pull.
+      - name: Pack release tarball
+        run: |
+          set -euo pipefail
+          tar \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='**/node_modules' \
+            --exclude='apps/web/dist' \
+            --exclude='apps/api/dist' \
+            --exclude='apps/mobile/.expo' \
+            --exclude='**/.env' \
+            --exclude='**/.env.local' \
+            --exclude='**/.env.production' \
+            -czf /tmp/dompettenang-release.tgz .
+
+      - name: Upload release and deploy over SSH
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
@@ -88,27 +104,48 @@ jobs:
           HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
           USER_NAME="${PROD_SSH_USER:?Set secret PROD_SSH_USER}"
           PORT="${PROD_SSH_PORT:-22}"
+          SSH=(ssh -i ~/.ssh/id_deploy -p "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          SCP=(scp -i ~/.ssh/id_deploy -P "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
 
-          ssh -i ~/.ssh/id_deploy \
-            -p "${PORT}" \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "${USER_NAME}@${HOST}" \
-            'bash -s' <<'EOF'
+          "${SCP[@]}" /tmp/dompettenang-release.tgz "${USER_NAME}@${HOST}:/tmp/dompettenang-release.tgz"
+
+          "${SSH[@]}" "${USER_NAME}@${HOST}" 'bash -s' <<'EOF'
           set -euo pipefail
           APP_DIR="${APP_DIR:-/opt/dompettenang}"
-          cd "${APP_DIR}"
-          # Ensure deploy script from current main after pull — run via bash from repo
-          git fetch origin main || git fetch origin master
-          if git show-ref --verify --quiet refs/remotes/origin/main; then
-            BRANCH=main
-          else
-            BRANCH=master
+          ENV_FILE="${APP_DIR}/deploy/.env.production"
+          RELEASE_TGZ=/tmp/dompettenang-release.tgz
+          STAGE=/tmp/dompettenang-release-$$
+
+          if [[ ! -f "${ENV_FILE}" ]]; then
+            echo "ERROR: missing ${ENV_FILE}"
+            exit 1
           fi
-          git checkout "${BRANCH}"
-          git pull --ff-only origin "${BRANCH}"
-          chmod +x deploy/remote-deploy.sh
-          APP_DIR="${APP_DIR}" BRANCH="${BRANCH}" ./deploy/remote-deploy.sh
+
+          cp -a "${ENV_FILE}" /tmp/dompettenang.env.production.bak
+          mkdir -p "${STAGE}"
+          tar -xzf "${RELEASE_TGZ}" -C "${STAGE}"
+
+          # Preserve production secrets and hosted APK downloads
+          mkdir -p "${APP_DIR}"
+          if command -v rsync >/dev/null 2>&1; then
+            rsync -a --delete \
+              --exclude 'deploy/.env.production' \
+              --exclude 'deploy/downloads/' \
+              --exclude '.git/' \
+              "${STAGE}/" "${APP_DIR}/"
+          else
+            # Fallback without rsync: overlay files, keep env
+            find "${STAGE}" -mindepth 1 -maxdepth 1 ! -name '.git' -exec cp -a {} "${APP_DIR}/" \;
+          fi
+
+          mkdir -p "${APP_DIR}/deploy"
+          cp -a /tmp/dompettenang.env.production.bak "${ENV_FILE}"
+          chmod +x "${APP_DIR}/deploy/remote-deploy.sh"
+
+          cd "${APP_DIR}"
+          SKIP_GIT=1 APP_DIR="${APP_DIR}" ./deploy/remote-deploy.sh
+
+          rm -rf "${STAGE}" "${RELEASE_TGZ}"
           EOF
 
       - name: Public health check (best effort)

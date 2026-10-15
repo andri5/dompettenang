@@ -2,6 +2,7 @@
 # Dompet Tenang — remote production deploy (run on Sumopod VPS)
 # Usage:
 #   BRANCH=main APP_DIR=/opt/dompettenang ./deploy/remote-deploy.sh
+#   SKIP_GIT=1 ./deploy/remote-deploy.sh   # code already synced via CI upload
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/dompettenang}"
@@ -9,10 +10,12 @@ BRANCH="${BRANCH:-main}"
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-deploy/.env.production}"
 HEALTH_URL="${HEALTH_URL:-https://dompet-tenang.web.id/api/v1/health}"
+SKIP_GIT="${SKIP_GIT:-0}"
 
 echo "==> Deploy Dompet Tenang"
 echo "    APP_DIR=${APP_DIR}"
 echo "    BRANCH=${BRANCH}"
+echo "    SKIP_GIT=${SKIP_GIT}"
 
 cd "${APP_DIR}"
 
@@ -22,10 +25,14 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
-echo "==> Fetching ${BRANCH}"
-git fetch origin "${BRANCH}"
-git checkout "${BRANCH}"
-git pull --ff-only origin "${BRANCH}"
+if [[ "${SKIP_GIT}" != "1" ]]; then
+  echo "==> Fetching ${BRANCH} from origin"
+  git fetch origin "${BRANCH}"
+  git checkout "${BRANCH}"
+  git pull --ff-only origin "${BRANCH}"
+else
+  echo "==> Skipping git pull (release uploaded by CI)"
+fi
 
 echo "==> Building and restarting containers"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build
