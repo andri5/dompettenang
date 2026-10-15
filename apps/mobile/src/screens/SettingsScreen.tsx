@@ -28,6 +28,7 @@ import { THEME_OPTIONS, radii, type ThemeColors } from '../theme';
 import { useTheme, useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { useFeatureEnabled } from '../lib/featureFlags';
+import { hasProAccess } from '../lib/plan';
 import type { MainStackParamList } from '../navigation/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -268,11 +269,38 @@ export function SettingsScreen({ navigation }: Props) {
             <Text style={styles.heroEmail} numberOfLines={1}>
               {user?.email || '—'}
             </Text>
-            <View style={styles.heroPill}>
-              <Text style={styles.heroPillText}>
-                {activeCurrency.code} {activeCurrency.label}
-              </Text>
+            <View style={styles.heroBadges}>
+              <View
+                style={[
+                  styles.heroPill,
+                  hasProAccess(user) ? styles.heroPillPro : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.heroPillText,
+                    hasProAccess(user) ? styles.heroPillTextPro : null,
+                  ]}
+                >
+                  {hasProAccess(user) ? 'Pro' : 'Free'}
+                </Text>
+              </View>
+              {user?.role === 'ADMIN' ? (
+                <View style={styles.heroPill}>
+                  <Text style={styles.heroPillText}>Admin</Text>
+                </View>
+              ) : null}
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillText}>
+                  {activeCurrency.code} {activeCurrency.label}
+                </Text>
+              </View>
             </View>
+            {hasProAccess(user) && user?.role === 'ADMIN' ? (
+              <Text style={styles.heroProHint}>
+                Admin otomatis mendapat akses Pro tanpa berlangganan.
+              </Text>
+            ) : null}
           </View>
         </FadeInUp>
 
@@ -853,8 +881,14 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
     },
     heroName: { fontSize: 20, fontWeight: '800', color: colors.text, letterSpacing: -0.3 },
     heroEmail: { marginTop: 2, color: colors.muted, fontSize: 13 },
-    heroPill: {
+    heroBadges: {
       marginTop: 12,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    heroPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
@@ -865,8 +899,21 @@ function createStyles(colors: ThemeColors, r: ReturnType<typeof useResponsive>) 
       borderWidth: 1,
       borderColor: colors.brandSoftBorder,
     },
+    heroPillPro: {
+      backgroundColor: colors.brand,
+      borderColor: colors.brand,
+    },
     heroPillSymbol: { fontWeight: '900', color: colors.brandDark, fontSize: 13 },
     heroPillText: { fontWeight: '700', color: colors.brandDark, fontSize: 12 },
+    heroPillTextPro: { color: colors.onBrand },
+    heroProHint: {
+      marginTop: 8,
+      textAlign: 'center',
+      color: colors.brand,
+      fontSize: 11,
+      fontWeight: '600',
+      paddingHorizontal: 12,
+    },
     sectionCard: {
       backgroundColor: colors.surface,
       borderRadius: 20,

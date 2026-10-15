@@ -13,6 +13,9 @@ export type User = {
   avatar?: string | null;
   currency?: string;
   role?: 'USER' | 'ADMIN';
+  plan?: 'FREE' | 'PRO';
+  proExpiresAt?: string | null;
+  hasPro?: boolean;
   gender?: Gender | null;
   birthDate?: string | null;
   createdAt?: string | Date | null;

@@ -59,6 +59,7 @@ import { MarketRates } from './components/MarketRates';
 import { BudgetSummaryCard } from './components/BudgetSummaryCard';
 import { fetchAllTransactionsForRange } from '@/lib/fetchTransactions';
 import { exportReportToExcel, exportReportToPdf } from '@/lib/exportReport';
+import { hasProAccess } from '@/lib/plan';
 
 type Period = 'week' | 'month' | 'year';
 type ExportFormat = 'excel' | 'pdf';
@@ -275,6 +276,13 @@ export function DashboardPage() {
       return;
     }
 
+    if (format === 'pdf' && !hasProAccess(user)) {
+      toast.error(
+        'Export PDF tersedia di Dompet Tenang Pro. Admin otomatis punya akses Pro.'
+      );
+      return;
+    }
+
     setIsExporting(format);
     try {
       const transactions = await fetchAllTransactionsForRange(
@@ -486,8 +494,13 @@ export function DashboardPage() {
               isLoading={isExporting === 'pdf'}
               disabled={!summary || !!isExporting}
               onClick={() => handleExport('pdf')}
+              title={
+                hasProAccess(user)
+                  ? 'Export PDF'
+                  : 'Fitur Pro — Export PDF'
+              }
             >
-              Export PDF
+              Export PDF{hasProAccess(user) ? '' : ' · Pro'}
             </Button>
           </div>
         </div>

@@ -17,6 +17,7 @@ import type {
 } from '../utils/validation.js';
 import type { AuthResponse, UserResponse } from '../types/index.js';
 import { AUTH_SAFE, LOGIN_DUMMY_HASH } from '../constants/authMessages.js';
+import { hasProAccess } from '../utils/plan.js';
 
 export class AuthService {
   async register(data: RegisterInput): Promise<AuthResponse> {
@@ -250,6 +251,8 @@ export class AuthService {
         gender: true,
         birthDate: true,
         role: true,
+        plan: true,
+        proExpiresAt: true,
         createdAt: true,
       },
     });
@@ -294,6 +297,8 @@ export class AuthService {
         gender: true,
         birthDate: true,
         role: true,
+        plan: true,
+        proExpiresAt: true,
         createdAt: true,
       },
     });
@@ -353,10 +358,18 @@ export class AuthService {
     gender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
     birthDate?: Date | null;
     role?: string;
+    plan?: 'FREE' | 'PRO' | string | null;
+    proExpiresAt?: Date | null;
     createdAt: Date;
   }): UserResponse {
     const gender =
       user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : null;
+    const storedPlan = user.plan === 'PRO' ? 'PRO' : 'FREE';
+    const planUser = {
+      role: user.role || 'USER',
+      plan: storedPlan,
+      proExpiresAt: user.proExpiresAt ?? null,
+    };
     return {
       id: user.id,
       name: user.name,
@@ -368,6 +381,11 @@ export class AuthService {
         ? user.birthDate.toISOString().slice(0, 10)
         : null,
       role: user.role || 'USER',
+      plan: storedPlan,
+      proExpiresAt: user.proExpiresAt
+        ? user.proExpiresAt.toISOString()
+        : null,
+      hasPro: hasProAccess(planUser),
       createdAt: user.createdAt,
     };
   }

@@ -93,7 +93,7 @@ export function AppStatusProvider({ children }: { children: ReactNode }) {
         title="Server tidak terjangkau"
         message={
           serverMsg ||
-          'Pastikan API Dompet Tenang berjalan dan HP satu Wi‑Fi dengan PC (bukan data seluler).'
+          'Tidak bisa terhubung ke server Dompet Tenang. Periksa koneksi internet, lalu coba lagi.'
         }
         confirmLabel="Mengerti"
         onRequestClose={() => setServerOpen(false)}

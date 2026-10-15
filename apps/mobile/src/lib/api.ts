@@ -60,6 +60,26 @@ function resolveApiBaseUrl() {
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
+function isLocalDevApiUrl(url: string) {
+  return (
+    url.includes('localhost') ||
+    url.includes('127.0.0.1') ||
+    url.includes('10.0.2.2') ||
+    /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(url)
+  );
+}
+
+function unreachableServerMessage(kind: 'timeout' | 'offline') {
+  if (isLocalDevApiUrl(API_BASE_URL)) {
+    return kind === 'timeout'
+      ? 'Koneksi ke server terlalu lama. Pastikan API jalan dan HP satu Wi‑Fi dengan PC.'
+      : `Tidak bisa terhubung ke server (${API_BASE_URL}). Pastikan API jalan dan HP satu Wi‑Fi dengan PC.`;
+  }
+  return kind === 'timeout'
+    ? 'Koneksi ke server Dompet Tenang terlalu lama. Coba lagi atau periksa koneksi internet.'
+    : 'Tidak bisa terhubung ke server Dompet Tenang. Periksa koneksi internet, lalu coba lagi.';
+}
+
 export async function getAccessToken() {
   return SecureStore.getItemAsync(ACCESS_KEY);
 }
@@ -103,17 +123,10 @@ api.interceptors.response.use(
     const apiMessage = error.response?.data?.message as string | undefined;
 
     if (!error.response) {
-      if (code === 'ECONNABORTED') {
-        emitAppStatus({
-          type: 'server',
-          message: 'Koneksi ke server terlalu lama. Pastikan API jalan dan HP satu Wi‑Fi dengan PC.',
-        });
-      } else {
-        emitAppStatus({
-          type: 'server',
-          message: `Tidak bisa terhubung ke server (${API_BASE_URL}). Pastikan API jalan dan HP satu Wi‑Fi dengan PC.`,
-        });
-      }
+      emitAppStatus({
+        type: 'server',
+        message: unreachableServerMessage(code === 'ECONNABORTED' ? 'timeout' : 'offline'),
+      });
     } else if (
       status === 503 ||
       apiCode === 'MAINTENANCE' ||

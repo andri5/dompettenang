@@ -15,6 +15,11 @@ export interface User {
   gender?: Gender | null;
   birthDate?: string | null;
   role?: 'USER' | 'ADMIN';
+  /** Stored plan from API (FREE/PRO). Prefer hasPro for feature gates. */
+  plan?: 'FREE' | 'PRO';
+  proExpiresAt?: string | null;
+  /** Effective Pro access (admin always true). */
+  hasPro?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

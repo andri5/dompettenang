@@ -23,6 +23,9 @@ import { PageLoader } from '../components/PageStatus';
 import { radii, type ThemeColors } from '../theme';
 import { useColors } from '../themeContext';
 import { useResponsive } from '../hooks/useResponsive';
+import { useAuth } from '../authContext';
+import { hasProAccess } from '../lib/plan';
+import { useDialog } from '../components/AppDialog';
 import type { MainStackParamList } from '../navigation/types';
 
 export function SummaryScreen() {
@@ -30,6 +33,8 @@ export function SummaryScreen() {
   const r = useResponsive();
   const styles = useMemo(() => createStyles(colors, r), [colors, r]);
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { showDialog } = useDialog();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,10 +105,23 @@ export function SummaryScreen() {
           {summary ? (
             <ScalePress
               style={styles.shareBtn}
-              onPress={() => void shareSummaryReport(summary, period)}
+              onPress={() => {
+                if (!hasProAccess(user)) {
+                  showDialog({
+                    title: 'Fitur Pro',
+                    message:
+                      'Bagikan laporan tersedia di Dompet Tenang Pro. Admin otomatis punya akses Pro.',
+                    confirmLabel: 'Mengerti',
+                  });
+                  return;
+                }
+                void shareSummaryReport(summary, period);
+              }}
             >
               <Ionicons name="share-outline" size={18} color={colors.brand} />
-              <Text style={styles.shareText}>Bagikan</Text>
+              <Text style={styles.shareText}>
+                Bagikan{hasProAccess(user) ? '' : ' · Pro'}
+              </Text>
             </ScalePress>
           ) : null}
         </View>

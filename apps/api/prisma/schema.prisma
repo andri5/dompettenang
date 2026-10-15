@@ -27,6 +27,11 @@ enum UserRole {
   ADMIN
 }
 
+enum Plan {
+  FREE
+  PRO
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -44,6 +49,8 @@ model User {
   gender       Gender?
   birthDate    DateTime? @map("birth_date") @db.Date
   role         UserRole  @default(USER)
+  plan         Plan      @default(FREE)
+  proExpiresAt DateTime? @map("pro_expires_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 

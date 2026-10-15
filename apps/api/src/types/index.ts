@@ -28,6 +28,11 @@ export interface UserResponse {
   gender: 'MALE' | 'FEMALE' | null;
   birthDate: string | null;
   role: string;
+  /** Stored subscription plan (FREE/PRO). Admin may still show PRO via hasPro. */
+  plan: 'FREE' | 'PRO';
+  proExpiresAt: string | null;
+  /** Effective Pro access (ADMIN always true, or active PRO plan). */
+  hasPro: boolean;
   createdAt: Date;
 }
 

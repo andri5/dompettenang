@@ -31,6 +31,7 @@ import api from '@/lib/api';
 import { updateProfile, changePassword } from '@/services/auth.service';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 import { GENDER_OPTIONS, type Gender } from '@/lib/gender';
+import { hasProAccess } from '@/lib/plan';
 
 const CURRENCIES = [
   { code: 'IDR' as const, label: 'Rupiah', hint: 'Indonesia', symbol: 'Rp' },
@@ -432,10 +433,31 @@ export function SettingsPage() {
               </button>
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">
-                {user?.name}
-              </h2>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">
+                  {user?.name}
+                </h2>
+                {hasProAccess(user) ? (
+                  <Badge variant="success" className="align-middle">
+                    Pro
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="align-middle">
+                    Free
+                  </Badge>
+                )}
+                {user?.role === 'ADMIN' ? (
+                  <Badge variant="info" className="align-middle">
+                    Admin
+                  </Badge>
+                ) : null}
+              </div>
               <p className="mt-1 text-muted">{user?.email}</p>
+              {hasProAccess(user) && user?.role === 'ADMIN' ? (
+                <p className="mt-1 text-xs font-medium text-accent">
+                  Admin otomatis mendapat akses Pro tanpa berlangganan.
+                </p>
+              ) : null}
               {user?.createdAt && (
                 <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted">
                   <Calendar className="h-4 w-4" />

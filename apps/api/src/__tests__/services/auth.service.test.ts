@@ -64,6 +64,9 @@ const mockUser = {
   currency: 'IDR',
   gender: 'MALE' as const,
   birthDate: new Date('1995-05-15'),
+  role: 'USER' as const,
+  plan: 'FREE' as const,
+  proExpiresAt: null,
   createdAt: new Date('2026-01-01'),
 };
 
