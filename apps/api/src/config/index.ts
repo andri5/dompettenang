@@ -90,7 +90,10 @@ export const config = {
     enabled: smtpEnabled,
     host: smtpHost,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
+    // Port 465 = implicit TLS; also honor SMTP_SECURE=true
+    secure:
+      process.env.SMTP_SECURE === 'true' ||
+      parseInt(process.env.SMTP_PORT || '587', 10) === 465,
     user: smtpUser,
     pass: smtpPass,
     from: process.env.SMTP_FROM || smtpUser || 'noreply@dompettenang.local',

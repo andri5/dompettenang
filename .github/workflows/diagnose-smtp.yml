@@ -1,0 +1,140 @@
+# Cek SMTP di VPS (env + koneksi + log API) tanpa login password dari laptop.
+# Actions → Diagnose SMTP → Run workflow
+
+name: Diagnose SMTP
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_test_to:
+        description: 'Opsional — kirim email uji ke alamat ini (kosongkan = skip kirim)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    name: SMTP status on VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key"
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Inspect env, verify SMTP, show recent logs
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SEND_TEST_TO: ${{ inputs.send_test_to }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?}"
+          USER_NAME="${PROD_SSH_USER:?}"
+          PORT="${PROD_SSH_PORT:-22}"
+          B64_TO=$(printf '%s' "${SEND_TEST_TO:-}" | base64 -w0)
+
+          ssh -i ~/.ssh/id_deploy \
+            -p "${PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "${USER_NAME}@${HOST}" \
+            B64_TO="$B64_TO" \
+            'bash -s' <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          ENV_FILE="${APP_DIR}/deploy/.env.production"
+          COMPOSE_FILE="${APP_DIR}/deploy/docker-compose.prod.yml"
+          SEND_TEST_TO=$(printf '%s' "$B64_TO" | base64 -d || true)
+
+          echo "==> SMTP keys in env (masked)"
+          if [[ ! -f "${ENV_FILE}" ]]; then
+            echo "ERROR: missing ${ENV_FILE}"
+            exit 1
+          fi
+          grep -E '^SMTP_' "${ENV_FILE}" | sed -E 's/(PASS|USER)=.*/\1=***/' || true
+
+          echo ""
+          echo "==> Values seen by API container"
+          cd "${APP_DIR}"
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
+            node -e '
+              const keys=["SMTP_ENABLED","SMTP_HOST","SMTP_PORT","SMTP_SECURE","SMTP_USER","SMTP_FROM"];
+              for (const k of keys) {
+                const v=process.env[k]||"";
+                console.log(k+"="+(k.includes("PASS")||k.includes("USER")? (v?"(set)":"(empty)") : v));
+              }
+              console.log("SMTP_PASS="+(process.env.SMTP_PASS?"(set len="+String(process.env.SMTP_PASS).length+")":"(empty)"));
+            '
+
+          echo ""
+          echo "==> Nodemailer verify()"
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
+            node -e '
+              const nodemailer=require("nodemailer");
+              const host=process.env.SMTP_HOST||"";
+              const port=Number(process.env.SMTP_PORT||465);
+              const secure=String(process.env.SMTP_SECURE||"") === "true" || port===465;
+              const user=process.env.SMTP_USER||"";
+              const pass=process.env.SMTP_PASS||"";
+              if(!host||!user||!pass){ console.error("FAIL: SMTP host/user/pass incomplete"); process.exit(2); }
+              const tx=nodemailer.createTransport({host,port,secure,auth:{user,pass}});
+              tx.verify().then(()=>{ console.log("OK: SMTP verify succeeded", {host,port,secure}); })
+                .catch((e)=>{ console.error("FAIL: SMTP verify", e && (e.response||e.message||e)); process.exit(3); });
+            '
+
+          if [[ -n "${SEND_TEST_TO}" ]]; then
+            echo ""
+            echo "==> Sending test mail to ${SEND_TEST_TO}"
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
+              node -e '
+                const nodemailer=require("nodemailer");
+                const to=process.argv[1];
+                const host=process.env.SMTP_HOST||"";
+                const port=Number(process.env.SMTP_PORT||465);
+                const secure=String(process.env.SMTP_SECURE||"") === "true" || port===465;
+                const user=process.env.SMTP_USER||"";
+                const pass=process.env.SMTP_PASS||"";
+                const from=process.env.SMTP_FROM||user;
+                const tx=nodemailer.createTransport({host,port,secure,auth:{user,pass}});
+                tx.sendMail({from,to,subject:"[Dompet Tenang] SMTP test",text:"Ini email uji SMTP dari VPS Dompet Tenang."})
+                  .then((info)=>{ console.log("OK: sent", info.messageId); })
+                  .catch((e)=>{ console.error("FAIL: send", e && (e.response||e.message||e)); process.exit(4); });
+              ' "${SEND_TEST_TO}"
+          else
+            echo ""
+            echo "==> Skip test send (no send_test_to input)"
+          fi
+
+          echo ""
+          echo "==> Recent API logs (password-reset / SMTP / mail)"
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" logs --tail=120 api 2>&1 \
+            | grep -iE 'password-reset|smtp|mail|nodemailer' || echo "(no matching log lines)"
+          EOF

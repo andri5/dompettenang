@@ -29,7 +29,12 @@ function getTransporter(): Transporter | null {
 }
 
 export function isSmtpConfigured(): boolean {
-  return config.smtp.enabled;
+  return Boolean(
+    config.smtp.enabled &&
+      config.smtp.host &&
+      config.smtp.user &&
+      config.smtp.pass
+  );
 }
 
 export async function sendPasswordResetEmail(params: {
@@ -94,13 +99,17 @@ export async function sendPasswordResetEmail(params: {
 </body>
 </html>`;
 
-  await tx.sendMail({
+  const info = await tx.sendMail({
     from: config.smtp.from,
     to,
     subject: 'Reset password Dompet Tenang',
     text,
     html,
   });
+
+  console.log(
+    `[password-reset] email accepted by SMTP host=${config.smtp.host} to=${to} messageId=${info.messageId || '-'}`
+  );
 }
 
 function escapeHtml(value: string): string {
