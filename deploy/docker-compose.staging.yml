@@ -1,6 +1,10 @@
 # Dompet Tenang — staging stack (same VPS as production)
 # Shares production Caddy network so https://staging.DOMAIN works.
 #
+# IMPORTANT: service names on prod_edge MUST NOT be `api` / `web`.
+# Compose registers the service name as a DNS alias on every attached
+# network; naming them `api` stole production's hostname and broke prod login.
+#
 # Usage:
 #   cp deploy/.env.staging.example deploy/.env.staging
 #   # edit secrets
@@ -32,7 +36,7 @@ services:
     networks:
       - staging_internal
 
-  api:
+  api-staging:
     build:
       context: ../apps/api
       dockerfile: Dockerfile
@@ -71,12 +75,10 @@ services:
     volumes:
       - uploads_staging_data:/app/uploads
     networks:
-      staging_internal:
-      prod_edge:
-        aliases:
-          - api-staging
+      - staging_internal
+      - prod_edge
 
-  web:
+  web-staging:
     build:
       context: ../apps/web
       dockerfile: Dockerfile
@@ -85,10 +87,8 @@ services:
         VITE_SITE_URL: https://staging.${DOMAIN}
     restart: unless-stopped
     networks:
-      staging_internal:
-      prod_edge:
-        aliases:
-          - web-staging
+      - staging_internal
+      - prod_edge
 
 volumes:
   postgres_staging_data:

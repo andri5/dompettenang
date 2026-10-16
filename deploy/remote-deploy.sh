@@ -34,7 +34,18 @@ else
   echo "==> Skipping git pull (release uploaded by CI)"
 fi
 
-echo "==> Building and restarting containers"
+echo "==> Heal staging DNS collision (if staging uses old api/web service names)"
+# Staging used to join the Caddy network as hostname "api"/"web", stealing
+# production traffic. Recreate staging with api-staging/web-staging names.
+STAGING_COMPOSE="deploy/docker-compose.staging.yml"
+STAGING_ENV="deploy/.env.staging"
+if [[ -f "${STAGING_COMPOSE}" && -f "${STAGING_ENV}" ]]; then
+  docker compose -p dompettenang-staging -f "${STAGING_COMPOSE}" --env-file "${STAGING_ENV}" down --remove-orphans || true
+  docker compose -p dompettenang-staging -f "${STAGING_COMPOSE}" --env-file "${STAGING_ENV}" up -d --force-recreate || true
+fi
+
+echo "==> Building and restarting production containers"
+docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build --force-recreate api web caddy
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build
 
 echo "==> Container status"

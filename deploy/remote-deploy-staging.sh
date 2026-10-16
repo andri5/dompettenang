@@ -48,10 +48,13 @@ if ! docker network inspect dompettenang_internal >/dev/null 2>&1; then
 fi
 
 echo "==> Building and restarting STAGING containers"
-docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build
+# Remove legacy service names that collided with production DNS (api/web on prod_edge)
+docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down --remove-orphans || true
+docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build --force-recreate
 
-echo "==> Reload production Caddy (staging host block in Caddyfile)"
-docker compose -f "${PROD_COMPOSE}" --env-file "${PROD_ENV}" up -d caddy
+echo "==> Restore production api/web DNS + reload Caddy"
+# Staging used to register as hostname "api"/"web" on the shared network.
+docker compose -f "${PROD_COMPOSE}" --env-file "${PROD_ENV}" up -d --force-recreate api web caddy
 
 echo "==> Staging container status"
 docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" ps
@@ -59,7 +62,7 @@ docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FI
 echo "==> Health check (staging API container)"
 ok=0
 for i in 1 2 3 4 5 6 7 8; do
-  if docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api \
+  if docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T api-staging \
     node -e "fetch('http://127.0.0.1:3001/api/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
     >/dev/null 2>&1; then
     ok=1
@@ -71,7 +74,7 @@ done
 
 if [[ "${ok}" -ne 1 ]]; then
   echo "ERROR: Staging API health check failed."
-  docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" logs --tail 50 api || true
+  docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" logs --tail 50 api-staging || true
   exit 1
 fi
 
