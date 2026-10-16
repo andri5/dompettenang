@@ -376,7 +376,7 @@ ssh -i ./dompettenang-prod-deploy root@43.133.135.215 'cd /opt/dompettenang && g
 ### 10.2 GitHub Secrets
 
 Repo GitHub → **Settings** → **Secrets and variables** → **Actions**  
-(atau Environment **production** — disarankan):
+(**Repository** secrets — wajib supaya Deploy Staging tidak butuh approval production):
 
 | Secret | Contoh nilai |
 |--------|----------------|

@@ -68,7 +68,8 @@ Jangan commit langsung ke `main` kecuali hotfix darurat. Rilis normal lewat **Pr
 
 1. Repo → **Settings** → **Environments** → **production**
 2. Centang **Required reviewers** → tambah akun QA / maintainer
-3. Pastikan **staging tidak** memakai environment dengan Required reviewers
+3. Pastikan secret `PROD_SSH_*` ada di **Repository secrets** (bukan hanya Environment production)  
+4. Environment **staging** boleh ada (untuk URL badge) — **jangan** centang Required reviewers di situ
 
 Promote memakai **git merge + push** ke `main`, lalu dispatch **Deploy to Production**.  
 Jika branch protection menolak push Actions ke `main`, tambahkan secret **`GH_PAT`** (scope `repo`).
