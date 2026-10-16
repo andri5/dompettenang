@@ -1,20 +1,13 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { recurringService } from '../services/recurring.service.js';
 import { authMiddleware, requireProMiddleware, validate } from '../middlewares/index.js';
 import { sendCreated, sendError, sendNotFound, sendSuccess } from '../utils/response.js';
 import { paramString } from '../utils/params.js';
+import {
+  createRecurringSchema,
+  setRecurringActiveSchema,
+} from '../utils/validation.js';
 import type { AuthenticatedRequest } from '../types/index.js';
-
-const createRecurringSchema = z.object({
-  categoryId: z.string().uuid(),
-  type: z.enum(['EXPENSE', 'INCOME']).optional(),
-  amount: z.number().positive(),
-  note: z.string().max(500).optional(),
-  frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-});
 
 const router = Router();
 router.use(authMiddleware);
@@ -40,11 +33,14 @@ router.post('/', validate(createRecurringSchema), async (req, res) => {
   }
 });
 
-router.patch('/:id/active', async (req, res) => {
+router.patch('/:id/active', validate(setRecurringActiveSchema), async (req, res) => {
   try {
     const { userId } = (req as AuthenticatedRequest).user!;
-    const isActive = Boolean(req.body?.isActive);
-    const row = await recurringService.setActive(userId, paramString(req.params.id), isActive);
+    const row = await recurringService.setActive(
+      userId,
+      paramString(req.params.id),
+      req.body.isActive
+    );
     if (!row) {
       sendNotFound(res, 'Recurring transaction not found');
       return;

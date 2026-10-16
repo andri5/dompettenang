@@ -33,6 +33,7 @@ import { updateProfile, changePassword } from '@/services/auth.service';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 import { GENDER_OPTIONS, type Gender } from '@/lib/gender';
 import { hasProAccess } from '@/lib/plan';
+import { feedbackSchema, firstZodMessage } from '@/lib/validations';
 
 const CURRENCIES = [
   { code: 'IDR' as const, label: 'Rupiah', hint: 'Indonesia', symbol: 'Rp' },
@@ -219,8 +220,13 @@ export function SettingsPage() {
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (sendingFeedbackRef.current) return;
-    if (!feedbackMessage.trim()) {
-      toast.error('Tulis saran atau masukan dulu ya.');
+    const checked = feedbackSchema.safeParse({
+      name: user?.name || undefined,
+      message: feedbackMessage,
+      rating: feedbackRating,
+    });
+    if (!checked.success) {
+      toast.error(firstZodMessage(checked.error, 'Tulis saran atau masukan dulu ya.'));
       return;
     }
 
@@ -228,9 +234,9 @@ export function SettingsPage() {
     setSendingFeedback(true);
     try {
       await api.post('/feedback', {
-        name: user?.name?.trim() || null,
-        message: feedbackMessage.trim(),
-        rating: feedbackRating,
+        name: checked.data.name || null,
+        message: checked.data.message,
+        rating: checked.data.rating ?? feedbackRating,
       });
       toast.success('Suaramu sudah sampai ke tim kami. Dompet Tenang makin baik berkat masukanmu.');
       setFeedbackVisible(false);
