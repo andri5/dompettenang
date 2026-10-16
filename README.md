@@ -129,4 +129,4 @@ MIT — see [LICENSE](./LICENSE)
 
 ## Support
 
-Buka issue di [GitHub Issues](https://github.com/andri5/duitdiary/issues).
+Buka issue di [GitHub Issues](https://github.com/andri5/dompettenang/issues).

@@ -22,7 +22,7 @@ cd "${APP_DIR}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "ERROR: missing ${APP_DIR}/${ENV_FILE}"
-  echo "Copy from deploy/.env.staging.example or run Actions → Bootstrap staging env."
+  echo "Copy from deploy/.env.staging.example on the VPS first."
   exit 1
 fi
 

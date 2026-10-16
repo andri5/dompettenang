@@ -431,4 +431,4 @@ Database:
 
 ---
 
-**For deployment instructions, see plan.md**
+**For deployment instructions, see [DEPLOY_SUMOPOD.md](./DEPLOY_SUMOPOD.md) and [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).**

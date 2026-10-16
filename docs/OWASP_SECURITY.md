@@ -791,19 +791,14 @@ export const callExternalAPI = async (endpoint: string) => {
 
 ---
 
-## 🧪 Security Testing Scripts
-
-See `scripts/security/` folder for automated testing:
+## 🧪 Security Testing
 
 ```bash
-# Run all security tests
-./scripts/security/run-all-tests.ps1
+# Dependency vulnerabilities
+npm audit --workspaces
 
-# Individual tests
-./scripts/security/dependency-check.ps1
-./scripts/security/code-audit.ps1
-./scripts/security/owasp-check.ps1
-./scripts/security/sast-scan.ps1
+# API unit tests (includes auth/validation coverage)
+npm --workspace apps/api run test -- --run
 ```
 
 ---
