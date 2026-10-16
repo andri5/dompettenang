@@ -50,35 +50,56 @@ jobs:
             exit 1
           fi
 
-      - name: Require latest CI on develop to be success
+      - name: Wait for CI success on develop tip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           DEVELOP_SHA="${{ steps.sha.outputs.sha }}"
-          ROW=$(gh run list \
-            --branch develop \
-            --workflow "CI - Build & Test" \
-            --limit 20 \
-            --json databaseId,conclusion,headSha,status \
-            --jq "[.[] | select(.status == \"completed\")] | .[0] // empty")
-          if [ -z "${ROW}" ] || [ "${ROW}" = "null" ]; then
-            echo "ERROR: no completed CI run found on develop"
-            exit 1
-          fi
-          CONCLUSION=$(echo "${ROW}" | jq -r .conclusion)
-          HEAD_SHA=$(echo "${ROW}" | jq -r .headSha)
-          echo "Latest CI: conclusion=${CONCLUSION} headSha=${HEAD_SHA}"
-          if [ "${CONCLUSION}" != "success" ]; then
-            echo "ERROR: latest CI on develop is not success (${CONCLUSION})"
-            exit 1
-          fi
-          if [ "${HEAD_SHA}" != "${DEVELOP_SHA}" ]; then
-            echo "ERROR: latest green CI (${HEAD_SHA}) does not match develop tip (${DEVELOP_SHA})"
-            echo "Push/merge to develop and wait for CI, then promote again."
-            exit 1
-          fi
-          echo "CI gate OK"
+          echo "Waiting for CI - Build & Test on develop @ ${DEVELOP_SHA}"
+
+          # Poll up to ~20 minutes for the run that matches develop tip
+          for i in $(seq 1 60); do
+            ROW=$(gh run list \
+              --branch develop \
+              --workflow "CI - Build & Test" \
+              --limit 30 \
+              --json databaseId,conclusion,headSha,status \
+              --jq "[.[] | select(.headSha == \"${DEVELOP_SHA}\")] | .[0] // empty")
+
+            if [ -n "${ROW}" ] && [ "${ROW}" != "null" ]; then
+              STATUS=$(echo "${ROW}" | jq -r .status)
+              CONCLUSION=$(echo "${ROW}" | jq -r .conclusion)
+              RUN_ID=$(echo "${ROW}" | jq -r .databaseId)
+              echo "Attempt ${i}: run=${RUN_ID} status=${STATUS} conclusion=${CONCLUSION}"
+
+              if [ "${STATUS}" = "completed" ]; then
+                if [ "${CONCLUSION}" = "success" ]; then
+                  echo "CI gate OK"
+                  exit 0
+                fi
+                echo "ERROR: CI on develop tip failed (${CONCLUSION})"
+                echo "See: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+                exit 1
+              fi
+
+              # In progress — wait on this run (falls through if watch returns early)
+              gh run watch "${RUN_ID}" --exit-status && {
+                echo "CI gate OK"
+                exit 0
+              } || {
+                echo "ERROR: CI on develop tip did not succeed"
+                echo "See: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+                exit 1
+              }
+            fi
+
+            echo "Attempt ${i}: no CI run for tip yet; sleeping 20s..."
+            sleep 20
+          done
+
+          echo "ERROR: timed out waiting for CI on develop tip ${DEVELOP_SHA}"
+          exit 1
 
   promote:
     name: Merge develop into main
