@@ -334,7 +334,7 @@ Cara pakai setelah staging OK:
 2. Buka banner **Review deployments** → **Approve**  
 3. Workflow merge `develop` → `main` lalu dispatch **Deploy to Production**
 
-Jika branch protection di `main` menolak merge oleh `GITHUB_TOKEN`, tambahkan secret Actions **`GH_PAT`** (Personal Access Token, scope `repo`).
+Jika branch protection di `main` menolak **push** oleh `GITHUB_TOKEN`, tambahkan secret Actions **`GH_PAT`** (Personal Access Token, scope `repo`).
 
 ### 10.1 Setup SSH deploy key (sekali)
 

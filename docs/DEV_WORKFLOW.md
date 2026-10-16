@@ -74,10 +74,9 @@ Agar langkah 5 menunggu approval manusia (bukan full-auto ke prod):
 
 **Catatan:** `Deploy to Production` juga memakai environment `production`. Jika Required reviewers aktif, Anda mungkin perlu **Approve** sekali lagi saat job deploy jalan (setelah promote merge). Itu disengaja agar prod tidak jalan tanpa konfirmasi.
 
-Jika `main` dilindungi branch protection (wajib PR / status check):
+Promote memakai **git merge + push** ke `main` (bukan buat PR), lalu dispatch Deploy to Production.
 
-- Izinkan GitHub Actions merge, **atau**
-- Tambah secret `GH_PAT` (Personal Access Token) dengan scope `repo` agar workflow promote bisa membuat/merge PR
+Jika branch protection di `main` menolak push dari Actions, tambahkan secret **`GH_PAT`** (Personal Access Token, scope `repo`).
 
 Detail secrets deploy VPS: [DEPLOY_SUMOPOD.md](./DEPLOY_SUMOPOD.md).
 
