@@ -52,6 +52,19 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const onSessionExpired = () => {
+      useAuthStore.setState({
+        user: null,
+        isAuthenticated: false,
+        isBootstrapping: false,
+        error: null,
+      });
+    };
+    window.addEventListener('dd:session-expired', onSessionExpired);
+    return () => window.removeEventListener('dd:session-expired', onSessionExpired);
+  }, []);
+
   return (
     <ErrorBoundary>
       <HelmetProvider>

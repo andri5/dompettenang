@@ -158,10 +158,19 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch (refreshError) {
-        clearClientSession();
-
-        if (shouldRedirectToLogin()) {
-          window.location.href = '/login';
+        // Only clear session when the server rejects the refresh.
+        // Network/timeouts must NOT force logout (common cause of "logout tiba-tiba").
+        const refreshStatus = (refreshError as AxiosError | undefined)?.response?.status;
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          clearClientSession();
+          try {
+            window.dispatchEvent(new Event('dd:session-expired'));
+          } catch {
+            // ignore
+          }
+          if (shouldRedirectToLogin()) {
+            window.location.assign('/login');
+          }
         }
         return Promise.reject(refreshError);
       }

@@ -649,15 +649,15 @@ export function DashboardPage() {
             </Card>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <Card padding="md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-lime" />
-                    Pemasukan Terbaru
+              <Card padding="md" className="min-w-0 overflow-hidden">
+                <CardHeader className="mb-3 gap-2 sm:mb-4">
+                  <CardTitle className="flex min-w-0 items-center gap-2 text-base sm:text-lg">
+                    <TrendingUp className="h-5 w-5 shrink-0 text-lime" />
+                    <span className="truncate">Pemasukan Terbaru</span>
                   </CardTitle>
                   <Link
                     to={ROUTES.INCOMES}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+                    className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent hover:underline"
                   >
                     Semua
                     <ArrowRight className="h-4 w-4" />
@@ -666,34 +666,37 @@ export function DashboardPage() {
                 {isIncomesLoading ? (
                   <Loading />
                 ) : recentIncomes?.data && recentIncomes.data.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {recentIncomes.data.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between gap-3 rounded-2xl px-2 py-2.5"
+                        className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-2.5 gap-y-1 rounded-2xl px-1 py-2 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:px-2 sm:py-2.5"
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div
-                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl"
-                            style={{
-                              backgroundColor: item.category?.color
-                                ? `${item.category.color}22`
-                                : '#d9f5f1',
-                              color: item.category?.color || '#0f9b8e',
-                            }}
-                          >
-                            <CategoryIcon icon={item.category?.icon} size={20} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-ink">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-11 sm:w-11"
+                          style={{
+                            backgroundColor: item.category?.color
+                              ? `${item.category.color}22`
+                              : '#d9f5f1',
+                            color: item.category?.color || '#0f9b8e',
+                          }}
+                        >
+                          <CategoryIcon icon={item.category?.icon} size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-start justify-between gap-2 sm:block">
+                            <p className="truncate text-sm font-semibold text-ink sm:text-base">
                               {item.description}
                             </p>
-                            <p className="truncate text-sm text-muted">
-                              {item.category?.name} • {formatDate(item.date)}
+                            <p className="shrink-0 text-xs font-bold font-mono tabular-nums text-lime sm:hidden">
+                              +{showAmount(item.amount)}
                             </p>
                           </div>
+                          <p className="truncate text-xs text-muted sm:text-sm">
+                            {item.category?.name} • {formatDate(item.date)}
+                          </p>
                         </div>
-                        <p className="flex-shrink-0 text-sm font-bold font-mono text-lime">
+                        <p className="col-start-2 hidden min-w-0 max-w-[9.5rem] truncate text-right text-sm font-bold font-mono tabular-nums text-lime sm:col-start-auto sm:block sm:max-w-none sm:shrink-0">
                           +{showAmount(item.amount)}
                         </p>
                       </div>
@@ -714,15 +717,15 @@ export function DashboardPage() {
                 )}
               </Card>
 
-              <Card padding="md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingDown className="h-5 w-5 text-coral" />
-                    Pengeluaran Terbaru
+              <Card padding="md" className="min-w-0 overflow-hidden">
+                <CardHeader className="mb-3 gap-2 sm:mb-4">
+                  <CardTitle className="flex min-w-0 items-center gap-2 text-base sm:text-lg">
+                    <TrendingDown className="h-5 w-5 shrink-0 text-coral" />
+                    <span className="truncate">Pengeluaran Terbaru</span>
                   </CardTitle>
                   <Link
                     to={ROUTES.EXPENSES}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+                    className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent hover:underline"
                   >
                     Semua
                     <ArrowRight className="h-4 w-4" />
@@ -731,34 +734,37 @@ export function DashboardPage() {
                 {isExpensesLoading ? (
                   <Loading />
                 ) : recentExpenses?.data && recentExpenses.data.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {recentExpenses.data.map((expense) => (
                       <div
                         key={expense.id}
-                        className="flex items-center justify-between gap-3 rounded-2xl px-2 py-2.5"
+                        className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-2.5 gap-y-1 rounded-2xl px-1 py-2 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:items-center sm:gap-3 sm:px-2 sm:py-2.5"
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div
-                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl"
-                            style={{
-                              backgroundColor: expense.category?.color
-                                ? `${expense.category.color}22`
-                                : '#e6edf4',
-                              color: expense.category?.color || '#0f9b8e',
-                            }}
-                          >
-                            <CategoryIcon icon={expense.category?.icon} size={20} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-ink">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-11 sm:w-11"
+                          style={{
+                            backgroundColor: expense.category?.color
+                              ? `${expense.category.color}22`
+                              : '#e6edf4',
+                            color: expense.category?.color || '#0f9b8e',
+                          }}
+                        >
+                          <CategoryIcon icon={expense.category?.icon} size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-start justify-between gap-2 sm:block">
+                            <p className="truncate text-sm font-semibold text-ink sm:text-base">
                               {expense.description}
                             </p>
-                            <p className="truncate text-sm text-muted">
-                              {expense.category?.name} • {formatDate(expense.date)}
+                            <p className="amount-negative shrink-0 text-xs font-bold font-mono tabular-nums sm:hidden">
+                              -{showAmount(expense.amount)}
                             </p>
                           </div>
+                          <p className="truncate text-xs text-muted sm:text-sm">
+                            {expense.category?.name} • {formatDate(expense.date)}
+                          </p>
                         </div>
-                        <p className="flex-shrink-0 text-sm font-bold amount-negative">
+                        <p className="amount-negative col-start-2 hidden min-w-0 max-w-[9.5rem] truncate text-right text-sm font-bold font-mono tabular-nums sm:col-start-auto sm:block sm:max-w-none sm:shrink-0">
                           -{showAmount(expense.amount)}
                         </p>
                       </div>
