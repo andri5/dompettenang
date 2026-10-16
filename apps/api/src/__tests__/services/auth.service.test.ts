@@ -9,6 +9,7 @@ vi.mock('../../utils/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -136,7 +137,7 @@ describe('Auth Service', () => {
     const hashedPw = bcrypt.hashSync('Correct1!', 10);
 
     it('should return tokens for valid credentials', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
 
       const result = await auth.login({ email: 'test@example.com', password: 'Correct1!' });
 
@@ -146,7 +147,7 @@ describe('Auth Service', () => {
     });
 
     it('should fail for non-existent user', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       await expect(
         auth.login({ email: 'nobody@example.com', password: 'Anything1!' })
@@ -154,7 +155,7 @@ describe('Auth Service', () => {
     });
 
     it('should fail for wrong password', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
 
       await expect(
         auth.login({ email: 'test@example.com', password: 'WrongPass1!' })
@@ -162,10 +163,10 @@ describe('Auth Service', () => {
     });
 
     it('should not leak user information in error', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       const err1 = await auth.login({ email: 'a@b.c', password: 'x' }).catch((e: Error) => e);
 
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: hashedPw });
       const err2 = await auth.login({ email: 'test@example.com', password: 'wrong' }).catch((e: Error) => e);
 
       expect((err1 as Error).message).toBe((err2 as Error).message);
@@ -175,7 +176,7 @@ describe('Auth Service', () => {
   // ── refreshTokens ─────────────────────────────────────────
 
   describe('refreshTokens()', () => {
-    it('should return new tokens for valid refresh token', async () => {
+    it('should return new access token and reuse refresh token', async () => {
       (verifyRefreshToken as ReturnType<typeof vi.fn>).mockReturnValue({ userId: 'user-123', email: 'test@example.com' });
       (prisma.refreshToken.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'rt-1',
@@ -188,8 +189,8 @@ describe('Auth Service', () => {
       const result = await auth.refreshTokens('old-rt');
 
       expect(result.accessToken).toBe('mock-access-token');
-      expect(result.refreshToken).toBe('mock-refresh-token');
-      expect(prisma.refreshToken.delete).toHaveBeenCalledOnce();
+      expect(result.refreshToken).toBe('old-rt');
+      expect(prisma.refreshToken.delete).not.toHaveBeenCalled();
     });
 
     it('should fail for invalid refresh token', async () => {

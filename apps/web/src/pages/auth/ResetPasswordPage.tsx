@@ -11,7 +11,8 @@ import { AuthLayout, PageTransition } from '@/components/layout';
 import { Button, Input } from '@/components/ui';
 import { resetPasswordSchema } from '@/lib/validations';
 import type { ResetPasswordFormData } from '@/lib/validations';
-import { resetPassword } from '@/services/auth.service';
+import { clearAuthData, resetPassword } from '@/services/auth.service';
+import { useAuthStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 
@@ -54,6 +55,14 @@ export function ResetPasswordPage() {
     setIsLoading(true);
     try {
       await resetPassword(token, data.password);
+      // Drop stale client session so /login is not bounced to dashboard
+      clearAuthData();
+      useAuthStore.setState({
+        user: null,
+        isAuthenticated: false,
+        isBootstrapping: false,
+        error: null,
+      });
       setSuccess(true);
       setTimeout(() => navigate(ROUTES.LOGIN), 1800);
     } catch (err) {

@@ -61,3 +61,6 @@ tmp/
 
 # Test files
 test-*.ps1
+
+.local-ssh/
+

@@ -44,7 +44,8 @@ export const registerSchema = z.object({
   email: z
     .string()
     .email('Invalid email format')
-    .max(255, 'Email must be less than 255 characters'),
+    .max(255, 'Email must be less than 255 characters')
+    .transform((v) => v.trim().toLowerCase()),
   password: z
     .string()
     .min(8, 'Password minimal 8 karakter')
@@ -58,7 +59,10 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z
+    .string()
+    .email('Invalid email format')
+    .transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1, 'Password is required'),
   captchaToken: z.string().max(2048).optional(),
 });
@@ -108,7 +112,10 @@ export const changePasswordSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z
+    .string()
+    .email('Invalid email format')
+    .transform((v) => v.trim().toLowerCase()),
   captchaToken: z.string().max(2048).optional(),
 });
 

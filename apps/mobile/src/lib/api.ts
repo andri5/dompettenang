@@ -149,18 +149,12 @@ api.interceptors.response.use(
     const original = error.config;
     if (status === 401 && original && !original._retry) {
       original._retry = true;
-      const refresh = await getRefreshToken();
-      if (!refresh) {
-        await clearTokens();
-        return Promise.reject(error);
-      }
       try {
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
-          refreshToken: refresh,
-        });
-        const accessToken = data.data.accessToken as string;
-        const refreshToken = data.data.refreshToken as string;
-        await saveTokens(accessToken, refreshToken);
+        const accessToken = await refreshAccessTokenSingleFlight();
+        if (!accessToken) {
+          await clearTokens();
+          return Promise.reject(error);
+        }
         original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch (e) {
@@ -171,3 +165,25 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+let mobileRefreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessTokenSingleFlight(): Promise<string | null> {
+  if (mobileRefreshInFlight) return mobileRefreshInFlight;
+
+  mobileRefreshInFlight = (async () => {
+    const refresh = await getRefreshToken();
+    if (!refresh) return null;
+    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+      refreshToken: refresh,
+    });
+    const accessToken = data.data.accessToken as string;
+    const refreshToken = (data.data.refreshToken as string) || refresh;
+    await saveTokens(accessToken, refreshToken);
+    return accessToken;
+  })().finally(() => {
+    mobileRefreshInFlight = null;
+  });
+
+  return mobileRefreshInFlight;
+}
