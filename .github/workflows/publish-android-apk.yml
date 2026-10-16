@@ -1,0 +1,198 @@
+# Build Android APK (EAS) and publish to VPS:
+#   https://dompet-tenang.web.id/download/dompet-tenang.apk
+#
+# Secrets required:
+#   EXPO_TOKEN          — https://expo.dev/settings/access-tokens
+#   PROD_SSH_HOST
+#   PROD_SSH_USER
+#   PROD_SSH_KEY
+#   PROD_SSH_PORT       — optional, default 22
+#   PROD_APP_DIR        — optional, default /opt/dompettenang
+
+name: Publish Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'build-and-publish = EAS build baru + upload; publish-latest = upload APK EAS terakhir saja'
+        type: choice
+        required: true
+        default: build-and-publish
+        options:
+          - build-and-publish
+          - publish-latest
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/publish-android-apk.yml'
+
+concurrency:
+  group: publish-android-apk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: EAS APK → VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment:
+      name: production
+      url: https://dompet-tenang.web.id/download/dompet-tenang.apk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install workspace dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+
+      - name: Resolve mode
+        id: mode
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          if [ -z "$MODE" ]; then
+            MODE="build-and-publish"
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Using mode=$MODE"
+
+      - name: Build APK on EAS
+        if: steps.mode.outputs.mode == 'build-and-publish'
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Ensure local node_modules resolve Expo config plugins before upload
+          test -d node_modules/expo-secure-store || test -d ../../node_modules/expo-secure-store
+          eas build \
+            --platform android \
+            --profile release-prod-api \
+            --non-interactive \
+            --wait \
+            --json > /tmp/eas-build.json
+          echo "EAS build finished"
+          cat /tmp/eas-build.json | head -c 2000 || true
+
+      - name: Resolve latest finished APK URL
+        id: apk
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Prefer JSON from the build we just ran; otherwise query latest finished Android build
+          if [ -f /tmp/eas-build.json ]; then
+            URL=$(node -e "
+              const fs=require('fs');
+              const raw=fs.readFileSync('/tmp/eas-build.json','utf8').trim();
+              let data=JSON.parse(raw);
+              if (Array.isArray(data)) data=data[0];
+              const url=data?.artifacts?.buildUrl || data?.artifacts?.applicationArchiveUrl || '';
+              if (!url) { console.error('No artifact URL in eas-build.json'); process.exit(1); }
+              process.stdout.write(url);
+            ")
+          else
+            eas build:list \
+              --platform android \
+              --status finished \
+              --limit 1 \
+              --non-interactive \
+              --json > /tmp/eas-list.json
+            URL=$(node -e "
+              const fs=require('fs');
+              const raw=fs.readFileSync('/tmp/eas-list.json','utf8').trim();
+              let data=JSON.parse(raw);
+              if (Array.isArray(data)) data=data[0];
+              const url=data?.artifacts?.buildUrl || data?.artifacts?.applicationArchiveUrl || '';
+              if (!url) { console.error('No finished Android build with APK URL'); process.exit(1); }
+              process.stdout.write(url);
+            ")
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "APK URL: $URL"
+
+      - name: Download APK
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/dompet-tenang.apk "${{ steps.apk.outputs.url }}"
+          ls -lh /tmp/dompet-tenang.apk
+          file /tmp/dompet-tenang.apk || true
+
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key contents"
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload APK to VPS
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?}"
+          USER_NAME="${PROD_SSH_USER:?}"
+          PORT="${PROD_SSH_PORT:-22}"
+          APP_DIR="${PROD_APP_DIR:-/opt/dompettenang}"
+          DEST="${APP_DIR}/deploy/downloads"
+
+          ssh -i ~/.ssh/id_deploy -p "${PORT}" -o IdentitiesOnly=yes \
+            "${USER_NAME}@${HOST}" "mkdir -p '${DEST}'"
+
+          scp -i ~/.ssh/id_deploy -P "${PORT}" -o IdentitiesOnly=yes \
+            /tmp/dompet-tenang.apk \
+            "${USER_NAME}@${HOST}:${DEST}/dompet-tenang.apk"
+
+          echo "Uploaded to ${DEST}/dompet-tenang.apk"
+
+      - name: Verify public download URL
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' \
+              https://dompet-tenang.web.id/download/dompet-tenang.apk || true)
+            echo "attempt ${i}: HTTP ${CODE}"
+            if [ "$CODE" = "200" ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Download URL not 200 yet — check Caddy volume mount on VPS"
+          exit 1

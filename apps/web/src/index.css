@@ -1,59 +1,285 @@
 @import "tailwindcss";
+@import "./styles/responsive-animations.css";
 
 /* ============================================
- * DuitDiary - Global Styles
+ * Dompet Tenang — Neo Ledger Design System
  * ============================================ */
 
-/* CSS Variables for theming */
-:root {
-  --color-primary: #1E3A8A;
-  --color-primary-dark: #0F172A;
-  --color-secondary: #06B6D4;
-  --color-danger: #DC2626;
-  --color-warning: #FBBF24;
-  --color-background: #F8FAFC;
-  --color-surface: #FFFFFF;
-  --color-text: #1F2937;
-  --color-text-muted: #6B7280;
-  --color-border: #E5E7EB;
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Manrope", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: #07111f;
+  --color-ink-soft: #122033;
+  --color-mist: #f3f6f9;
+  --color-mist-deep: #e6edf4;
+  --color-surface: #ffffff;
+  --color-line: #d7e0ea;
+  --color-muted: #5b6b7c;
+  --color-accent: #0f9b8e;
+  --color-accent-bright: #1cc8b4;
+  --color-accent-soft: #d9f5f1;
+  --color-coral: #e24b4a;
+  --color-coral-soft: #fdecec;
+  --color-amber: #d97706;
+  --color-amber-soft: #fef3c7;
+  --color-lime: #16a34a;
+  --color-lime-soft: #dcfce7;
 }
 
-/* Base styles */
+:root,
+html[data-theme='neo'] {
+  --color-primary: #0f9b8e;
+  --color-primary-dark: #0b7d72;
+  --color-primary-light: #d9f5f1;
+  --color-secondary: #122033;
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #e24b4a;
+  --color-danger-light: #fdecec;
+  --color-background: #f3f6f9;
+  --color-surface: #ffffff;
+  --color-text: #07111f;
+  --color-text-muted: #5b6b7c;
+  --color-border: #d7e0ea;
+  --color-ink: #07111f;
+  --color-ink-soft: #122033;
+  --color-mist: #f3f6f9;
+  --color-mist-deep: #e6edf4;
+  --color-line: #d7e0ea;
+  --color-muted: #5b6b7c;
+  --color-accent: #0f9b8e;
+  --color-accent-bright: #1cc8b4;
+  --color-accent-soft: #d9f5f1;
+  --color-coral: #e24b4a;
+  --color-coral-soft: #fdecec;
+  --color-amber: #d97706;
+  --color-amber-soft: #fef3c7;
+  --color-lime: #16a34a;
+  --color-lime-soft: #dcfce7;
+  --shadow-soft: 0 10px 30px rgba(7, 17, 31, 0.06);
+  --shadow-lift: 0 18px 40px rgba(7, 17, 31, 0.1);
+  --radius-panel: 1.25rem;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --body-bg-a: rgba(28, 200, 180, 0.14);
+  --body-bg-b: rgba(15, 155, 142, 0.1);
+  --body-bg-base: linear-gradient(180deg, #f7fafc 0%, #f3f6f9 45%, #eef3f7 100%);
+  --brand-mark-bg: linear-gradient(135deg, #0f9b8e 0%, #1cc8b4 55%, #5eead4 100%);
+  --shell-grid: rgba(7, 17, 31, 0.03);
+  --color-sidebar: #07111f;
+}
+
+html[data-theme='midnight'] {
+  --color-primary: #1cc8b4;
+  --color-primary-dark: #0f9b8e;
+  --color-primary-light: #12352f;
+  --color-secondary: #e8eef5;
+  --color-success: #4ade80;
+  --color-success-light: #14532d;
+  --color-warning: #fbbf24;
+  --color-warning-light: #422006;
+  --color-danger: #f87171;
+  --color-danger-light: #3f1515;
+  --color-background: #0b1118;
+  --color-surface: #151e2a;
+  --color-text: #e8eef5;
+  --color-text-muted: #93a4b8;
+  --color-border: #243040;
+  --color-ink: #e8eef5;
+  --color-ink-soft: #c5d0de;
+  --color-mist: #101820;
+  --color-mist-deep: #1a2433;
+  --color-line: #2a3a4d;
+  --color-muted: #93a4b8;
+  --color-accent: #1cc8b4;
+  --color-accent-bright: #5eead4;
+  --color-accent-soft: #12352f;
+  --color-coral: #f87171;
+  --color-coral-soft: #3f1515;
+  --color-amber: #fbbf24;
+  --color-amber-soft: #422006;
+  --color-lime: #4ade80;
+  --color-lime-soft: #14532d;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --body-bg-a: rgba(28, 200, 180, 0.08);
+  --body-bg-b: rgba(15, 155, 142, 0.06);
+  --body-bg-base: linear-gradient(180deg, #0d141c 0%, #0b1118 50%, #090e14 100%);
+  --brand-mark-bg: linear-gradient(135deg, #0f9b8e 0%, #1cc8b4 55%, #5eead4 100%);
+  --shell-grid: rgba(232, 238, 245, 0.04);
+  --color-sidebar: #080d14;
+}
+
+html[data-theme='ocean'] {
+  --color-primary: #0e7490;
+  --color-primary-dark: #155e75;
+  --color-primary-light: #cffafe;
+  --color-secondary: #0f172a;
+  --color-success: #059669;
+  --color-success-light: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #e11d48;
+  --color-danger-light: #ffe4e6;
+  --color-background: #f0f7fb;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #cfe0ea;
+  --color-ink: #0f172a;
+  --color-ink-soft: #1e293b;
+  --color-mist: #eef6fa;
+  --color-mist-deep: #dceaf2;
+  --color-line: #cfe0ea;
+  --color-muted: #64748b;
+  --color-accent: #0e7490;
+  --color-accent-bright: #06b6d4;
+  --color-accent-soft: #cffafe;
+  --color-coral: #e11d48;
+  --color-coral-soft: #ffe4e6;
+  --color-amber: #d97706;
+  --color-amber-soft: #fef3c7;
+  --color-lime: #059669;
+  --color-lime-soft: #d1fae5;
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --shadow-lift: 0 18px 40px rgba(15, 23, 42, 0.1);
+  --body-bg-a: rgba(6, 182, 212, 0.12);
+  --body-bg-b: rgba(14, 116, 144, 0.1);
+  --body-bg-base: linear-gradient(180deg, #f5fafc 0%, #f0f7fb 45%, #e8f2f7 100%);
+  --brand-mark-bg: linear-gradient(135deg, #0e7490 0%, #06b6d4 55%, #67e8f9 100%);
+  --shell-grid: rgba(15, 23, 42, 0.035);
+  --color-sidebar: #0f172a;
+}
+
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--color-background);
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-optical-sizing: auto;
   color: var(--color-text);
-  line-height: 1.6;
+  background-color: var(--color-background);
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, var(--body-bg-a), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, var(--body-bg-b), transparent 50%),
+    var(--body-bg-base);
+  background-attachment: scroll;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  touch-action: manipulation;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+@media (min-width: 1024px) {
+  body {
+    background-attachment: fixed;
+  }
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+.font-mono,
+.tabular,
+.amount-negative {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+#root {
   min-height: 100vh;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
+  background: #c2cedb;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: #9aadc0;
 }
 
-/* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+.app-shell-bg {
+  background-image:
+    linear-gradient(var(--shell-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.panel {
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.brand-mark {
+  background: var(--brand-mark-bg);
+}
+
+.amount-negative {
+  color: var(--color-coral);
+}
+
+/* Mobile polish */
+@media (max-width: 640px) {
+  .tabular,
+  .amount-negative,
+  .font-mono {
+    font-size: 0.95em;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
 }

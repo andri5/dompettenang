@@ -1,0 +1,18 @@
+{
+  "name": "Dompet Tenang",
+  "short_name": "Dompet Tenang",
+  "description": "Aplikasi pencatatan keuangan pribadi — pemasukan, pengeluaran, budget, dan tabungan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0F9B8E",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

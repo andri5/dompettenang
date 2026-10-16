@@ -5,6 +5,7 @@ import type { ExpenseResponse, PaginationMeta } from '../types/index.js';
 interface ExpenseWhereInput {
   userId: string;
   deletedAt: null;
+  type?: 'EXPENSE' | 'INCOME';
   date?: {
     gte?: Date;
     lte?: Date;
@@ -21,14 +22,17 @@ export class ExpenseService {
     userId: string,
     query: ExpenseQueryInput
   ): Promise<{ expenses: ExpenseResponse[]; meta: PaginationMeta }> {
-    const { page, limit, startDate, endDate, categoryId, search, sortBy, sortOrder } = query;
+    const { page, limit, startDate, endDate, categoryId, search, sortBy, sortOrder, type } = query;
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: ExpenseWhereInput = {
       userId,
       deletedAt: null,
     };
+
+    if (type) {
+      where.type = type;
+    }
 
     if (startDate && endDate) {
       where.date = {
@@ -49,10 +53,8 @@ export class ExpenseService {
       where.note = { contains: search, mode: 'insensitive' };
     }
 
-    // Get total count
     const total = await prisma.expense.count({ where: where as any });
 
-    // Get expenses
     const expenses = await prisma.expense.findMany({
       where: where as any,
       include: {
@@ -62,6 +64,7 @@ export class ExpenseService {
             name: true,
             icon: true,
             color: true,
+            type: true,
           },
         },
       },
@@ -95,6 +98,7 @@ export class ExpenseService {
             name: true,
             icon: true,
             color: true,
+            type: true,
           },
         },
       },
@@ -106,10 +110,10 @@ export class ExpenseService {
   }
 
   async create(userId: string, data: CreateExpenseInput): Promise<ExpenseResponse> {
-    // Verify category exists and is accessible
     const category = await prisma.category.findFirst({
       where: {
         id: data.categoryId,
+        type: data.type,
         OR: [
           { userId: null, isDefault: true },
           { userId },
@@ -125,9 +129,11 @@ export class ExpenseService {
       data: {
         userId,
         categoryId: data.categoryId,
+        type: data.type,
         amount: data.amount,
         note: data.note,
         date: new Date(data.date),
+        receiptUrl: data.receiptUrl ?? null,
       },
       include: {
         category: {
@@ -136,6 +142,7 @@ export class ExpenseService {
             name: true,
             icon: true,
             color: true,
+            type: true,
           },
         },
       },
@@ -145,7 +152,6 @@ export class ExpenseService {
   }
 
   async update(id: string, userId: string, data: UpdateExpenseInput): Promise<ExpenseResponse | null> {
-    // Check if expense exists
     const existing = await prisma.expense.findFirst({
       where: {
         id,
@@ -156,11 +162,13 @@ export class ExpenseService {
 
     if (!existing) return null;
 
-    // If categoryId is being updated, verify it exists
+    const nextType = data.type ?? existing.type;
+
     if (data.categoryId) {
       const category = await prisma.category.findFirst({
         where: {
           id: data.categoryId,
+          type: nextType,
           OR: [
             { userId: null, isDefault: true },
             { userId },
@@ -178,8 +186,10 @@ export class ExpenseService {
       data: {
         ...(data.amount !== undefined && { amount: data.amount }),
         ...(data.categoryId && { categoryId: data.categoryId }),
+        ...(data.type && { type: data.type }),
         ...(data.note !== undefined && { note: data.note }),
         ...(data.date && { date: new Date(data.date) }),
+        ...(data.receiptUrl !== undefined && { receiptUrl: data.receiptUrl }),
       },
       include: {
         category: {
@@ -188,6 +198,7 @@ export class ExpenseService {
             name: true,
             icon: true,
             color: true,
+            type: true,
           },
         },
       },
@@ -207,7 +218,6 @@ export class ExpenseService {
 
     if (!existing) return false;
 
-    // Soft delete
     await prisma.expense.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -218,6 +228,7 @@ export class ExpenseService {
 
   private formatExpense(expense: {
     id: string;
+    type: 'EXPENSE' | 'INCOME';
     amount: any;
     note: string | null;
     date: Date;
@@ -228,13 +239,17 @@ export class ExpenseService {
       name: string;
       icon: string;
       color: string;
+      type?: 'EXPENSE' | 'INCOME';
     };
   }): ExpenseResponse {
     return {
       id: expense.id,
+      type: expense.type,
       amount: Number(expense.amount),
       category: expense.category,
+      categoryId: expense.category.id,
       note: expense.note,
+      description: expense.note || '',
       date: expense.date.toISOString().split('T')[0],
       receiptUrl: expense.receiptUrl,
       createdAt: expense.createdAt,

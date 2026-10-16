@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "Dompet Tenang",
+    "slug": "duitdiary",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07111f"
+    },
+    "scheme": "dompettenang",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dompettenang.app"
+    },
+    "android": {
+      "package": "com.dompettenang.app",
+      "label": "Dompet Tenang",
+      "versionCode": 4,
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f9b8e",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Izinkan Dompet Tenang mengakses foto untuk struk dan avatar.",
+          "cameraPermission": "Izinkan Dompet Tenang memakai kamera untuk foto struk."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a6631937-6819-4b60-89ba-955f6e84db9d"
+      },
+      "appEnv": "release"
+    },
+    "owner": "andri5",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a6631937-6819-4b60-89ba-955f6e84db9d"
+    }
+  }
+}

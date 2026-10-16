@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /register
+Allow: /login
+Allow: /terms
+Allow: /privacy
+
+Disallow: /dashboard
+Disallow: /expenses
+Disallow: /incomes
+Disallow: /categories
+Disallow: /budget
+Disallow: /recurring
+Disallow: /savings
+Disallow: /settings
+Disallow: /admin
+Disallow: /help
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /maintenance
+
+Sitemap: https://dompet-tenang.web.id/sitemap.xml

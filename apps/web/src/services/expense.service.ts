@@ -1,6 +1,5 @@
 /**
- * DuitDiary - Expense Service
- * API calls for expense management
+ * Dompet Tenang - Expense / Income Service
  */
 
 import api from '@/lib/api';
@@ -13,9 +12,40 @@ import type {
   UpdateExpenseData,
 } from '@/types';
 
-/**
- * Get expenses with filters and pagination
- */
+function normalizeExpense(raw: any): Expense {
+  return {
+    id: raw.id,
+    type: raw.type || 'EXPENSE',
+    amount: Number(raw.amount),
+    description: raw.description || raw.note || '',
+    note: raw.note,
+    date: raw.date,
+    categoryId: raw.categoryId || raw.category?.id,
+    category: {
+      id: raw.category?.id,
+      name: raw.category?.name,
+      icon: raw.category?.icon,
+      color: raw.category?.color,
+      type: raw.category?.type || raw.type || 'EXPENSE',
+    },
+    receiptUrl: raw.receiptUrl ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+function toApiPayload(data: CreateExpenseData | UpdateExpenseData) {
+  return {
+    amount: data.amount,
+    categoryId: data.categoryId,
+    date: data.date ? data.date.slice(0, 10) : undefined,
+    description: data.description,
+    note: data.description,
+    type: data.type,
+    receiptUrl: data.receiptUrl ?? null,
+  };
+}
+
 export async function getExpenses(
   filters?: ExpenseFilters
 ): Promise<PaginatedResponse<Expense>> {
@@ -27,51 +57,60 @@ export async function getExpenses(
     if (filters.categoryId) params.append('categoryId', filters.categoryId);
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
+    if (filters.type) params.append('type', filters.type);
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
     if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
   }
 
-  const response = await api.get<PaginatedResponse<Expense>>(
+  const response = await api.get<ApiResponse<any[]>>(
     `/expenses?${params.toString()}`
   );
-  return response.data;
+
+  const meta = response.data.meta || {
+    page: filters?.page || 1,
+    limit: filters?.limit || 10,
+    total: Array.isArray(response.data.data) ? response.data.data.length : 0,
+    totalPages: 1,
+  };
+
+  return {
+    success: true,
+    data: (response.data.data || []).map(normalizeExpense),
+    pagination: {
+      page: meta.page,
+      limit: meta.limit,
+      totalItems: meta.total,
+      totalPages: meta.totalPages,
+      hasNext: meta.page < meta.totalPages,
+      hasPrev: meta.page > 1,
+    },
+  };
 }
 
-/**
- * Get a single expense by ID
- */
 export async function getExpense(id: string): Promise<Expense> {
-  const response = await api.get<ApiResponse<Expense>>(`/expenses/${id}`);
-  return response.data.data;
+  const response = await api.get<ApiResponse<any>>(`/expenses/${id}`);
+  return normalizeExpense(response.data.data);
 }
 
-/**
- * Create a new expense
- */
-export async function createExpense(
-  data: CreateExpenseData
-): Promise<Expense> {
-  const response = await api.post<ApiResponse<Expense>>('/expenses', data);
-  return response.data.data;
+export async function createExpense(data: CreateExpenseData): Promise<Expense> {
+  const response = await api.post<ApiResponse<any>>(
+    '/expenses',
+    toApiPayload({ ...data, type: data.type || 'EXPENSE' })
+  );
+  return normalizeExpense(response.data.data);
 }
 
-/**
- * Update an expense
- */
 export async function updateExpense(
   id: string,
   data: UpdateExpenseData
 ): Promise<Expense> {
-  const response = await api.put<ApiResponse<Expense>>(
+  const response = await api.put<ApiResponse<any>>(
     `/expenses/${id}`,
-    data
+    toApiPayload(data)
   );
-  return response.data.data;
+  return normalizeExpense(response.data.data);
 }
 
-/**
- * Delete an expense
- */
 export async function deleteExpense(id: string): Promise<void> {
   await api.delete(`/expenses/${id}`);
 }

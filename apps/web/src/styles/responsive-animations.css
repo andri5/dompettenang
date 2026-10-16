@@ -1,0 +1,97 @@
+/**
+ * Dompet Tenang - Responsive Animation Styles
+ * Reduce animations on mobile for better performance
+ */
+
+/* Prefers reduced motion - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile devices - reduce animation complexity */
+@media (max-width: 768px) {
+  /* Reduce stagger delay on mobile */
+  [class*="stagger"] {
+    --stagger-delay: 0.05s;
+  }
+
+  /* Disable some hover animations on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    /* Buttons - use only tap animations, no hover */
+    button {
+      &:hover {
+        transform: none;
+      }
+    }
+
+    /* Cards - disable hover scale, keep tap scale */
+    [class*="card"] {
+      &:hover {
+        transform: none;
+        box-shadow: inherit;
+      }
+    }
+
+    /* Inputs - keep focus animations but disable unnecessary hover effects */
+    input,
+    select,
+    textarea {
+      &:hover {
+        border-color: inherit;
+      }
+    }
+  }
+
+  /* Reduce motion on mobile transitions */
+  .page-transition {
+    animation-duration: 0.3s;
+  }
+
+  /* Smaller scale animations on mobile */
+  [class*="whileHover"] {
+    --scale: 1.01;
+  }
+
+  [class*="whileTap"] {
+    --scale: 0.97;
+  }
+}
+
+/* Tablet devices - moderate animations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Standard stagger on tablet */
+  [class*="stagger"] {
+    --stagger-delay: 0.08s;
+  }
+}
+
+/* Desktop - full animations */
+@media (min-width: 1025px) {
+  /* Standard stagger on desktop */
+  [class*="stagger"] {
+    --stagger-delay: 0.1s;
+  }
+
+  /* Full animations on desktop */
+  [class*="whileHover"] {
+    --scale: 1.02;
+  }
+
+  [class*="whileTap"] {
+    --scale: 0.95;
+  }
+}
+
+/* Performance optimization - reduce shadows on mobile */
+@media (max-width: 768px) {
+  * {
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  }
+}

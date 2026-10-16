@@ -1,12 +1,25 @@
 /**
- * DuitDiary - Expenses List Page
- * Modern design with gradient accents
+ * Dompet Tenang - Expenses List Page
  */
 
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, Filter, Calendar, Receipt, X, ChevronDown } from 'lucide-react';
-import { MainLayout } from '@/components/layout';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Filter,
+  Calendar,
+  Receipt,
+  Paperclip,
+  X,
+  ChevronDown,
+  Grid,
+  List,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
 import {
   Button,
   Input,
@@ -14,31 +27,39 @@ import {
   Loading,
   Modal,
   ModalFooter,
+  Badge,
+  Card,
+  EmptyState,
+  CategoryIcon,
+  ReceiptPreviewModal,
 } from '@/components/ui';
 import { useExpenses, useExpenseMutations, useCategories } from '@/hooks';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { ROUTES, DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import type { Expense, ExpenseFilters } from '@/types';
 
 export function ExpensesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [deleteModal, setDeleteModal] = useState<Expense | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<Expense | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [search, setSearch] = useState('');
 
-  // Get filter values from URL
   const filters: ExpenseFilters = {
     page: Number(searchParams.get('page')) || 1,
     limit: DEFAULT_PAGE_SIZE,
     categoryId: searchParams.get('categoryId') || undefined,
     startDate: searchParams.get('startDate') || undefined,
     endDate: searchParams.get('endDate') || undefined,
+    type: 'EXPENSE',
     sortBy: (searchParams.get('sortBy') as ExpenseFilters['sortBy']) || 'date',
     sortOrder: (searchParams.get('sortOrder') as ExpenseFilters['sortOrder']) || 'desc',
   };
 
   const { data: expenses, isLoading } = useExpenses(filters);
-  const { data: categories } = useCategories();
-  const { delete: deleteMutation } = useExpenseMutations();
+  const { data: categories } = useCategories('EXPENSE');
+  const { delete: deleteMutation } = useExpenseMutations('EXPENSE');
 
   const updateFilters = (newFilters: Partial<ExpenseFilters>) => {
     const params = new URLSearchParams(searchParams);
@@ -49,7 +70,6 @@ export function ExpensesPage() {
         params.delete(key);
       }
     });
-    // Reset to page 1 when filters change
     if (!('page' in newFilters)) {
       params.set('page', '1');
     }
@@ -62,238 +82,387 @@ export function ExpensesPage() {
     setDeleteModal(null);
   };
 
-  const clearFilters = () => {
-    setSearchParams({});
-  };
+  const clearFilters = () => setSearchParams({});
 
-  const categoryOptions = categories?.map((cat) => ({
-    value: cat.id,
-    label: cat.name,
-  })) || [];
+  const categoryOptions =
+    categories?.map((cat) => ({
+      value: cat.id,
+      label: cat.name,
+    })) || [];
 
   const hasActiveFilters = filters.categoryId || filters.startDate || filters.endDate;
 
-  return (
-    <MainLayout>
-      {/* Hero Header */}
-      <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-red-700 to-blue-900 p-6 text-white shadow-xl sm:p-8 border border-blue-700/50">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">💰 Pengeluaran</h1>
-            <p className="mt-1 text-white/80">
-              Kelola semua pengeluaran harianmu
-            </p>
-          </div>
-          <Link to={ROUTES.EXPENSE_NEW}>
-            <Button
-              variant="glass"
-              size="lg"
-              leftIcon={<Plus className="h-5 w-5" />}
-              className="w-full sm:w-auto"
-            >
-              Tambah Pengeluaran
-            </Button>
-          </Link>
-        </div>
-      </div>
+  const filteredData =
+    expenses?.data?.filter((expense) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        expense.description.toLowerCase().includes(q) ||
+        expense.category?.name?.toLowerCase().includes(q)
+      );
+    }) || [];
 
-      {/* Search & Filters */}
-      <div className="mb-6 overflow-hidden rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+  return (
+    <PageTransition>
+      <MainLayout>
+        <PageHeader
+          eyebrow="Transaksi"
+          title="Pengeluaran"
+          description="Cari, filter, dan kelola semua catatan pengeluaran."
+          action={
+            <Link to={ROUTES.EXPENSE_NEW} className="w-full sm:w-auto">
+              <Button
+                variant="gradient"
+                size="lg"
+                leftIcon={<Plus className="h-5 w-5" />}
+                className="w-full"
+              >
+                Tambah
+              </Button>
+            </Link>
+          }
+        />
+
+        <Card padding="md" className="mb-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 type="text"
-                placeholder="Cari pengeluaran..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-gray-900 placeholder-gray-400 transition-all focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari deskripsi atau kategori..."
+                className="w-full rounded-2xl border border-line bg-mist/40 py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
               />
             </div>
-          </div>
-          <Button
-            variant={showFilters ? 'primary' : 'outline'}
-            leftIcon={<Filter className="h-4 w-4" />}
-            rightIcon={<ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />}
-            onClick={() => setShowFilters(!showFilters)}
-            className="rounded-xl"
-          >
-            Filter
-            {hasActiveFilters && (
-              <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
-                Aktif
-              </span>
-            )}
-          </Button>
-        </div>
 
-        {showFilters && (
-          <div className="mt-4 grid gap-4 border-t border-gray-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Select
-              label="Kategori"
-              placeholder="Semua kategori"
-              options={categoryOptions}
-              value={filters.categoryId || ''}
-              onChange={(e) => updateFilters({ categoryId: e.target.value || undefined })}
-            />
-            <Input
-              label="Dari Tanggal"
-              type="date"
-              leftIcon={<Calendar className="h-4 w-4" />}
-              value={filters.startDate || ''}
-              onChange={(e) => updateFilters({ startDate: e.target.value || undefined })}
-            />
-            <Input
-              label="Sampai Tanggal"
-              type="date"
-              leftIcon={<Calendar className="h-4 w-4" />}
-              value={filters.endDate || ''}
-              onChange={(e) => updateFilters({ endDate: e.target.value || undefined })}
-            />
-            <div className="flex items-end">
-              <Button 
-                variant="ghost" 
-                onClick={clearFilters}
-                leftIcon={<X className="h-4 w-4" />}
-                className="text-gray-500"
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-xl border border-line p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'rounded-lg p-2 transition',
+                    viewMode === 'list' ? 'bg-accent-soft text-accent' : 'text-muted'
+                  )}
+                  aria-label="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    'rounded-lg p-2 transition',
+                    viewMode === 'grid' ? 'bg-accent-soft text-accent' : 'text-muted'
+                  )}
+                  aria-label="Grid view"
+                >
+                  <Grid className="h-4 w-4" />
+                </button>
+              </div>
+
+              <Button
+                variant={showFilters || hasActiveFilters ? 'gradient' : 'outline'}
+                className={cn(
+                  'min-w-[7.5rem] font-bold',
+                  !showFilters &&
+                    !hasActiveFilters &&
+                    'border-accent/35 bg-accent-soft/40 text-accent shadow-sm shadow-accent/10 hover:bg-accent-soft hover:border-accent/50',
+                  (showFilters || hasActiveFilters) && 'shadow-md shadow-accent/25'
+                )}
+                leftIcon={<Filter className="h-4 w-4" />}
+                rightIcon={
+                  <ChevronDown
+                    className={cn('h-4 w-4 transition', showFilters && 'rotate-180')}
+                  />
+                }
+                onClick={() => setShowFilters(!showFilters)}
               >
-                Reset Filter
+                Filter
+                {hasActiveFilters && (
+                  <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/25 px-1.5 text-[11px] font-extrabold">
+                    !
+                  </span>
+                )}
               </Button>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Expenses List */}
-      {isLoading ? (
-        <Loading message="Memuat pengeluaran..." />
-      ) : expenses?.data && expenses.data.length > 0 ? (
-        <>
-          <div className="space-y-3">
-            {expenses.data.map((expense) => (
-              <div
-                key={expense.id}
-                className="group overflow-hidden rounded-2xl bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-5"
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div
-                      className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105 sm:h-14 sm:w-14"
-                      style={{
-                        backgroundColor: expense.category?.color
-                          ? `${expense.category.color}15`
-                          : '#f3f4f6',
-                      }}
-                    >
-                      <span
-                        className="text-xl sm:text-2xl"
-                        style={{ color: expense.category?.color }}
-                      >
-                        {expense.category?.icon || '💰'}
+                <div className="mt-4 rounded-2xl border border-accent/25 bg-gradient-to-br from-accent-soft/70 via-surface to-mist/60 p-4 shadow-md shadow-accent/10 ring-1 ring-accent/10">
+                  <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-accent text-white shadow-md shadow-accent/30">
+                      <Filter className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-base font-extrabold text-ink">
+                        Filter pengeluaran
+                      </p>
+                      <p className="text-sm text-muted">
+                        Saring daftar dengan kategori dan rentang tanggal
+                      </p>
+                    </div>
+                    {hasActiveFilters ? (
+                      <span className="ml-auto inline-flex items-center rounded-full bg-accent px-2.5 py-1 text-[11px] font-extrabold text-white">
+                        Aktif
                       </span>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {expense.description}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {expense.category?.name} • {formatDate(expense.date)}
-                      </p>
-                    </div>
+                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2 sm:gap-4">
-                    <p className="text-lg font-bold text-rose-600 sm:text-xl">
-                      -{formatCurrency(expense.amount)}
-                    </p>
-                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Link to={`/expenses/${expense.id}/edit`}>
-                        <button className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </Link>
-                      <button
-                        className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                        onClick={() => setDeleteModal(expense)}
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-2xl border border-accent/30 bg-surface p-3 shadow-sm">
+                      <Select
+                        label="Kategori"
+                        placeholder="Semua kategori"
+                        options={categoryOptions}
+                        value={filters.categoryId || ''}
+                        onChange={(e) =>
+                          updateFilters({ categoryId: e.target.value || undefined })
+                        }
+                        className="border-accent/35 bg-accent-soft/20 font-semibold"
+                      />
+                    </div>
+                    <div className="rounded-2xl border border-line bg-surface p-3 shadow-sm">
+                      <Input
+                        label="Dari Tanggal"
+                        type="date"
+                        leftIcon={<Calendar className="h-4 w-4" />}
+                        value={filters.startDate || ''}
+                        onChange={(e) =>
+                          updateFilters({ startDate: e.target.value || undefined })
+                        }
+                        className="border-accent/20 bg-mist/40 font-semibold"
+                      />
+                    </div>
+                    <div className="rounded-2xl border border-line bg-surface p-3 shadow-sm">
+                      <Input
+                        label="Sampai Tanggal"
+                        type="date"
+                        leftIcon={<Calendar className="h-4 w-4" />}
+                        value={filters.endDate || ''}
+                        onChange={(e) =>
+                          updateFilters({ endDate: e.target.value || undefined })
+                        }
+                        className="border-accent/20 bg-mist/40 font-semibold"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        variant="outline"
+                        onClick={clearFilters}
+                        leftIcon={<X className="h-4 w-4" />}
+                        className="w-full border-coral/30 bg-coral-soft/50 font-bold text-coral hover:border-coral/50 hover:bg-coral-soft"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                        Reset Filter
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Card>
 
-          {/* Pagination */}
-          {expenses?.pagination && expenses.pagination.totalPages > 1 && (
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!expenses.pagination.hasPrev}
-                onClick={() => updateFilters({ page: filters.page! - 1 })}
-                className="w-full rounded-xl sm:w-auto"
-              >
-                Sebelumnya
-              </Button>
-              <span className="text-sm text-gray-600">
-                Halaman <span className="font-semibold text-gray-900">{expenses.pagination.page}</span> dari{' '}
-                <span className="font-semibold text-gray-900">{expenses.pagination.totalPages}</span>
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!expenses.pagination.hasNext}
-                onClick={() => updateFilters({ page: filters.page! + 1 })}
-                className="w-full rounded-xl sm:w-auto"
-              >
-                Selanjutnya
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="overflow-hidden rounded-2xl bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-100 to-red-200">
-            <Receipt className="h-8 w-8 text-rose-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Belum ada pengeluaran</h3>
-          <p className="mt-1 text-gray-500">Mulai catat pengeluaran harianmu sekarang</p>
-          <Link to={ROUTES.EXPENSE_NEW} className="mt-4 inline-block">
-            <Button 
-              variant="gradient" 
-              leftIcon={<Plus className="h-4 w-4" />}
+        {isLoading ? (
+          <Loading message="Memuat pengeluaran..." />
+        ) : filteredData.length > 0 ? (
+          <>
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3'
+                  : 'space-y-2'
+              }
             >
-              Tambah Pengeluaran
-            </Button>
-          </Link>
-        </div>
-      )}
+              {filteredData.map((expense) => (
+                <Card
+                  key={expense.id}
+                  padding="sm"
+                  className={cn(
+                    'transition hover:shadow-[var(--shadow-lift)]',
+                    viewMode === 'list' && 'sm:px-4'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'flex gap-3',
+                      viewMode === 'grid'
+                        ? 'flex-col'
+                        : 'flex-col sm:flex-row sm:items-center sm:justify-between'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex min-w-0 items-center gap-3',
+                        viewMode === 'grid' && 'flex-col text-center'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'flex flex-shrink-0 items-center justify-center rounded-2xl',
+                          viewMode === 'grid' ? 'h-14 w-14' : 'h-12 w-12'
+                        )}
+                        style={{
+                          backgroundColor: expense.category?.color
+                            ? `${expense.category.color}22`
+                            : '#e6edf4',
+                          color: expense.category?.color || '#0f9b8e',
+                        }}
+                      >
+                        <CategoryIcon
+                          icon={expense.category?.icon}
+                          size={viewMode === 'grid' ? 24 : 20}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">
+                          {expense.description}
+                        </p>
+                        <div
+                          className={cn(
+                            'mt-1.5 flex flex-wrap items-center gap-2',
+                            viewMode === 'grid' && 'justify-center'
+                          )}
+                        >
+                          <Badge variant="primary" size="sm">
+                            {expense.category?.name || 'Umum'}
+                          </Badge>
+                          <span className="text-xs text-muted">
+                            {formatDate(expense.date)}
+                          </span>
+                          {expense.receiptUrl && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setReceiptPreview(expense);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-accent transition hover:underline"
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              Struk
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteModal}
-        onClose={() => setDeleteModal(null)}
-        title="Hapus Pengeluaran"
-        size="sm"
-      >
-        <p className="text-gray-600">
-          Apakah kamu yakin ingin menghapus pengeluaran "
-          <strong>{deleteModal?.description}</strong>"? Tindakan ini tidak dapat
-          dibatalkan.
-        </p>
-        <ModalFooter>
-          <Button variant="ghost" onClick={() => setDeleteModal(null)}>
-            Batal
-          </Button>
-          <Button
-            variant="danger"
-            isLoading={deleteMutation.isPending}
-            onClick={handleDelete}
-          >
-            Hapus
-          </Button>
-        </ModalFooter>
-      </Modal>
-    </MainLayout>
+                    <div
+                      className={cn(
+                        'flex items-center gap-2',
+                        viewMode === 'grid' ? 'mt-2 justify-between' : 'justify-between sm:justify-end'
+                      )}
+                    >
+                      <p className="text-base font-bold amount-negative sm:text-lg">
+                        -{formatCurrency(expense.amount)}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Link
+                          to={`/expenses/${expense.id}/edit`}
+                          className="rounded-xl p-2 text-muted transition hover:bg-accent-soft hover:text-accent"
+                          aria-label="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                        <button
+                          className="rounded-xl p-2 text-muted transition hover:bg-coral-soft hover:text-coral"
+                          onClick={() => setDeleteModal(expense)}
+                          aria-label="Hapus"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {expenses?.pagination && expenses.pagination.totalPages > 1 && (
+              <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!expenses.pagination.hasPrev}
+                  onClick={() => updateFilters({ page: filters.page! - 1 })}
+                  className="w-full sm:w-auto"
+                >
+                  Sebelumnya
+                </Button>
+                <span className="text-sm text-muted">
+                  Halaman{' '}
+                  <span className="font-semibold text-ink">{expenses.pagination.page}</span>{' '}
+                  dari{' '}
+                  <span className="font-semibold text-ink">
+                    {expenses.pagination.totalPages}
+                  </span>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!expenses.pagination.hasNext}
+                  onClick={() => updateFilters({ page: filters.page! + 1 })}
+                  className="w-full sm:w-auto"
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <Card padding="lg">
+            <EmptyState
+              icon={<Receipt className="h-7 w-7" />}
+              title="Belum ada pengeluaran"
+              description="Mulai catat pengeluaran harianmu sekarang"
+              action={
+                <Link to={ROUTES.EXPENSE_NEW}>
+                  <Button leftIcon={<Plus className="h-4 w-4" />}>Tambah Pengeluaran</Button>
+                </Link>
+              }
+            />
+          </Card>
+        )}
+
+        <Modal
+          isOpen={!!deleteModal}
+          onClose={() => setDeleteModal(null)}
+          title="Hapus Pengeluaran"
+          size="sm"
+        >
+          <p className="text-muted">
+            Hapus pengeluaran "
+            <strong className="text-ink">{deleteModal?.description}</strong>"? Tindakan
+            ini tidak dapat dibatalkan.
+          </p>
+          <ModalFooter>
+            <Button variant="ghost" onClick={() => setDeleteModal(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={deleteMutation.isPending}
+              onClick={handleDelete}
+            >
+              Hapus
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <ReceiptPreviewModal
+          isOpen={!!receiptPreview}
+          onClose={() => setReceiptPreview(null)}
+          receiptUrl={receiptPreview?.receiptUrl}
+          title={receiptPreview?.description || 'Preview Struk'}
+        />
+      </MainLayout>
+    </PageTransition>
   );
 }

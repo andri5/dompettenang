@@ -1,6 +1,5 @@
 /**
- * DuitDiary - Card Component
- * Container component with variants
+ * Dompet Tenang - Card / Panel Component
  */
 
 import { forwardRef } from 'react';
@@ -10,19 +9,22 @@ import { cn } from '@/lib/utils';
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'bordered' | 'elevated';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
+  glowing?: boolean;
+  animated?: boolean;
 }
 
 const variantStyles = {
-  default: 'bg-white',
-  bordered: 'bg-white border border-gray-200',
-  elevated: 'bg-white shadow-lg',
+  default: 'bg-surface/90 border border-line',
+  bordered: 'bg-surface/90 border border-line',
+  elevated: 'bg-surface border border-line shadow-[var(--shadow-soft)]',
 };
 
 const paddingStyles = {
   none: '',
   sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-8',
+  md: 'p-5 sm:p-6',
+  lg: 'p-6 sm:p-8',
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -31,38 +33,39 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       className,
       variant = 'bordered',
       padding = 'md',
+      hover = false,
+      glowing: _glowing,
+      animated: _animated,
       children,
       ...props
     },
     ref
-  ) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'rounded-xl',
-          variantStyles[variant],
-          paddingStyles[padding],
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
+  ) => (
+    <div
+      ref={ref}
+      className={cn(
+        'rounded-[1.25rem] backdrop-blur-sm transition-shadow duration-200',
+        variantStyles[variant],
+        paddingStyles[padding],
+        hover && 'hover:shadow-[var(--shadow-lift)]',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
 );
 
 Card.displayName = 'Card';
 
-// Card Header
 export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {}
 
 export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('mb-4 flex items-center justify-between', className)}
+      className={cn('mb-4 flex items-center justify-between gap-3', className)}
       {...props}
     />
   )
@@ -70,14 +73,13 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
 
 CardHeader.displayName = 'CardHeader';
 
-// Card Title
 export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {}
 
 export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold text-gray-900', className)}
+      className={cn('font-display text-lg font-bold text-ink', className)}
       {...props}
     />
   )
@@ -85,7 +87,6 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
 
 CardTitle.displayName = 'CardTitle';
 
-// Card Content
 export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {}
 
 export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(

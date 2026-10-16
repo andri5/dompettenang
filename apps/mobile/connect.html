@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dompet Tenang — Scan Expo Go</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: #f4f7fb;
+        color: #0f172a;
+      }
+      .card {
+        width: min(420px, 92vw);
+        background: #fff;
+        border: 1px solid #d7e0ea;
+        border-radius: 20px;
+        padding: 28px 24px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      }
+      h1 { margin: 0 0 8px; font-size: 1.35rem; }
+      p { margin: 0 0 18px; color: #64748b; line-height: 1.45; }
+      img { width: 260px; height: 260px; border-radius: 12px; }
+      code {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #ecfdf8;
+        color: #0f9b8e;
+        font-weight: 700;
+        word-break: break-all;
+      }
+      .hint { margin-top: 16px; font-size: 0.9rem; }
+      .warn { margin-top: 10px; font-size: 0.85rem; color: #b45309; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Scan dengan Expo Go</h1>
+      <p>
+        Buka di Chrome/Edge. Expo Go <strong>SDK 57</strong>.
+        Mode <strong>LAN</strong> — HP harus satu Wi‑Fi dengan PC.
+      </p>
+      <img
+        alt="QR Expo"
+        width="260"
+        height="260"
+        src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=exp%3A%2F%2F192.168.101.76%3A8081"
+      />
+      <div><code>exp://192.168.101.76:8081</code></div>
+      <p class="hint">API: http://192.168.101.76:3001/api/v1</p>
+      <p class="warn">Jangan pakai data seluler. Kalau login gagal, pastikan API `npm run dev` di apps/api masih jalan.</p>
+    </div>
+  </body>
+</html>

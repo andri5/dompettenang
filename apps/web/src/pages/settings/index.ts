@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Settings Pages Index
+ * Dompet Tenang - Settings Pages Index
  */
 
 export { SettingsPage } from './SettingsPage';

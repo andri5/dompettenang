@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,24 +11,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum ProPurchaseStatus {
+  PENDING
+  PROOF_SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 // ==================== USERS ====================
 model User {
-  id           String   @id @default(uuid())
-  name         String   @db.VarChar(100)
-  email        String   @unique @db.VarChar(255)
-  password     String   @db.VarChar(255)
-  avatar       String?  @db.VarChar(500)
-  currency     String   @default("IDR") @db.VarChar(3)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  password     String    @db.VarChar(255)
+  avatar       String?   @db.VarChar(500)
+  currency     String    @default("IDR") @db.VarChar(3)
+  gender       Gender?
+  birthDate    DateTime? @map("birth_date") @db.Date
+  role         UserRole  @default(USER)
+  plan         Plan      @default(FREE)
+  proExpiresAt DateTime? @map("pro_expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
   expenses      Expense[]
   categories    Category[]
   budgets       Budget[]
   refreshTokens RefreshToken[]
+  passwordResets PasswordResetToken[]
+  recurringTransactions RecurringTransaction[]
+  savingsGoals          SavingsGoal[]
+  auditLogs             AuditLog[]
+  visitEvents           VisitEvent[]
+  featureFlags         FeatureFlag[]
+  legalDocuments       LegalDocument[]
+  feedback              Feedback?
+  proPurchaseRequests   ProPurchaseRequest[]
 
   @@map("users")
+}
+
+// ==================== PRO PURCHASE (manual transfer) ====================
+model ProPurchaseRequest {
+  id           String             @id @default(uuid())
+  userId       String             @map("user_id")
+  amount       Int
+  transferNote String             @map("transfer_note") @db.VarChar(64)
+  status       ProPurchaseStatus  @default(PENDING)
+  proofPath    String?            @map("proof_path") @db.VarChar(500)
+  adminNote    String?            @map("admin_note") @db.VarChar(500)
+  reviewedAt   DateTime?          @map("reviewed_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("pro_purchase_requests")
 }
 
 // ==================== REFRESH TOKENS ====================
@@ -44,43 +113,63 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+// ==================== PASSWORD RESET TOKENS ====================
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  token     String    @unique @db.VarChar(128)
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 // ==================== CATEGORIES ====================
 model Category {
-  id        String   @id @default(uuid())
-  userId    String?  @map("user_id")
-  name      String   @db.VarChar(50)
-  icon      String   @db.VarChar(10)
-  color     String   @db.VarChar(7)
-  isDefault Boolean  @default(false) @map("is_default")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id        String          @id @default(uuid())
+  userId    String?         @map("user_id")
+  name      String          @db.VarChar(50)
+  icon      String          @db.VarChar(32)
+  color     String          @db.VarChar(7)
+  type      TransactionType @default(EXPENSE)
+  isDefault Boolean         @default(false) @map("is_default")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   // Relations
   user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses        Expense[]
   categoryBudgets CategoryBudget[]
+  recurringTransactions RecurringTransaction[]
 
+  @@index([type])
   @@map("categories")
 }
 
-// ==================== EXPENSES ====================
+// ==================== EXPENSES / TRANSACTIONS ====================
 model Expense {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  categoryId String    @map("category_id")
-  amount     Decimal   @db.Decimal(15, 2)
-  note       String?   @db.Text
-  date       DateTime  @db.Date
-  receiptUrl String?   @map("receipt_url") @db.VarChar(500)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  categoryId String          @map("category_id")
+  type       TransactionType @default(EXPENSE)
+  amount     Decimal         @db.Decimal(15, 2)
+  note       String?         @db.Text
+  date       DateTime        @db.Date
+  receiptUrl String?         @map("receipt_url") @db.VarChar(500)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+  deletedAt  DateTime?       @map("deleted_at")
 
   // Relations
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id])
 
   @@index([userId, date])
+  @@index([userId, type, date])
   @@index([categoryId])
   @@map("expenses")
 }
@@ -115,4 +204,134 @@ model CategoryBudget {
 
   @@unique([budgetId, categoryId])
   @@map("category_budgets")
+}
+
+// ==================== RECURRING TRANSACTIONS (P3) ====================
+model RecurringTransaction {
+  id          String             @id @default(uuid())
+  userId      String             @map("user_id")
+  categoryId  String             @map("category_id")
+  type        TransactionType    @default(EXPENSE)
+  amount      Decimal            @db.Decimal(15, 2)
+  note        String?            @db.Text
+  frequency   RecurringFrequency
+  startDate   DateTime           @map("start_date") @db.Date
+  endDate     DateTime?          @map("end_date") @db.Date
+  nextRunDate DateTime           @map("next_run_date") @db.Date
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, isActive])
+  @@map("recurring_transactions")
+}
+
+// ==================== SAVINGS GOALS ====================
+model SavingsGoal {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  name         String    @db.VarChar(100)
+  targetAmount Decimal   @map("target_amount") @db.Decimal(15, 2)
+  savedAmount  Decimal   @default(0) @map("saved_amount") @db.Decimal(15, 2)
+  deadline     DateTime? @db.Date
+  icon         String    @default("flag") @db.VarChar(32)
+  color        String    @default("#0f9b8e") @db.VarChar(7)
+  isCompleted  Boolean   @default(false) @map("is_completed")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("savings_goals")
+}
+
+// ==================== FEEDBACK ====================
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String?  @unique @map("user_id")
+  name        String?  @db.VarChar(100)
+  message     String   @db.Text
+  rating      Int      @default(0)
+  /// Admin can publish selected feedback as landing testimonials
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([isPublished, createdAt])
+  @@map("feedback")
+}
+
+// ==================== ADMIN INSIGHTS ====================
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  actorRole  String?  @map("actor_role") // USER/ADMIN (optional)
+  action     String   @map("action") // e.g. UPDATE_PROFILE, DELETE_BUDGET
+  entityType String   @map("entity_type") // e.g. user/expense/budget
+  entityId   String?  @map("entity_id")
+  summary    String   @db.VarChar(500)
+  metadata   Json?    @map("metadata")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entityType, action, createdAt])
+  @@map("audit_logs")
+}
+
+model FeatureFlag {
+  key          String   @id @map("key") @db.VarChar(120)
+  label        String   @db.VarChar(160)
+  description  String?  @db.Text
+  isEnabled    Boolean  @default(true) @map("is_enabled")
+  updatedById  String?  @map("updated_by_user_id")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("feature_flags")
+}
+
+model VisitEvent {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  sessionId   String   @map("session_id") @db.VarChar(120)
+  path        String   @map("path") @db.VarChar(500)
+  source      String?  @map("source") @db.VarChar(80)
+  deviceType  String?  @map("device_type") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([path, createdAt])
+  @@index([sessionId, createdAt])
+  @@map("visit_events")
+}
+
+model LegalDocument {
+  key         String   @id @map("key") @db.VarChar(40)
+  title       String   @db.VarChar(160)
+  body        String   @db.Text
+  updatedById String?  @map("updated_by_user_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("legal_documents")
+}
+
+// Key-value settings (e.g. Pro bank details editable from Admin UI).
+model AppSetting {
+  key       String   @id @map("key") @db.VarChar(120)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
 }

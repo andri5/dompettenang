@@ -1,8 +1,9 @@
 /**
- * DuitDiary - Category Hooks
+ * Dompet Tenang - Category Hooks
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { QUERY_KEYS } from '@/lib/constants';
 import {
   getCategories,
@@ -10,16 +11,30 @@ import {
   updateCategory,
   deleteCategory,
 } from '@/services/category.service';
-import type { CreateCategoryData, UpdateCategoryData } from '@/types';
+import type {
+  CreateCategoryData,
+  TransactionType,
+  UpdateCategoryData,
+} from '@/types';
 import { useUIStore } from '@/stores';
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AxiosError) {
+    return error.response?.data?.message || fallback;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
 
 /**
  * Hook to fetch all categories
  */
-export function useCategories() {
+export function useCategories(type?: TransactionType) {
   return useQuery({
-    queryKey: QUERY_KEYS.CATEGORIES,
-    queryFn: getCategories,
+    queryKey: [...QUERY_KEYS.CATEGORIES, type || 'ALL'],
+    queryFn: () => getCategories(type),
   });
 }
 
@@ -39,10 +54,11 @@ export function useCategoryMutations() {
         title: 'Kategori berhasil ditambahkan',
       });
     },
-    onError: () => {
+    onError: (error) => {
       addNotification({
         type: 'error',
         title: 'Gagal menambahkan kategori',
+        message: getErrorMessage(error, 'Silakan coba lagi'),
       });
     },
   });
@@ -57,10 +73,11 @@ export function useCategoryMutations() {
         title: 'Kategori berhasil diperbarui',
       });
     },
-    onError: () => {
+    onError: (error) => {
       addNotification({
         type: 'error',
         title: 'Gagal memperbarui kategori',
+        message: getErrorMessage(error, 'Silakan coba lagi'),
       });
     },
   });
@@ -74,10 +91,14 @@ export function useCategoryMutations() {
         title: 'Kategori berhasil dihapus',
       });
     },
-    onError: () => {
+    onError: (error) => {
       addNotification({
         type: 'error',
         title: 'Gagal menghapus kategori',
+        message: getErrorMessage(
+          error,
+          'Kategori default tidak dapat dihapus'
+        ),
       });
     },
   });

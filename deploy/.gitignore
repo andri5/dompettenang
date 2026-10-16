@@ -1,0 +1,8 @@
+.env.production
+*.pem
+*.key
+# APK artifacts (upload via Publish Android APK workflow — jangan commit)
+downloads/*.apk
+downloads/*.aab
+!downloads/.gitkeep
+!downloads/README.md

@@ -1,6 +1,6 @@
 /**
  * ============================================
- * DuitDiary API - Constants
+ * Dompet Tenang API - Constants
  * ============================================
  * Centralized constants for the application.
  * Import from this file for consistent values.

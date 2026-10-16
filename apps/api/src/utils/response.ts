@@ -1,6 +1,6 @@
 /**
  * ============================================
- * DuitDiary API - Response Utilities
+ * Dompet Tenang API - Response Utilities
  * ============================================
  * Standardized API response helpers.
  * Ensures consistent response format across all endpoints.

@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Components Index
+ * Dompet Tenang - Components Index
  */
 
 export * from './ui';

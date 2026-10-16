@@ -1,0 +1,154 @@
+# After QA verifies staging, promote develop → main (1-click + environment approval).
+# Then explicitly triggers Deploy to Production (GITHUB_TOKEN merges do not re-fire push workflows).
+#
+# Setup (once): Settings → Environments → production → Required reviewers
+# Optional: secret GH_PAT (repo scope) if main branch protection blocks GITHUB_TOKEN
+
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type promote to confirm (case-sensitive)'
+        required: true
+        type: string
+
+concurrency:
+  group: promote-to-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  check-ci:
+    name: Verify develop CI
+    runs-on: ubuntu-latest
+    outputs:
+      develop_sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - name: Confirm input
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.confirm }}" != "promote" ]; then
+            echo "ERROR: type exactly 'promote' in the confirm field"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: develop
+
+      - name: Resolve develop tip
+        id: sha
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "develop HEAD: ${SHA}"
+
+      - name: Require develop ahead of main
+        run: |
+          set -euo pipefail
+          git fetch origin main develop
+          AHEAD=$(git rev-list --count origin/main..origin/develop)
+          echo "Commits on develop not in main: ${AHEAD}"
+          if [ "${AHEAD}" -eq 0 ]; then
+            echo "ERROR: develop has nothing new to promote to main"
+            exit 1
+          fi
+
+      - name: Require latest CI on develop to be success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DEVELOP_SHA="${{ steps.sha.outputs.sha }}"
+          ROW=$(gh run list \
+            --branch develop \
+            --workflow "CI - Build & Test" \
+            --limit 20 \
+            --json databaseId,conclusion,headSha,status \
+            --jq "[.[] | select(.status == \"completed\")] | .[0] // empty")
+          if [ -z "${ROW}" ] || [ "${ROW}" = "null" ]; then
+            echo "ERROR: no completed CI run found on develop"
+            exit 1
+          fi
+          CONCLUSION=$(echo "${ROW}" | jq -r .conclusion)
+          HEAD_SHA=$(echo "${ROW}" | jq -r .headSha)
+          echo "Latest CI: conclusion=${CONCLUSION} headSha=${HEAD_SHA}"
+          if [ "${CONCLUSION}" != "success" ]; then
+            echo "ERROR: latest CI on develop is not success (${CONCLUSION})"
+            exit 1
+          fi
+          if [ "${HEAD_SHA}" != "${DEVELOP_SHA}" ]; then
+            echo "ERROR: latest green CI (${HEAD_SHA}) does not match develop tip (${DEVELOP_SHA})"
+            echo "Push/merge to develop and wait for CI, then promote again."
+            exit 1
+          fi
+          echo "CI gate OK"
+
+  promote:
+    name: Merge develop into main
+    needs: check-ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dompet-tenang.web.id
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Create or reuse promote PR and merge
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          DEVELOP_SHA: ${{ needs.check-ci.outputs.develop_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main develop
+
+          EXISTING=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number // empty')
+          if [ -n "${EXISTING}" ]; then
+            PR="${EXISTING}"
+            echo "Reusing open PR #${PR}"
+          else
+            BODY=$(printf '%s\n' \
+              "## Summary" \
+              "Automated promote after QA approval on staging." \
+              "" \
+              "- Source: \`develop\` @ \`${DEVELOP_SHA}\`" \
+              "- Staging: https://staging.dompet-tenang.web.id" \
+              "- After merge: Deploy to Production is triggered explicitly" \
+              "" \
+              "## Test plan" \
+              "- [x] QA verified staging" \
+              "- [ ] Confirm Deploy to Production succeeds" \
+              "- [ ] Smoke production health + login")
+
+            URL=$(gh pr create \
+              --base main \
+              --head develop \
+              --title "Promote develop → production (${DEVELOP_SHA:0:7})" \
+              --body "${BODY}")
+            PR=$(echo "${URL}" | grep -oE '[0-9]+$')
+            echo "Created PR #${PR} (${URL})"
+          fi
+
+          gh pr merge "${PR}" --merge --delete-branch=false
+          echo "Merged PR #${PR}"
+
+      - name: Trigger Deploy to Production
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -euo pipefail
+          # Push events from GITHUB_TOKEN do not start other workflows; dispatch explicitly.
+          gh workflow run "Deploy to Production" --ref main
+          echo "Dispatched Deploy to Production on main"

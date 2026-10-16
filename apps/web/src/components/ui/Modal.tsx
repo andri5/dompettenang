@@ -1,11 +1,10 @@
 /**
- * DuitDiary - Modal Component
- * Reusable modal dialog
+ * Dompet Tenang - Modal Component
  */
 
-import { Fragment } from 'react';
 import type { ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { Wallet, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export interface ModalProps {
@@ -15,6 +14,8 @@ export interface ModalProps {
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
+  animated?: boolean;
+  showBrand?: boolean;
 }
 
 const sizeStyles = {
@@ -31,62 +32,74 @@ export function Modal({
   children,
   size = 'md',
   showCloseButton = true,
+  showBrand = true,
 }: ModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <Fragment>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/50 transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div
-          className={cn(
-            'relative w-full rounded-xl bg-white shadow-xl',
-            sizeStyles[size]
-          )}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={title ? 'modal-title' : undefined}
-        >
-          {/* Header */}
-          {(title || showCloseButton) && (
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              {title && (
-                <h2
-                  id="modal-title"
-                  className="text-lg font-semibold text-gray-900"
-                >
-                  {title}
-                </h2>
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+            <motion.div
+              initial={{ opacity: 0, y: 28, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              className={cn(
+                'relative w-full rounded-t-[1.5rem] bg-surface shadow-2xl sm:rounded-[1.5rem]',
+                sizeStyles[size]
               )}
-              {showCloseButton && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Close modal"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? 'modal-title' : undefined}
+            >
+              {(title || showCloseButton) && (
+                <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+                  {title ? (
+                    <div className="flex min-w-0 items-center gap-3">
+                      {showBrand && (
+                        <div className="brand-mark flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-ink shadow-sm shadow-accent/20">
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                      )}
+                      <h2
+                        id="modal-title"
+                        className="font-display text-lg font-bold tracking-[-0.03em] text-ink"
+                      >
+                        {title}
+                      </h2>
+                    </div>
+                  ) : (
+                    <span />
+                  )}
+                  {showCloseButton && (
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="rounded-xl p-2 text-muted transition hover:bg-mist hover:text-ink"
+                      aria-label="Close modal"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-
-          {/* Content */}
-          <div className="p-6">{children}</div>
-        </div>
-      </div>
-    </Fragment>
+              <div className="max-h-[75vh] overflow-y-auto p-5 sm:p-6">{children}</div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
-// Modal Footer helper
 export interface ModalFooterProps {
   children: ReactNode;
   className?: string;
@@ -96,7 +109,7 @@ export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
     <div
       className={cn(
-        'mt-6 flex items-center justify-end gap-3 border-t border-gray-200 pt-4',
+        'mt-6 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3',
         className
       )}
     >

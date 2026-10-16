@@ -1,0 +1,179 @@
+# Deploy staging stack to Sumopod VPS (same server as production).
+# URL: https://staging.dompet-tenang.web.id
+#
+# Prerequisites:
+#   1. DNS A: staging.dompet-tenang.web.id → VPS IP
+#   2. deploy/.env.staging on VPS (copy from deploy/.env.staging.example)
+#   3. Secrets: PROD_SSH_* (same as production)
+#
+# Triggers: push to develop (canonical) or feature/testing-qa, or manual Run workflow
+# After QA on staging: Actions → Promote to Production (see promote-to-production.yml)
+
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, feature/testing-qa]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Build gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Generate Prisma client
+        run: npx --workspace apps/api prisma generate
+
+      - name: Build API
+        run: npm --workspace apps/api run build
+
+      - name: Build Web
+        run: npm --workspace apps/web run build
+        env:
+          VITE_API_URL: /api/v1
+          VITE_SITE_URL: https://staging.dompet-tenang.web.id
+
+  deploy:
+    name: Deploy staging to Sumopod VPS
+    needs: gate
+    runs-on: ubuntu-latest
+    # Reuse production env secrets (PROD_SSH_*). Staging URL is separate.
+    environment:
+      name: production
+      url: https://staging.dompet-tenang.web.id
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key"
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Pack release tarball
+        run: |
+          set -euo pipefail
+          tar -czf /tmp/dompettenang-staging.tgz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='**/node_modules' \
+            --exclude='apps/mobile' \
+            --exclude='deploy/.env.production' \
+            --exclude='deploy/.env.staging' \
+            --exclude='deploy/downloads' \
+            --exclude='.local-ssh' \
+            .
+          ls -lh /tmp/dompettenang-staging.tgz
+
+      - name: Upload release and deploy over SSH
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?}"
+          USER_NAME="${PROD_SSH_USER:?}"
+          PORT="${PROD_SSH_PORT:-22}"
+          SSH=(ssh -i ~/.ssh/id_deploy -p "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          SCP=(scp -i ~/.ssh/id_deploy -P "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+
+          "${SSH[@]}" "${USER_NAME}@${HOST}" 'bash -s' <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          mkdir -p "${APP_DIR}" /tmp
+          EOF
+
+          "${SCP[@]}" /tmp/dompettenang-staging.tgz "${USER_NAME}@${HOST}:/tmp/dompettenang-staging.tgz"
+
+          "${SSH[@]}" "${USER_NAME}@${HOST}" 'bash -s' <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          ENV_FILE="${APP_DIR}/deploy/.env.staging"
+          PROD_ENV="${APP_DIR}/deploy/.env.production"
+
+          if [[ ! -f "${ENV_FILE}" ]]; then
+            echo "ERROR: missing ${ENV_FILE}"
+            echo "Create it from deploy/.env.staging.example on the VPS first."
+            exit 1
+          fi
+          if [[ ! -f "${PROD_ENV}" ]]; then
+            echo "ERROR: missing ${PROD_ENV} (production must exist for Caddy)"
+            exit 1
+          fi
+
+          # Preserve secrets / downloads while refreshing code
+          TMP_KEEP=$(mktemp -d)
+          cp -a "${ENV_FILE}" "${TMP_KEEP}/.env.staging"
+          cp -a "${PROD_ENV}" "${TMP_KEEP}/.env.production"
+          if [[ -d "${APP_DIR}/deploy/downloads" ]]; then
+            cp -a "${APP_DIR}/deploy/downloads" "${TMP_KEEP}/downloads"
+          fi
+
+          mkdir -p "${APP_DIR}"
+          tar -xzf /tmp/dompettenang-staging.tgz -C "${APP_DIR}"
+          rm -f /tmp/dompettenang-staging.tgz
+
+          mkdir -p "${APP_DIR}/deploy"
+          cp -a "${TMP_KEEP}/.env.staging" "${ENV_FILE}"
+          cp -a "${TMP_KEEP}/.env.production" "${PROD_ENV}"
+          if [[ -d "${TMP_KEEP}/downloads" ]]; then
+            mkdir -p "${APP_DIR}/deploy/downloads"
+            cp -a "${TMP_KEEP}/downloads/." "${APP_DIR}/deploy/downloads/"
+          fi
+          rm -rf "${TMP_KEEP}"
+
+          chmod +x "${APP_DIR}/deploy/remote-deploy-staging.sh"
+          SKIP_GIT=1 APP_DIR="${APP_DIR}" "${APP_DIR}/deploy/remote-deploy-staging.sh"
+          EOF
+
+      - name: Public staging health check (best effort)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6 7 8; do
+            if curl -fsSL --connect-timeout 5 --max-time 25 \
+              https://staging.dompet-tenang.web.id/api/v1/health; then
+              echo "Public staging health OK"
+              exit 0
+            fi
+            echo "Public health attempt ${i}/8 failed, retrying..."
+            sleep 8
+          done
+          echo "Public HTTPS health still failing — add DNS A record staging.dompet-tenang.web.id → VPS IP"
+          exit 1

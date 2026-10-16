@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Utility Functions
+ * Dompet Tenang - Utility Functions
  */
 
 import { format, parseISO } from 'date-fns';
@@ -7,15 +7,27 @@ import { id as idLocale } from 'date-fns/locale';
 import { CURRENCY, DATE_FORMATS } from './constants';
 
 /**
- * Format currency to Indonesian Rupiah
+ * Format amount as currency (defaults to IDR; pass user.currency when available)
  */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat(CURRENCY.LOCALE, {
-    style: 'currency',
-    currency: CURRENCY.CODE,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+export function formatCurrency(amount: number, currencyCode: string = CURRENCY.CODE): string {
+  const code = (currencyCode || CURRENCY.CODE).toUpperCase().slice(0, 3);
+  const locale =
+    code === 'USD' ? 'en-US' : code === 'SGD' ? 'en-SG' : code === 'MYR' ? 'ms-MY' : CURRENCY.LOCALE;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: code === 'IDR' ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat(CURRENCY.LOCALE, {
+      style: 'currency',
+      currency: CURRENCY.CODE,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
 }
 
 /**

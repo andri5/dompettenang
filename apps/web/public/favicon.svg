@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dompet Tenang">
+  <defs>
+    <linearGradient id="brand" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F9B8E"/>
+      <stop offset="55%" stop-color="#1CC8B4"/>
+      <stop offset="100%" stop-color="#5EEAD4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#brand)"/>
+  <rect x="12" y="18" width="40" height="30" rx="8" fill="#07111F" opacity="0.18"/>
+  <path
+    d="M14 26.5C14 22.91 16.91 20 20.5 20H43.5C47.09 20 50 22.91 50 26.5V43.5C50 47.09 47.09 50 43.5 50H20.5C16.91 50 14 47.09 14 43.5V26.5Z"
+    fill="#F3F6F9"
+  />
+  <path
+    d="M14 28H50V33.5C50 35.43 48.43 37 46.5 37H40.5C37.46 37 35 39.46 35 42.5C35 43.88 36.12 45 37.5 45H46.5C48.43 45 50 46.57 50 48.5V43.5C50 47.09 47.09 50 43.5 50H20.5C16.91 50 14 47.09 14 43.5V28Z"
+    fill="#FFFFFF"
+  />
+  <circle cx="41.5" cy="41.5" r="3.25" fill="#0F9B8E"/>
+  <rect x="20" y="24" width="14" height="3" rx="1.5" fill="#0F9B8E" opacity="0.35"/>
+</svg>

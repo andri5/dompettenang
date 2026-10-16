@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Expense Pages Index
+ * Dompet Tenang - Expense Pages Index
  */
 
 export { ExpensesPage } from './ExpensesPage';

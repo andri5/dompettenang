@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Empty State Component
+ * Dompet Tenang - Empty State Component
  */
 
 import type { ReactNode } from 'react';
@@ -11,6 +11,7 @@ export interface EmptyStateProps {
   description?: string;
   action?: ReactNode;
   className?: string;
+  animated?: boolean;
 }
 
 export function EmptyState({
@@ -23,20 +24,20 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center py-12 text-center',
+        'flex flex-col items-center justify-center px-4 py-12 text-center',
         className
       )}
     >
       {icon && (
-        <div className="mb-4 rounded-full bg-gray-100 p-4 text-gray-400">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-mist-deep text-muted">
           {icon}
         </div>
       )}
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <h3 className="font-display text-lg font-bold text-ink">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted">{description}</p>
       )}
-      {action && <div className="mt-4">{action}</div>}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }

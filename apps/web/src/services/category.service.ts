@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Category Service
+ * Dompet Tenang - Category Service
  * API calls for category management
  */
 
@@ -8,14 +8,16 @@ import type {
   ApiResponse,
   Category,
   CreateCategoryData,
+  TransactionType,
   UpdateCategoryData,
 } from '@/types';
 
 /**
  * Get all categories for the current user
  */
-export async function getCategories(): Promise<Category[]> {
-  const response = await api.get<ApiResponse<Category[]>>('/categories');
+export async function getCategories(type?: TransactionType): Promise<Category[]> {
+  const params = type ? `?type=${type}` : '';
+  const response = await api.get<ApiResponse<Category[]>>(`/categories${params}`);
   return response.data.data;
 }
 

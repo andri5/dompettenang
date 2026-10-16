@@ -1,6 +1,5 @@
 /**
- * DuitDiary - Button Component
- * Modern button with gradient and glass variants
+ * Dompet Tenang - Button Component
  */
 
 import { forwardRef } from 'react';
@@ -14,29 +13,30 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  animated?: boolean;
 }
 
 const variantStyles = {
   primary:
-    'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300',
+    'bg-accent text-white hover:brightness-95 shadow-md shadow-accent/20 focus-visible:ring-accent disabled:bg-accent/40',
   secondary:
-    'bg-cyan-500 text-white hover:bg-cyan-600 focus:ring-cyan-500 disabled:bg-cyan-300',
+    'bg-[var(--color-sidebar)] text-white hover:brightness-110 focus-visible:ring-accent disabled:opacity-40',
   outline:
-    'border-2 border-blue-300 text-blue-700 hover:bg-blue-50 focus:ring-blue-500 disabled:border-blue-200',
+    'border border-line bg-surface text-ink hover:border-accent/40 hover:bg-accent-soft/50 focus-visible:ring-accent disabled:opacity-50',
   ghost:
-    'text-blue-700 hover:bg-blue-100 focus:ring-blue-500 disabled:text-blue-300',
+    'text-muted hover:bg-mist-deep hover:text-ink focus-visible:ring-accent disabled:opacity-40',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-red-300',
+    'bg-coral text-white hover:bg-red-600 shadow-md shadow-coral/20 focus-visible:ring-coral disabled:bg-coral/40',
   gradient:
-    'bg-gradient-to-r from-blue-600 via-blue-700 to-cyan-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] focus:ring-blue-500 disabled:opacity-50 disabled:hover:scale-100',
+    'bg-gradient-to-r from-accent to-accent-bright text-white shadow-md shadow-accent/25 hover:brightness-105 focus-visible:ring-accent disabled:opacity-50',
   glass:
-    'border border-blue-400/50 bg-blue-500/20 text-white backdrop-blur-sm hover:bg-blue-500/30 focus:ring-blue-400/50 disabled:opacity-50',
+    'border border-white/25 bg-white/15 text-white backdrop-blur-md hover:bg-white/25 focus-visible:ring-white/40 disabled:opacity-50',
 };
 
 const sizeStyles = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-2.5 text-base sm:py-3 sm:text-lg',
+  sm: 'h-9 px-3 text-sm rounded-xl',
+  md: 'h-11 px-4 text-sm rounded-xl sm:text-base',
+  lg: 'h-12 px-5 text-base rounded-2xl sm:h-13',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -50,6 +50,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon,
       rightIcon,
       children,
+      animated: _animated = true,
+      type = 'button',
       ...props
     },
     ref
@@ -57,20 +59,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed',
+          'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:active:scale-100',
           variantStyles[variant],
           sizeStyles[size],
           className
         )}
         {...props}
       >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
-        ) : (
-          leftIcon
-        )}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : leftIcon}
         {children}
         {!isLoading && rightIcon}
       </button>

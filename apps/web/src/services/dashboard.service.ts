@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Dashboard Service
+ * Dompet Tenang - Dashboard Service
  * API calls for dashboard data
  */
 

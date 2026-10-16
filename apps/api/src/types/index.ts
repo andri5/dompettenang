@@ -1,32 +1,17 @@
 /**
- * ============================================
- * DuitDiary API - Type Definitions
- * ============================================
- * Shared TypeScript interfaces and types.
- * Used across controllers, services, and responses.
- * ============================================
+ * Dompet Tenang API - Type Definitions
  */
 
 import { Request } from 'express';
 
-// ==================== REQUEST TYPES ====================
-
-/**
- * Express request with authenticated user data
- * @description Extended after auth middleware validation
- */
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
     email: string;
+    role?: string;
   };
 }
 
-// ==================== PAGINATION ====================
-
-/**
- * Pagination metadata for list responses
- */
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -34,87 +19,101 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
-// ==================== USER TYPES ====================
-
-/**
- * User data for API responses (excludes sensitive data)
- */
 export interface UserResponse {
   id: string;
   name: string;
   email: string;
   avatar: string | null;
   currency: string;
+  gender: 'MALE' | 'FEMALE' | null;
+  birthDate: string | null;
+  role: string;
+  /** Stored subscription plan (FREE/PRO). Admin may still show PRO via hasPro. */
+  plan: 'FREE' | 'PRO';
+  proExpiresAt: string | null;
+  /** Effective Pro access (ADMIN always true, or active PRO plan). */
+  hasPro: boolean;
   createdAt: Date;
 }
 
-/**
- * Authentication response with tokens
- */
 export interface AuthResponse {
   user: UserResponse;
   accessToken: string;
   refreshToken: string;
 }
 
-// ==================== CATEGORY TYPES ====================
-
-/**
- * Category data for API responses
- */
 export interface CategoryResponse {
   id: string;
   name: string;
   icon: string;
   color: string;
+  type: 'EXPENSE' | 'INCOME';
   isDefault: boolean;
   expenseCount?: number;
 }
 
-// ==================== EXPENSE TYPES ====================
-
-/**
- * Expense data for API responses
- */
 export interface ExpenseResponse {
   id: string;
+  type: 'EXPENSE' | 'INCOME';
   amount: number;
   category: {
     id: string;
     name: string;
     icon: string;
     color: string;
+    type?: 'EXPENSE' | 'INCOME';
   };
+  categoryId: string;
   note: string | null;
+  description: string;
   date: string;
   receiptUrl: string | null;
   createdAt: Date;
 }
 
-// ==================== DASHBOARD TYPES ====================
+export interface CategoryBreakdownItem {
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  categoryIcon: string;
+  total: number;
+  count: number;
+  percentage: number;
+}
 
-/**
- * Dashboard summary data structure
- */
 export interface DashboardSummary {
-  /** Today's expense statistics */
+  period: 'week' | 'month' | 'year';
+  periodStart: string;
+  periodEnd: string;
+  totalExpenses: number;
+  expenseCount: number;
+  totalIncome: number;
+  incomeCount: number;
+  balance: number;
+  /** @deprecated use expenseCategoryBreakdown */
+  categoryBreakdown: CategoryBreakdownItem[];
+  expenseCategoryBreakdown: CategoryBreakdownItem[];
+  incomeCategoryBreakdown: CategoryBreakdownItem[];
+  overview: {
+    name: string;
+    income: number;
+    expense: number;
+    balance: number;
+  }[];
   today: {
     total: number;
     count: number;
   };
-  /** This week's expense statistics */
   thisWeek: {
     total: number;
     count: number;
   };
-  /** This month's expense statistics */
   thisMonth: {
     total: number;
     count: number;
   };
-  /** Recent expenses list */
   recentExpenses: ExpenseResponse[];
-  /** Top spending categories */
+  recentIncomes: ExpenseResponse[];
   topCategories: {
     category: {
       name: string;
@@ -124,4 +123,30 @@ export interface DashboardSummary {
     total: number;
     percentage: number;
   }[];
+}
+
+export interface CategoryBudgetStatus {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  budgetAmount: number;
+  spent: number;
+  remaining: number;
+  percentUsed: number;
+  isNearLimit: boolean;
+  isOverLimit: boolean;
+}
+
+export interface BudgetStatus {
+  id: string | null;
+  month: string;
+  totalBudget: number;
+  totalSpent: number;
+  totalRemaining: number;
+  percentUsed: number;
+  isNearLimit: boolean;
+  isOverLimit: boolean;
+  hasBudget: boolean;
+  categoryBudgets: CategoryBudgetStatus[];
 }

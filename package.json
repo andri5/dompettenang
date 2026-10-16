@@ -1,0 +1,33 @@
+{
+  "name": "dompettenang",
+  "version": "1.0.0",
+  "description": "Personal Finance Management App — Dompet Tenang",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "api": "npm --workspace apps/api run dev",
+    "web": "npm --workspace apps/web run dev",
+    "mobile": "npm --workspace apps/mobile run start"
+  },
+  "keywords": [
+    "finance",
+    "expense",
+    "budget",
+    "tracking",
+    "personal",
+    "money"
+  ],
+  "author": "Andri",
+  "license": "MIT",
+  "devDependencies": {}
+}

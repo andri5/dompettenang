@@ -1,0 +1,54 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "release": {
+      "distribution": "internal",
+      "channel": "release",
+      "environment": "production",
+      "node": "22.14.0",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "applicationArchivePath": "android/app/build/outputs/apk/release/app-release.apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://10.44.201.79:3001/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "release",
+        "NPM_CONFIG_ENGINE_STRICT": "false",
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      }
+    },
+    "release-prod-api": {
+      "extends": "release",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dompet-tenang.web.id/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "NPM_CONFIG_ENGINE_STRICT": "false",
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      }
+    },
+    "production": {
+      "extends": "release",
+      "distribution": "store",
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "applicationArchivePath": "android/app/build/outputs/bundle/release/app-release.aab"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dompet-tenang.web.id/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "NPM_CONFIG_ENGINE_STRICT": "false",
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

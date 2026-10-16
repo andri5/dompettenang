@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Loading Spinner Component
+ * Dompet Tenang - Loading Spinner
  */
 
 import { Loader2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 export interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  color?: 'primary' | 'secondary' | 'success';
 }
 
 const sizeStyles = {
@@ -16,35 +17,39 @@ const sizeStyles = {
   lg: 'h-8 w-8',
 };
 
-export function Spinner({ size = 'md', className }: SpinnerProps) {
+const colorStyles = {
+  primary: 'text-accent',
+  secondary: 'text-ink',
+  success: 'text-lime',
+};
+
+export function Spinner({ size = 'md', className, color = 'primary' }: SpinnerProps) {
   return (
     <Loader2
-      className={cn('animate-spin text-blue-600', sizeStyles[size], className)}
+      className={cn('animate-spin', sizeStyles[size], colorStyles[color], className)}
     />
   );
 }
 
-// Full page loading
 export interface LoadingProps {
   message?: string;
 }
 
-export function Loading({ message = 'Loading...' }: LoadingProps) {
+export function Loading({ message = 'Memuat...' }: LoadingProps) {
   return (
     <div className="flex min-h-[200px] flex-col items-center justify-center gap-3">
       <Spinner size="lg" />
-      <p className="text-sm text-gray-500">{message}</p>
+      <p className="text-sm text-muted">{message}</p>
     </div>
   );
 }
 
-// Full screen loading overlay
-export function LoadingOverlay({ message = 'Loading...' }: LoadingProps) {
+export function LoadingOverlay({ message = 'Memuat...' }: LoadingProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface/80 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-3">
         <Spinner size="lg" />
-        <p className="text-sm text-gray-600">{message}</p>
+        <p className="text-sm text-muted">{message}</p>
       </div>
     </div>
   );

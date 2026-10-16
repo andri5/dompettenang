@@ -1,0 +1,57 @@
+# Same-origin: browser → https://DOMAIN/api/v1 → API
+#               browser → https://DOMAIN/*     → Web
+# This keeps HttpOnly cookies working with SameSite=Lax.
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	# Static APK / artifacts (mounted at /srv/downloads)
+	# e.g. https://DOMAIN/download/dompet-tenang.apk
+	# Missing files fall back to branded 404.html (not API JSON).
+	handle_path /download/* {
+		root * /srv/downloads
+		header X-Content-Type-Options nosniff
+		@apk path *.apk *.aab
+		header @apk Content-Disposition "attachment"
+		try_files {path} /404.html
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+# Staging (same VPS) — containers api-staging / web-staging from docker-compose.staging.yml
+staging.{$DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	handle /api/* {
+		reverse_proxy api-staging:3001
+	}
+
+	handle {
+		reverse_proxy web-staging:80
+	}
+}

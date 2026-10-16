@@ -1,12 +1,12 @@
 /**
- * DuitDiary - Select Component
- * Custom select dropdown
+ * Dompet Tenang - Select Component
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import type { SelectHTMLAttributes } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FieldTooltip } from './FieldTooltip';
 
 export interface SelectOption {
   value: string;
@@ -15,10 +15,12 @@ export interface SelectOption {
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
+  tooltip?: string;
   error?: string;
   helperText?: string;
   options: SelectOption[];
   placeholder?: string;
+  animated?: boolean;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
@@ -26,15 +28,20 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     {
       className,
       label,
+      tooltip,
       error,
       helperText,
       options,
       placeholder,
       id,
+      onFocus,
+      onBlur,
+      animated: _animated,
       ...props
     },
     ref
   ) => {
+    const [isFocused, setIsFocused] = useState(false);
     const selectId = id || props.name;
 
     return (
@@ -42,9 +49,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="mb-1.5 block text-sm font-medium text-gray-700"
+            className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-ink"
           >
-            {label}
+            <span>{label}</span>
+            {tooltip && <FieldTooltip content={tooltip} />}
           </label>
         )}
         <div className="relative">
@@ -52,14 +60,23 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             className={cn(
-              'w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-              error && 'border-red-500 focus:border-red-500 focus:ring-red-500/20',
+              'w-full appearance-none rounded-2xl border border-line bg-surface px-4 py-3 pr-11 text-sm text-ink transition-all focus:outline-none sm:text-base',
+              isFocused && 'border-accent ring-2 ring-accent/15',
+              error && 'border-coral ring-2 ring-coral/15',
               className
             )}
+            onFocus={(e) => {
+              setIsFocused(true);
+              onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              onBlur?.(e);
+            }}
             {...props}
           >
             {placeholder && (
-              <option value="" disabled>
+              <option value="" disabled={props.required}>
                 {placeholder}
               </option>
             )}
@@ -69,16 +86,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </div>
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         </div>
-        {error && (
-          <p className="mt-1.5 text-sm text-red-600">{error}</p>
-        )}
-        {helperText && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{helperText}</p>
-        )}
+        {error && <p className="mt-1.5 text-sm text-coral">{error}</p>}
+        {helperText && !error && <p className="mt-1.5 text-sm text-muted">{helperText}</p>}
       </div>
     );
   }

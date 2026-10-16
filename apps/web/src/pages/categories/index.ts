@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Categories Pages Index
+ * Dompet Tenang - Categories Pages Index
  */
 
 export { CategoriesPage } from './CategoriesPage';

@@ -1,6 +1,5 @@
 /**
- * DuitDiary - Login Page
- * Modern glassmorphism design with gradient
+ * Dompet Tenang - Login Page
  */
 
 import { useState } from 'react';
@@ -8,19 +7,30 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { AuthLayout } from '@/components/layout';
+import { AuthLayout, PageTransition } from '@/components/layout';
+import { TurnstileWidget } from '@/components/auth';
 import { Button, Input } from '@/components/ui';
 import { loginSchema } from '@/lib/validations';
 import type { LoginFormData } from '@/lib/validations';
 import { useAuthStore } from '@/stores';
+import { useToast } from '@/hooks/useToast';
+import { useCaptchaConfig } from '@/hooks/useCaptchaConfig';
 import { ROUTES } from '@/lib/constants';
-import { AxiosError } from 'axios';
+import { SEO } from '@/components/SEO';
+import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
+  const toast = useToast();
+  const { data: captcha, isLoading: captchaLoading, isError: captchaFetchError } =
+    useCaptchaConfig();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+
+  const captchaRequired = Boolean(captcha?.enabled && captcha.siteKey);
 
   const {
     register,
@@ -31,102 +41,129 @@ export function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    if (captchaRequired && !captchaToken) {
+      toast.warning('Selesaikan verifikasi captcha dulu');
+      return;
+    }
+
     setError(null);
     try {
-      await login(data);
+      await login({
+        ...data,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
+      toast.success('Selamat datang kembali', 'Login berhasil!');
       navigate(ROUTES.DASHBOARD);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.message || 'Login gagal. Periksa email dan password.');
-      } else {
-        setError('Terjadi kesalahan. Silakan coba lagi.');
-      }
+      const errorMessage = authErrorMessage(err, AUTH_SAFE.loginFailed);
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setCaptchaToken(null);
+      setCaptchaReset((n) => n + 1);
     }
   };
 
   return (
-    <AuthLayout
-      title="Masuk ke DuitDiary"
-      subtitle="Kelola pengeluaran harianmu dengan mudah"
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-red-400/40 bg-red-950/30 p-3 text-sm text-red-100 backdrop-blur-sm sm:p-4 sm:text-base">
-            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+    <PageTransition>
+      <SEO
+        title="Masuk"
+        description="Login ke akun Dompet Tenang untuk mengelola keuangan pribadimu dengan aman."
+        canonical="/login"
+      />
+      <AuthLayout title="Masuk" subtitle="Lanjutkan pencatatan keuanganmu">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {error && (
+            <div className="flex items-start gap-2 rounded-2xl border border-coral/20 bg-coral-soft px-3 py-3 text-sm text-ink">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-coral" />
+              <span>{error}</span>
+            </div>
+          )}
 
-        <Input
-          label="Email"
-          type="email"
-          placeholder="nama@email.com"
-          variant="glass"
-          leftIcon={<Mail className="h-4 w-4 sm:h-5 sm:w-5" />}
-          error={errors.email?.message}
-          {...register('email')}
-        />
+          <Input
+            label="Email"
+            type="email"
+            placeholder="nama@email.com"
+            leftIcon={<Mail className="h-4 w-4" />}
+            error={errors.email?.message}
+            {...register('email')}
+          />
 
-        <Input
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          placeholder="Masukkan password"
-          variant="glass"
-          leftIcon={<Lock className="h-4 w-4 sm:h-5 sm:w-5" />}
-          rightIcon={
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-white/60 transition-colors hover:text-white"
-              aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+          <Input
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Masukkan password"
+            leftIcon={<Lock className="h-4 w-4" />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-muted transition hover:text-ink"
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            error={errors.password?.message}
+            {...register('password')}
+          />
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-muted">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+              />
+              <span>Ingat saya</span>
+            </label>
+            <Link
+              to={ROUTES.FORGOT_PASSWORD}
+              className="font-medium text-accent hover:underline"
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
-              ) : (
-                <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
-              )}
-            </button>
-          }
-          error={errors.password?.message}
-          {...register('password')}
-        />
+              Lupa password?
+            </Link>
+          </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex cursor-pointer items-center gap-2 text-white/80">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-white/30 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+          {captchaLoading && (
+            <p className="text-center text-xs text-muted">Memuat captcha…</p>
+          )}
+          {captchaFetchError && (
+            <p className="text-xs text-coral">
+              Gagal memuat konfigurasi captcha. Refresh halaman atau periksa API.
+            </p>
+          )}
+          {captcha?.misconfigured && (
+            <p className="text-xs text-amber-700">
+              Captcha diaktifkan admin tetapi kunci Turnstile belum diset di server.
+            </p>
+          )}
+          {captchaRequired && captcha.siteKey && (
+            <TurnstileWidget
+              key={captchaReset}
+              siteKey={captcha.siteKey}
+              onToken={setCaptchaToken}
+              className="flex justify-center overflow-visible"
             />
-            <span>Ingat saya</span>
-          </label>
-          <Link
-            to="#"
-            className="text-white/80 transition-colors hover:text-white hover:underline"
-          >
-            Lupa password?
-          </Link>
-        </div>
+          )}
 
-        <Button
-          type="submit"
-          variant="gradient"
-          className="w-full"
-          size="lg"
-          isLoading={isLoading}
-        >
-          Masuk
-        </Button>
-
-        <p className="text-center text-sm text-white/70 sm:text-base">
-          Belum punya akun?{' '}
-          <Link
-            to={ROUTES.REGISTER}
-            className="font-semibold text-white transition-colors hover:underline"
+          <Button
+            type="submit"
+            variant="gradient"
+            className="w-full"
+            size="lg"
+            isLoading={isLoading}
+            disabled={isLoading || (captchaRequired && !captchaToken)}
           >
-            Daftar sekarang
-          </Link>
-        </p>
-      </form>
-    </AuthLayout>
+            Masuk
+          </Button>
+
+          <p className="text-center text-sm text-muted">
+            Belum punya akun?{' '}
+            <Link to={ROUTES.REGISTER} className="font-semibold text-accent hover:underline">
+              Daftar sekarang
+            </Link>
+          </p>
+        </form>
+      </AuthLayout>
+    </PageTransition>
   );
 }

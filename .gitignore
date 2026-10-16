@@ -1,21 +1,73 @@
+# Dependencies
 node_modules/
-dist/
-build/
+/.pnp
+.pnp.js
+
+# Production build
+/build
+/dist
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 *.log
+
+# Environment variables
 .env
 .env.local
-.DS_Store
-*.swp
-*.swo
+.env.*.local
+
+# IDE and Editor
 .vscode/
 .idea/
-coverage/
-uploads/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS specific
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+/coverage
+.nyc_output
+
+# Build outputs
+.turbo/
+.vercel/
 .next/
 out/
 *.tsbuildinfo
-.turbo/
-.vercel/
+
+# Package managers
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
+
+# Misc
+.playwright-mcp/
+uploads/
+temp/
+tmp/
+
+# Cursor / mobile agent artifacts
+/apps/mobile/.claude/
+/apps/mobile/eas-build-*.json
+
+# Test files
+test-*.ps1
+
+.local-ssh/
+.tmp-check.sh
+.tmp*/
+
+# Playwright / local artifacts (do not commit)
+**/playwright-report/
+**/test-results/
+apps/mobile/expo-qr.png
+

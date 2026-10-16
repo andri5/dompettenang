@@ -1,12 +1,13 @@
 {
-  "name": "duitdiary-api",
+  "name": "dompettenang-api",
   "version": "1.0.0",
-  "description": "DuitDiary - Backend API for expense tracking application",
+  "description": "Dompet Tenang - Backend API for expense tracking application",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "eas-build-pre-install": "echo Skipping API install hooks for mobile EAS build",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -15,30 +16,49 @@
     "test": "vitest",
     "test:coverage": "vitest --coverage"
   },
-  "keywords": ["expense-tracker", "duitdiary", "finance"],
+  "keywords": [
+    "expense-tracker",
+    "dompettenang",
+    "finance"
+  ],
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@types/helmet": "^0.0.48",
+    "@types/swagger-jsdoc": "^6.0.4",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "express-validator": "^7.2.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/uuid": "^10.0.0",
+    "jest": "^30.2.0",
     "prisma": "^5.22.0",
+    "ts-jest": "^29.4.6",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.5"

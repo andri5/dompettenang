@@ -1,6 +1,6 @@
 /**
  * ============================================
- * DuitDiary API - Custom Error Classes
+ * Dompet Tenang API - Custom Error Classes
  * ============================================
  * Standardized error handling for the application.
  * These errors are caught by error middleware.

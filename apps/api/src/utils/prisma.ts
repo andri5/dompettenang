@@ -1,6 +1,6 @@
 /**
  * ============================================
- * DuitDiary API - Prisma Client
+ * Dompet Tenang API - Prisma Client
  * ============================================
  * Singleton Prisma client instance.
  * Uses global caching to prevent multiple instances during hot reload.

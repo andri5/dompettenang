@@ -1,6 +1,6 @@
-# 📒 DuitDiary API
+# 📒 Dompet Tenang API
 
-> Backend API for DuitDiary - Aplikasi Catat Harian Pengeluaran
+> Backend API for Dompet Tenang - Aplikasi Catat Harian Pengeluaran
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -90,7 +90,7 @@ Make sure you have the following installed:
 
 6. **Verify installation**:
    ```bash
-   # Should return: {"success":true,"message":"DuitDiary API is running",...}
+   # Should return: {"success":true,"message":"Dompet Tenang API is running",...}
    curl http://localhost:3000/api/v1/health
    ```
 
@@ -422,7 +422,7 @@ NODE_ENV=development
 PORT=3000
 
 # Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/duitdiary?schema=public"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/Dompet Tenang?schema=public"
 
 # JWT Secrets (generate secure random strings for production)
 JWT_SECRET=your-super-secret-jwt-key
@@ -580,7 +580,7 @@ Solution: Refresh token using `/auth/refresh` endpoint
 
 ### Getting Help
 
-- Check the [plan.md](../../plan.md) for project documentation
+- Check [docs/DEV_WORKFLOW.md](../../docs/DEV_WORKFLOW.md) for project documentation
 - Review error logs in terminal
 - Check PostgreSQL logs if database issues
 
@@ -592,4 +592,4 @@ This project is proprietary software. All rights reserved.
 
 ---
 
-**Made with ❤️ by DuitDiary Team**
+**Made with ❤️ by Dompet Tenang Team**

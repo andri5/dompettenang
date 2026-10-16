@@ -6,7 +6,7 @@ Write-Host " DuitDiary API Test Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$baseUrl = "http://localhost:3000/api/v1"
+$baseUrl = "http://localhost:3001/api/v1"
 $headers = @{"Content-Type"="application/json"}
 
 # Test Health Endpoint

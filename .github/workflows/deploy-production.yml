@@ -1,0 +1,166 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Build gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      # Repo currently has no root package-lock; use npm install.
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Generate Prisma client
+        run: npx --workspace apps/api prisma generate
+
+      - name: Build API
+        run: npm --workspace apps/api run build
+
+      - name: Build Web
+        run: npm --workspace apps/web run build
+        env:
+          VITE_API_URL: /api/v1
+          VITE_SITE_URL: https://dompet-tenang.web.id
+
+  deploy:
+    name: Deploy to Sumopod VPS
+    needs: gate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dompet-tenang.web.id
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Normalize Windows CRLF / accidental quotes from secret paste
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key file contents"
+            echo "Expected a line like: -----BEGIN OPENSSH PRIVATE KEY-----"
+            echo "Do NOT paste the .pub public key."
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # VPS (Sumopod) often cannot reach github.com:443 — upload release from Actions instead of git pull.
+      - name: Pack release tarball
+        run: |
+          set -euo pipefail
+          tar \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='**/node_modules' \
+            --exclude='apps/web/dist' \
+            --exclude='apps/api/dist' \
+            --exclude='apps/mobile/.expo' \
+            --exclude='**/.env' \
+            --exclude='**/.env.local' \
+            --exclude='**/.env.production' \
+            -czf /tmp/dompettenang-release.tgz .
+
+      - name: Upload release and deploy over SSH
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          USER_NAME="${PROD_SSH_USER:?Set secret PROD_SSH_USER}"
+          PORT="${PROD_SSH_PORT:-22}"
+          SSH=(ssh -i ~/.ssh/id_deploy -p "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          SCP=(scp -i ~/.ssh/id_deploy -P "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+
+          "${SCP[@]}" /tmp/dompettenang-release.tgz "${USER_NAME}@${HOST}:/tmp/dompettenang-release.tgz"
+
+          "${SSH[@]}" "${USER_NAME}@${HOST}" 'bash -s' <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          ENV_FILE="${APP_DIR}/deploy/.env.production"
+          RELEASE_TGZ=/tmp/dompettenang-release.tgz
+          STAGE=/tmp/dompettenang-release-$$
+
+          if [[ ! -f "${ENV_FILE}" ]]; then
+            echo "ERROR: missing ${ENV_FILE}"
+            exit 1
+          fi
+
+          cp -a "${ENV_FILE}" /tmp/dompettenang.env.production.bak
+          mkdir -p "${STAGE}"
+          tar -xzf "${RELEASE_TGZ}" -C "${STAGE}"
+
+          # Preserve production secrets and hosted APK downloads
+          mkdir -p "${APP_DIR}"
+          if command -v rsync >/dev/null 2>&1; then
+            rsync -a --delete \
+              --exclude 'deploy/.env.production' \
+              --exclude 'deploy/.env.staging' \
+              --exclude 'deploy/downloads/' \
+              --exclude '.git/' \
+              "${STAGE}/" "${APP_DIR}/"
+          else
+            # Fallback without rsync: overlay files, keep env
+            find "${STAGE}" -mindepth 1 -maxdepth 1 ! -name '.git' -exec cp -a {} "${APP_DIR}/" \;
+          fi
+
+          mkdir -p "${APP_DIR}/deploy"
+          cp -a /tmp/dompettenang.env.production.bak "${ENV_FILE}"
+          chmod +x "${APP_DIR}/deploy/remote-deploy.sh"
+
+          cd "${APP_DIR}"
+          SKIP_GIT=1 APP_DIR="${APP_DIR}" ./deploy/remote-deploy.sh
+
+          rm -rf "${STAGE}" "${RELEASE_TGZ}"
+          EOF
+
+      - name: Public health check (best effort)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL --connect-timeout 5 --max-time 20 \
+              https://dompet-tenang.web.id/api/v1/health; then
+              echo "Public health OK"
+              exit 0
+            fi
+            echo "Public health attempt ${i}/6 failed, retrying..."
+            sleep 5
+          done
+          echo "Public HTTPS health still failing — check DNS/TLS on VPS. Deploy job already completed remote script."
+          exit 1

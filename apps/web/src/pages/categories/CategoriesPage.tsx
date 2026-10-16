@@ -1,16 +1,19 @@
 /**
- * DuitDiary - Categories Page
- * Modern grid layout with colorful cards
+ * Dompet Tenang - Categories Page
  */
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
-import { MainLayout } from '@/components/layout';
+import { Plus, Pencil, Trash2, FolderOpen, AlertCircle, Lock } from 'lucide-react';
+import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
 import {
   Button,
   Loading,
   Modal,
   ModalFooter,
+  EmptyState,
+  Card,
+  CategoryIcon,
+  Badge,
 } from '@/components/ui';
 import { CategoryForm } from './components/CategoryForm';
 import { useCategories, useCategoryMutations } from '@/hooks';
@@ -28,173 +31,187 @@ export function CategoriesPage() {
 
   const handleDelete = async () => {
     if (!deleteModal) return;
-    await deleteMutation.mutateAsync(deleteModal.id);
-    setDeleteModal(null);
+    try {
+      await deleteMutation.mutateAsync(deleteModal.id);
+      setDeleteModal(null);
+    } catch {
+      // Error toast handled in mutation
+    }
   };
 
-  const openCreateModal = () => {
-    setFormModal({ isOpen: true });
-  };
-
+  const openCreateModal = () => setFormModal({ isOpen: true });
   const openEditModal = (category: Category) => {
+    if (category.isDefault) return;
     setFormModal({ isOpen: true, category });
   };
-
-  const closeFormModal = () => {
-    setFormModal({ isOpen: false });
-  };
+  const closeFormModal = () => setFormModal({ isOpen: false });
 
   return (
-    <MainLayout>
-      {/* Hero Header */}
-      <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-slate-900 p-6 text-white shadow-xl sm:p-8 border border-blue-700/50">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">📁 Kategori</h1>
-            <p className="mt-1 text-white/80">
-              Kelola kategori pengeluaranmu
+    <PageTransition>
+      <MainLayout>
+        <PageHeader
+          eyebrow="Organisasi"
+          title="Kategori"
+          description="Kelompokkan pemasukan dan pengeluaran. Kategori default tidak bisa dihapus."
+          action={
+            <Button
+              variant="gradient"
+              size="lg"
+              leftIcon={<Plus className="h-5 w-5" />}
+              onClick={openCreateModal}
+              className="w-full sm:w-auto"
+            >
+              Tambah Kategori
+            </Button>
+          }
+        />
+
+        {isLoading ? (
+          <Loading message="Memuat kategori..." />
+        ) : categories && categories.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {categories.map((category) => {
+              const isDefault = !!category.isDefault;
+              return (
+                <Card key={category.id} padding="none" className="overflow-hidden">
+                  <div
+                    className="h-1.5 w-full"
+                    style={{ backgroundColor: category.color || '#0f9b8e' }}
+                  />
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
+                          style={{
+                            backgroundColor: category.color
+                              ? `${category.color}22`
+                              : '#e6edf4',
+                            color: category.color || '#0f9b8e',
+                          }}
+                        >
+                          <CategoryIcon icon={category.icon} size={22} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate font-display text-lg font-bold text-ink">
+                              {category.name}
+                            </p>
+                            {isDefault && (
+                              <Badge variant="info" size="sm">
+                                Default
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted">
+                            {category.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}
+                            {' · '}
+                            {category.expenseCount || 0} transaksi
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-2 border-t border-line pt-4">
+                      <button
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold text-muted transition hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+                        onClick={() => openEditModal(category)}
+                        disabled={isDefault}
+                        title={
+                          isDefault
+                            ? 'Kategori default tidak dapat diubah'
+                            : 'Edit kategori'
+                        }
+                      >
+                        {isDefault ? <Lock className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                        Edit
+                      </button>
+                      <button
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold text-muted transition hover:bg-coral-soft hover:text-coral disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+                        onClick={() => setDeleteModal(category)}
+                        disabled={isDefault}
+                        title={
+                          isDefault
+                            ? 'Kategori default tidak dapat dihapus'
+                            : 'Hapus kategori'
+                        }
+                      >
+                        {isDefault ? <Lock className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+
+            <button
+              onClick={openCreateModal}
+              className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-line bg-surface/50 p-5 text-muted transition hover:border-accent/40 hover:bg-accent-soft/40 hover:text-accent"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-mist-deep">
+                <Plus className="h-6 w-6" />
+              </div>
+              <span className="font-semibold">Tambah Kategori</span>
+            </button>
+          </div>
+        ) : (
+          <Card padding="lg">
+            <EmptyState
+              icon={<FolderOpen className="h-7 w-7" />}
+              title="Belum ada kategori"
+              description="Buat kategori untuk mengelompokkan transaksimu"
+              action={
+                <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreateModal}>
+                  Tambah Kategori
+                </Button>
+              }
+            />
+          </Card>
+        )}
+
+        <Modal
+          isOpen={formModal.isOpen}
+          onClose={closeFormModal}
+          title={formModal.category ? 'Edit Kategori' : 'Tambah Kategori'}
+        >
+          <CategoryForm
+            category={formModal.category}
+            onSuccess={closeFormModal}
+            onCancel={closeFormModal}
+          />
+        </Modal>
+
+        <Modal
+          isOpen={!!deleteModal}
+          onClose={() => setDeleteModal(null)}
+          title="Hapus Kategori"
+          size="sm"
+        >
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber/20 bg-amber-soft p-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber" />
+            <p className="text-sm text-ink">
+              Transaksi terkait akan dipindah ke kategori &quot;Lainnya&quot;.
             </p>
           </div>
-          <Button
-            variant="glass"
-            size="lg"
-            leftIcon={<Plus className="h-5 w-5" />}
-            onClick={openCreateModal}
-            className="w-full sm:w-auto"
-          >
-            Tambah Kategori
-          </Button>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <Loading message="Memuat kategori..." />
-      ) : categories && categories.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+          <p className="text-muted">
+            Hapus kategori "
+            <strong className="text-ink">{deleteModal?.name}</strong>"?
+          </p>
+          <ModalFooter>
+            <Button variant="ghost" onClick={() => setDeleteModal(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={deleteMutation.isPending}
+              onClick={handleDelete}
             >
-              {/* Color accent top border */}
-              <div
-                className="absolute inset-x-0 top-0 h-1"
-                style={{ backgroundColor: category.color || '#6366f1' }}
-              />
-              
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
-                    style={{
-                      backgroundColor: category.color
-                        ? `${category.color}15`
-                        : '#f3f4f6',
-                    }}
-                  >
-                    <span
-                      className="text-2xl"
-                      style={{ color: category.color }}
-                    >
-                      {category.icon || '📁'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{category.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {category.expenseCount || 0} pengeluaran
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Action buttons - show on hover */}
-              <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-4 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                  onClick={() => openEditModal(category)}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </button>
-                <button
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
-                  onClick={() => setDeleteModal(category)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Hapus
-                </button>
-              </div>
-            </div>
-          ))}
-          
-          {/* Add New Category Card */}
-          <button
-            onClick={openCreateModal}
-            className="flex min-h-[140px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-5 text-gray-400 transition-all hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-500"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-              <Plus className="h-6 w-6" />
-            </div>
-            <span className="font-medium">Tambah Kategori</span>
-          </button>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100">
-            <FolderOpen className="h-8 w-8 text-violet-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Belum ada kategori</h3>
-          <p className="mt-1 text-gray-500">Buat kategori untuk mengelompokkan pengeluaranmu</p>
-          <Button 
-            variant="gradient" 
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={openCreateModal}
-            className="mt-4"
-          >
-            Tambah Kategori
-          </Button>
-        </div>
-      )}
-
-      {/* Category Form Modal */}
-      <Modal
-        isOpen={formModal.isOpen}
-        onClose={closeFormModal}
-        title={formModal.category ? 'Edit Kategori' : 'Tambah Kategori'}
-      >
-        <CategoryForm
-          category={formModal.category}
-          onSuccess={closeFormModal}
-          onCancel={closeFormModal}
-        />
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteModal}
-        onClose={() => setDeleteModal(null)}
-        title="Hapus Kategori"
-        size="sm"
-      >
-        <p className="text-gray-600">
-          Apakah kamu yakin ingin menghapus kategori "
-          <strong>{deleteModal?.name}</strong>"? Pengeluaran yang terkait dengan
-          kategori ini tidak akan dihapus.
-        </p>
-        <ModalFooter>
-          <Button variant="ghost" onClick={() => setDeleteModal(null)}>
-            Batal
-          </Button>
-          <Button
-            variant="danger"
-            isLoading={deleteMutation.isPending}
-            onClick={handleDelete}
-          >
-            Hapus
-          </Button>
-        </ModalFooter>
-      </Modal>
-    </MainLayout>
+              Hapus
+            </Button>
+          </ModalFooter>
+        </Modal>
+      </MainLayout>
+    </PageTransition>
   );
 }

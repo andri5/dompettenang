@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { expenseService } from '../services/expense.service.js';
+import { auditService } from '../services/audit.service.js';
 import { sendSuccess, sendCreated, sendError, sendNotFound } from '../utils/response.js';
 import { expenseQuerySchema } from '../utils/validation.js';
 import type { CreateExpenseInput, UpdateExpenseInput } from '../utils/validation.js';
 import type { AuthenticatedRequest } from '../types/index.js';
+import { paramString } from '../utils/params.js';
 
 export class ExpenseController {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -21,7 +23,7 @@ export class ExpenseController {
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = (req as AuthenticatedRequest).user!;
-      const { id } = req.params;
+      const id = paramString(req.params.id);
       const expense = await expenseService.getById(id, userId);
       
       if (!expense) {
@@ -41,6 +43,17 @@ export class ExpenseController {
       const { userId } = (req as AuthenticatedRequest).user!;
       const data: CreateExpenseInput = req.body;
       const expense = await expenseService.create(userId, data);
+
+      void auditService.log({
+        userId,
+        actorRole: (req as AuthenticatedRequest).user?.role,
+        action: 'CREATE_EXPENSE',
+        entityType: 'expense',
+        entityId: expense.id,
+        summary: `Create expense ${expense.id}`,
+        metadata: { type: expense.type, amount: expense.amount, categoryId: expense.categoryId },
+      });
+
       sendCreated(res, expense, 'Expense created successfully');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create expense';
@@ -55,7 +68,7 @@ export class ExpenseController {
   async update(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = (req as AuthenticatedRequest).user!;
-      const { id } = req.params;
+      const id = paramString(req.params.id);
       const data: UpdateExpenseInput = req.body;
       const expense = await expenseService.update(id, userId, data);
       
@@ -65,6 +78,16 @@ export class ExpenseController {
       }
       
       sendSuccess(res, expense, 'Expense updated successfully');
+
+      void auditService.log({
+        userId,
+        actorRole: (req as AuthenticatedRequest).user?.role,
+        action: 'UPDATE_EXPENSE',
+        entityType: 'expense',
+        entityId: expense.id,
+        summary: `Update expense ${expense.id}`,
+        metadata: { type: expense.type, amount: expense.amount, categoryId: expense.categoryId },
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update expense';
       if (message === 'Category not found') {
@@ -78,7 +101,7 @@ export class ExpenseController {
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = (req as AuthenticatedRequest).user!;
-      const { id } = req.params;
+      const id = paramString(req.params.id);
       const deleted = await expenseService.delete(id, userId);
       
       if (!deleted) {
@@ -87,6 +110,15 @@ export class ExpenseController {
       }
       
       sendSuccess(res, null, 'Expense deleted successfully');
+
+      void auditService.log({
+        userId,
+        actorRole: (req as AuthenticatedRequest).user?.role,
+        action: 'DELETE_EXPENSE',
+        entityType: 'expense',
+        entityId: id,
+        summary: `Delete expense ${id}`,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete expense';
       sendError(res, message, 400, 'DELETE_EXPENSE_FAILED');

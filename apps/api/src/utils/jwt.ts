@@ -1,6 +1,6 @@
 /**
  * ============================================
- * DuitDiary API - JWT Utilities
+ * Dompet Tenang API - JWT Utilities
  * ============================================
  * Token generation and verification utilities.
  * Handles access tokens and refresh tokens.
@@ -18,6 +18,7 @@ import { config } from '../config/index.js';
 export interface TokenPayload {
   userId: string;
   email: string;
+  role?: string;
 }
 
 /**

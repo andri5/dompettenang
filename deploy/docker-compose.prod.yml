@@ -1,0 +1,106 @@
+# Dompet Tenang — production stack for Sumopod VPS
+# Usage (from repo root on the server):
+#   cp deploy/.env.production.example deploy/.env.production
+#   # edit deploy/.env.production
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d --build
+
+name: dompettenang
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dompet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dompettenang}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-dompet} -d ${POSTGRES_DB:-dompettenang}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dompet}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dompettenang}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://${DOMAIN}}
+      APP_URL: ${APP_URL:-https://${DOMAIN}}
+      COOKIE_SECURE: 'true'
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      SMTP_ENABLED: ${SMTP_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      EXPOSE_PASSWORD_RESET_URL: 'false'
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      PRO_LIFETIME_PRICE: ${PRO_LIFETIME_PRICE:-29000}
+      PRO_BANK_NAME: ${PRO_BANK_NAME:-}
+      PRO_BANK_ACCOUNT: ${PRO_BANK_ACCOUNT:-}
+      PRO_BANK_HOLDER: ${PRO_BANK_HOLDER:-}
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+        VITE_SITE_URL: https://${DOMAIN}
+    restart: unless-stopped
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN e.g. dompettenang.id}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./downloads:/srv/downloads:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge

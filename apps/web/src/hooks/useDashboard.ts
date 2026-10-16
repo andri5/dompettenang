@@ -1,5 +1,5 @@
 /**
- * DuitDiary - Dashboard Hooks
+ * Dompet Tenang - Dashboard Hooks
  */
 
 import { useQuery } from '@tanstack/react-query';

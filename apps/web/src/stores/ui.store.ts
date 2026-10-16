@@ -1,9 +1,12 @@
 /**
- * DuitDiary - UI Store
- * Zustand store for UI state (sidebar, modals, notifications)
+ * Dompet Tenang - UI Store
+ * Zustand store for UI state (sidebar, modals, notifications, theme)
  */
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { AppTheme } from '@/lib/constants';
+import { STORAGE_KEYS } from '@/lib/constants';
 
 interface Notification {
   id: string;
@@ -18,6 +21,7 @@ interface UIState {
   isMobileMenuOpen: boolean;
   notifications: Notification[];
   isLoading: boolean;
+  theme: AppTheme;
 }
 
 interface UIActions {
@@ -29,69 +33,106 @@ interface UIActions {
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
   setLoading: (loading: boolean) => void;
+  setTheme: (theme: AppTheme) => void;
 }
 
 type UIStore = UIState & UIActions;
 
 let notificationId = 0;
 
-export const useUIStore = create<UIStore>()((set) => ({
-  // Initial state
-  isSidebarOpen: true,
-  isMobileMenuOpen: false,
-  notifications: [],
-  isLoading: false,
+function applyThemeToDocument(theme: AppTheme) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(STORAGE_KEYS.THEME, theme);
+}
 
-  // Actions
-  toggleSidebar: () => {
-    set((state) => ({ isSidebarOpen: !state.isSidebarOpen }));
-  },
+export const useUIStore = create<UIStore>()(
+  persist(
+    (set) => ({
+      isSidebarOpen: true,
+      isMobileMenuOpen: false,
+      notifications: [],
+      isLoading: false,
+      theme: 'neo',
 
-  setSidebarOpen: (open: boolean) => {
-    set({ isSidebarOpen: open });
-  },
+      toggleSidebar: () => {
+        set((state) => ({ isSidebarOpen: !state.isSidebarOpen }));
+      },
 
-  toggleMobileMenu: () => {
-    set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen }));
-  },
+      setSidebarOpen: (open: boolean) => {
+        set({ isSidebarOpen: open });
+      },
 
-  setMobileMenuOpen: (open: boolean) => {
-    set({ isMobileMenuOpen: open });
-  },
+      toggleMobileMenu: () => {
+        set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen }));
+      },
 
-  addNotification: (notification: Omit<Notification, 'id'>) => {
-    const id = `notification-${++notificationId}`;
-    const newNotification: Notification = {
-      ...notification,
-      id,
-      duration: notification.duration ?? 5000,
-    };
+      setMobileMenuOpen: (open: boolean) => {
+        set({ isMobileMenuOpen: open });
+      },
 
-    set((state) => ({
-      notifications: [...state.notifications, newNotification],
-    }));
+      addNotification: (notification: Omit<Notification, 'id'>) => {
+        const id = `notification-${++notificationId}`;
+        const newNotification: Notification = {
+          ...notification,
+          id,
+          duration: notification.duration ?? 5000,
+        };
 
-    // Auto remove after duration
-    if (newNotification.duration && newNotification.duration > 0) {
-      setTimeout(() => {
+        set((state) => ({
+          notifications: [...state.notifications, newNotification],
+        }));
+
+        if (newNotification.duration && newNotification.duration > 0) {
+          setTimeout(() => {
+            set((state) => ({
+              notifications: state.notifications.filter((n) => n.id !== id),
+            }));
+          }, newNotification.duration);
+        }
+      },
+
+      removeNotification: (id: string) => {
         set((state) => ({
           notifications: state.notifications.filter((n) => n.id !== id),
         }));
-      }, newNotification.duration);
+      },
+
+      clearNotifications: () => {
+        set({ notifications: [] });
+      },
+
+      setLoading: (loading: boolean) => {
+        set({ isLoading: loading });
+      },
+
+      setTheme: (theme: AppTheme) => {
+        applyThemeToDocument(theme);
+        set({ theme });
+      },
+    }),
+    {
+      name: 'dompettenang-ui',
+      partialize: (state) => ({
+        theme: state.theme,
+        isSidebarOpen: state.isSidebarOpen,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.theme) {
+          applyThemeToDocument(state.theme);
+        }
+      },
     }
-  },
+  )
+);
 
-  removeNotification: (id: string) => {
-    set((state) => ({
-      notifications: state.notifications.filter((n) => n.id !== id),
-    }));
-  },
-
-  clearNotifications: () => {
-    set({ notifications: [] });
-  },
-
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
-  },
-}));
+/** Call once on app boot before paint if possible */
+export function initThemeFromStorage() {
+  const stored = localStorage.getItem(STORAGE_KEYS.THEME) as AppTheme | null;
+  const theme: AppTheme =
+    stored === 'neo' || stored === 'midnight' || stored === 'ocean'
+      ? stored
+      : 'neo';
+  applyThemeToDocument(theme);
+  return theme;
+}
