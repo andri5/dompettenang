@@ -17,11 +17,14 @@ import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
 import routes from './routes/index.js';
 import { errorMiddleware } from './middlewares/index.js';
-import { authRateLimiter, apiRateLimiter } from './middlewares/rateLimit.middleware.js';
+import { apiRateLimiter } from './middlewares/rateLimit.middleware.js';
 import { ensureDefaultCategories } from './services/defaultCategories.service.js';
 
 // Initialize Express application
 const app = express();
+
+// Caddy/Docker: use real client IP for rate limits (not the proxy hop)
+app.set('trust proxy', 1);
 
 // ==================== SECURITY MIDDLEWARE ====================
 
@@ -58,7 +61,8 @@ app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
 // NOTE: uploads are NOT publicly static — use GET /api/v1/uploads/content/:kind/:filename
 
-app.use('/api/v1/auth', authRateLimiter);
+// Auth login/register rate limits are applied per-route (not whole /auth),
+// so /me + /refresh-token are never blocked by shared proxy IP limits.
 app.use('/api/v1', apiRateLimiter);
 
 // ==================== ROUTES ====================

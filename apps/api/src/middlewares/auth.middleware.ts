@@ -4,17 +4,40 @@ import { sendUnauthorized } from '../utils/response.js';
 import { config } from '../config/index.js';
 import { AuthenticatedRequest } from '../types/index.js';
 
-function extractAccessToken(req: Request): string | null {
+function extractBearer(req: Request): string | null {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice('Bearer '.length).trim();
     if (token) return token;
   }
+  return null;
+}
 
-  const cookieToken = (req as Request & { cookies?: Record<string, string> }).cookies?.[
-    config.cookie.accessName
-  ];
-  return cookieToken || null;
+function extractCookieToken(req: Request): string | null {
+  return (
+    (req as Request & { cookies?: Record<string, string> }).cookies?.[
+      config.cookie.accessName
+    ] || null
+  );
+}
+
+/**
+ * Prefer a *valid* Bearer token; if missing/expired, fall back to access cookie.
+ * Stale in-memory Bearer must not block a still-valid HttpOnly cookie.
+ */
+function resolveAccessPayload(req: Request) {
+  const bearer = extractBearer(req);
+  if (bearer) {
+    const fromBearer = verifyAccessToken(bearer);
+    if (fromBearer) return fromBearer;
+  }
+
+  const cookieToken = extractCookieToken(req);
+  if (cookieToken) {
+    return verifyAccessToken(cookieToken);
+  }
+
+  return null;
 }
 
 export const authMiddleware = (
@@ -22,17 +45,14 @@ export const authMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  const token = extractAccessToken(req);
-
-  if (!token) {
-    sendUnauthorized(res, 'Access token is required');
-    return;
-  }
-
-  const payload = verifyAccessToken(token);
+  const payload = resolveAccessPayload(req);
 
   if (!payload) {
-    sendUnauthorized(res, 'Invalid or expired access token');
+    const hasAnyToken = !!(extractBearer(req) || extractCookieToken(req));
+    sendUnauthorized(
+      res,
+      hasAnyToken ? 'Invalid or expired access token' : 'Access token is required'
+    );
     return;
   }
 
@@ -50,16 +70,13 @@ export const optionalAuthMiddleware = (
   _res: Response,
   next: NextFunction
 ): void => {
-  const token = extractAccessToken(req);
-  if (token) {
-    const payload = verifyAccessToken(token);
-    if (payload) {
-      (req as AuthenticatedRequest).user = {
-        userId: payload.userId,
-        email: payload.email,
-        role: payload.role,
-      };
-    }
+  const payload = resolveAccessPayload(req);
+  if (payload) {
+    (req as AuthenticatedRequest).user = {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role,
+    };
   }
   next();
 };

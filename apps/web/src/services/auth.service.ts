@@ -150,13 +150,20 @@ export async function restoreSession(): Promise<User | null> {
   }
 
   try {
+    // Avoid sending a stale memory Bearer during bootstrap refresh
+    setAccessToken(null);
     const tokens = await refreshToken();
     if (tokens?.accessToken) setAccessToken(tokens.accessToken);
     if (tokens?.refreshToken) setRefreshToken(tokens.refreshToken);
     const user = await getCurrentUser();
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     return user;
-  } catch {
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    // Transient failures must not wipe a still-valid cookie session
+    if (status === 429 || status === 503 || status === undefined) {
+      return getStoredUser();
+    }
     clearAuthData();
     return null;
   }

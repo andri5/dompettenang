@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { authController } from '../controllers/auth.controller.js';
 import { authMiddleware, validate } from '../middlewares/index.js';
-import { passwordResetRateLimiter } from '../middlewares/rateLimit.middleware.js';
+import {
+  authRateLimiter,
+  passwordResetRateLimiter,
+} from '../middlewares/rateLimit.middleware.js';
 import {
   registerSchema,
   loginSchema,
@@ -18,12 +21,14 @@ router.get('/captcha-config', (req, res) => authController.captchaConfig(req, re
 
 router.post(
   '/register',
+  authRateLimiter,
   validate(registerSchema),
   (req, res) => authController.register(req, res)
 );
 
 router.post(
   '/login',
+  authRateLimiter,
   validate(loginSchema),
   (req, res) => authController.login(req, res)
 );
