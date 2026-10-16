@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from '@/stores';
 import { SEO } from '@/components/SEO';
 import api from '@/lib/api';
+import { feedbackSchema } from '@/lib/validations';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -762,8 +763,18 @@ function FeedbackSection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    api.post('/feedback', { name: name.trim() || null, message: message.trim(), rating })
+    const checked = feedbackSchema.safeParse({
+      name: name || undefined,
+      message,
+      rating,
+    });
+    if (!checked.success) return;
+    api
+      .post('/feedback', {
+        name: checked.data.name || null,
+        message: checked.data.message,
+        rating: checked.data.rating ?? rating,
+      })
       .catch(() => {});
     setSubmitted(true);
     setTimeout(() => {

@@ -2,22 +2,65 @@
  * ============================================
  * Dompet Tenang API - Validation Schemas
  * ============================================
- * Zod validation schemas for request validation.
- * Used with validate middleware to validate request body/query.
- * 
- * @see https://zod.dev/ for Zod documentation
+ * Zod schemas aligned with OWASP Input Validation:
+ * whitelist types, max lengths, canonicalize, reject unsafe text.
  * ============================================
  */
 
 import { z } from 'zod';
+import {
+  isSafeIconKey,
+  isSafePlainText,
+  normalizeMultiline,
+  normalizeWhitespace,
+} from './sanitize.js';
 
-// ==================== AUTH SCHEMAS ====================
+// ==================== SHARED ====================
+
+/** bcrypt truncates at 72 bytes — cap to avoid DoS / silent truncation. */
+const PASSWORD_MAX = 72;
+const NOTE_MAX = 1000;
+const NAME_MAX = 100;
+const EMAIL_MAX = 255;
+const SEARCH_MAX = 100;
+const AMOUNT_MAX = 999_999_999_999.99;
+
+const safePlainText = (label: string, max: number) =>
+  z
+    .string()
+    .max(max, `${label} terlalu panjang`)
+    .transform(normalizeWhitespace)
+    .refine((v) => v.length > 0, `${label} wajib diisi`)
+    .refine(isSafePlainText, `${label} mengandung karakter tidak diizinkan`);
+
+const optionalSafeNote = z
+  .string()
+  .max(NOTE_MAX, 'Catatan terlalu panjang')
+  .optional()
+  .transform((v) => {
+    if (v === undefined || v === '') return undefined;
+    return normalizeMultiline(v);
+  })
+  .refine(
+    (v) => v === undefined || isSafePlainText(v),
+    'Catatan mengandung karakter tidak diizinkan'
+  );
+
+const emailSchema = z
+  .string()
+  .max(EMAIL_MAX, 'Email terlalu panjang')
+  .email('Format email tidak valid')
+  .transform((v) => v.trim().toLowerCase());
+
 const strongPassword = z
   .string()
   .min(8, 'Password minimal 8 karakter')
-  .max(100, 'Password must be less than 100 characters')
+  .max(PASSWORD_MAX, `Password maksimal ${PASSWORD_MAX} karakter`)
   .refine((value) => /[A-Za-z]/.test(value) && /\d/.test(value), {
     message: 'Password harus mengandung huruf dan angka',
+  })
+  .refine((value) => !/\s/.test(value), {
+    message: 'Password tidak boleh mengandung spasi',
   });
 
 const genderSchema = z.enum(['MALE', 'FEMALE'], {
@@ -30,115 +73,122 @@ const birthDateSchema = z
   .refine((value) => {
     const d = new Date(`${value}T00:00:00.000Z`);
     if (Number.isNaN(d.getTime())) return false;
+    const iso = d.toISOString().slice(0, 10);
+    if (iso !== value) return false;
     const now = new Date();
     const min = new Date(now.getFullYear() - 120, now.getMonth(), now.getDate());
     const max = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
     return d >= min && d <= max;
   }, 'Tanggal lahir tidak valid (usia 10–120 tahun)');
 
+const dateYmdSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal: YYYY-MM-DD')
+  .refine((value) => {
+    const d = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.toISOString().slice(0, 10) === value;
+  }, 'Tanggal tidak valid');
+
+const amountSchema = z
+  .number({ message: 'Jumlah harus angka' })
+  .finite('Jumlah tidak valid')
+  .positive('Jumlah harus lebih dari 0')
+  .max(AMOUNT_MAX, 'Jumlah terlalu besar');
+
+const uuidSchema = z.string().uuid('ID tidak valid');
+
+const currencySchema = z
+  .string()
+  .length(3, 'Mata uang harus 3 karakter')
+  .regex(/^[A-Za-z]{3}$/, 'Kode mata uang tidak valid')
+  .transform((v) => v.toUpperCase());
+
+const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Warna harus format #RRGGBB');
+
+const iconSchema = z
+  .string()
+  .min(1, 'Ikon wajib')
+  .max(32, 'Ikon terlalu panjang')
+  .refine(isSafeIconKey, 'Ikon tidak valid');
+
+export const transactionTypeSchema = z.enum(['EXPENSE', 'INCOME']);
+
+// ==================== AUTH ====================
+
 export const registerSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be less than 100 characters'),
-  email: z
-    .string()
-    .email('Invalid email format')
-    .max(255, 'Email must be less than 255 characters')
-    .transform((v) => v.trim().toLowerCase()),
-  password: z
-    .string()
-    .min(8, 'Password minimal 8 karakter')
-    .max(100, 'Password must be less than 100 characters')
-    .refine((value) => /[A-Za-z]/.test(value) && /\d/.test(value), {
-      message: 'Password harus mengandung huruf dan angka',
-    }),
+  name: safePlainText('Nama', NAME_MAX).refine(
+    (v) => v.length >= 2,
+    'Nama minimal 2 karakter'
+  ),
+  email: emailSchema,
+  password: strongPassword,
   gender: genderSchema,
   birthDate: birthDateSchema,
   captchaToken: z.string().max(2048).optional(),
 });
 
 export const loginSchema = z.object({
-  email: z
+  email: emailSchema,
+  password: z
     .string()
-    .email('Invalid email format')
-    .transform((v) => v.trim().toLowerCase()),
-  password: z.string().min(1, 'Password is required'),
+    .min(1, 'Password wajib diisi')
+    .max(PASSWORD_MAX, 'Password terlalu panjang'),
   captchaToken: z.string().max(2048).optional(),
 });
 
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1).optional(),
+  refreshToken: z.string().min(1).max(2048).optional(),
 });
 
-// ==================== USER SCHEMAS ====================
+// ==================== USER ====================
+
 export const updateProfileSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be less than 100 characters')
+  name: safePlainText('Nama', NAME_MAX)
+    .refine((v) => v.length >= 2, 'Nama minimal 2 karakter')
     .optional(),
-  currency: z
-    .string()
-    .length(3, 'Currency must be exactly 3 characters')
-    .optional(),
+  currency: currencySchema.optional(),
   gender: genderSchema.optional().nullable(),
   birthDate: birthDateSchema.optional().nullable(),
 });
 
 export const adminUpdateUserSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Nama minimal 2 karakter')
-    .max(100, 'Nama maksimal 100 karakter')
+  name: safePlainText('Nama', NAME_MAX)
+    .refine((v) => v.length >= 2, 'Nama minimal 2 karakter')
     .optional(),
-  email: z
-    .string()
-    .email('Format email tidak valid')
-    .max(255, 'Email terlalu panjang')
-    .optional(),
-  currency: z
-    .string()
-    .length(3, 'Mata uang harus 3 karakter')
-    .optional(),
+  email: emailSchema.optional(),
+  currency: currencySchema.optional(),
   gender: genderSchema.optional().nullable(),
   birthDate: birthDateSchema.optional().nullable(),
   role: z.enum(['USER', 'ADMIN']).optional(),
 });
 
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  currentPassword: z
+    .string()
+    .min(1, 'Password saat ini wajib')
+    .max(PASSWORD_MAX, 'Password terlalu panjang'),
   newPassword: strongPassword,
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .email('Invalid email format')
-    .transform((v) => v.trim().toLowerCase()),
+  email: emailSchema,
   captchaToken: z.string().max(2048).optional(),
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
+  token: z.string().min(1, 'Token reset wajib').max(512, 'Token tidak valid'),
   password: strongPassword,
 });
 
-export const transactionTypeSchema = z.enum(['EXPENSE', 'INCOME']);
+// ==================== CATEGORY ====================
 
-// ==================== CATEGORY SCHEMAS ====================
 export const createCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Category name is required')
-    .max(50, 'Category name must be less than 50 characters'),
-  icon: z
-    .string()
-    .min(1, 'Icon is required')
-    .max(32, 'Icon must be less than 32 characters'),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format. Use hex format: #RRGGBB'),
+  name: safePlainText('Nama kategori', 50),
+  icon: iconSchema,
+  color: hexColorSchema,
   type: transactionTypeSchema.default('EXPENSE'),
 });
 
@@ -148,41 +198,36 @@ export const categoryQuerySchema = z.object({
   type: transactionTypeSchema.optional(),
 });
 
-// ==================== EXPENSE SCHEMAS ====================
+// ==================== EXPENSE ====================
+
 const receiptUrlSchema = z
   .string()
-  .max(500, 'Receipt URL is too long')
+  .max(500, 'URL bukti terlalu panjang')
   .refine(
     (value) =>
       value === '' ||
-      value.startsWith('/uploads/') ||
-      value.startsWith('http://') ||
-      value.startsWith('https://'),
-    'Invalid receipt URL'
+      /^\/uploads\/[A-Za-z0-9._/-]+$/.test(value) ||
+      /^https:\/\/[^\s<>"']+$/i.test(value),
+    'URL bukti tidak valid (hanya /uploads/ atau https://)'
   )
   .optional()
   .nullable();
 
 export const createExpenseSchema = z
   .object({
-    amount: z
-      .number()
-      .positive('Amount must be positive')
-      .max(999999999999.99, 'Amount is too large'),
-    categoryId: z.string().uuid('Invalid category ID'),
+    amount: amountSchema,
+    categoryId: uuidSchema,
     type: transactionTypeSchema.default('EXPENSE'),
-    note: z.string().max(1000, 'Note must be less than 1000 characters').optional(),
-    description: z
-      .string()
-      .max(1000, 'Description must be less than 1000 characters')
-      .optional(),
+    note: optionalSafeNote,
+    description: optionalSafeNote,
     date: z
       .string()
       .refine(
         (value) => /^\d{4}-\d{2}-\d{2}/.test(value),
-        'Date must be in YYYY-MM-DD format'
+        'Tanggal harus format YYYY-MM-DD'
       )
-      .transform((value) => value.slice(0, 10)),
+      .transform((value) => value.slice(0, 10))
+      .pipe(dateYmdSchema),
     receiptUrl: receiptUrlSchema,
   })
   .transform((data) => ({
@@ -196,25 +241,19 @@ export const createExpenseSchema = z
 
 export const updateExpenseSchema = z
   .object({
-    amount: z
-      .number()
-      .positive('Amount must be positive')
-      .max(999999999999.99, 'Amount is too large')
-      .optional(),
-    categoryId: z.string().uuid('Invalid category ID').optional(),
+    amount: amountSchema.optional(),
+    categoryId: uuidSchema.optional(),
     type: transactionTypeSchema.optional(),
-    note: z.string().max(1000, 'Note must be less than 1000 characters').optional(),
-    description: z
-      .string()
-      .max(1000, 'Description must be less than 1000 characters')
-      .optional(),
+    note: optionalSafeNote,
+    description: optionalSafeNote,
     date: z
       .string()
       .refine(
         (value) => /^\d{4}-\d{2}-\d{2}/.test(value),
-        'Date must be in YYYY-MM-DD format'
+        'Tanggal harus format YYYY-MM-DD'
       )
       .transform((value) => value.slice(0, 10))
+      .pipe(dateYmdSchema)
       .optional(),
     receiptUrl: receiptUrlSchema,
   })
@@ -228,54 +267,41 @@ export const updateExpenseSchema = z
   }));
 
 export const expenseQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
+  page: z.coerce.number().int().positive().max(10_000).default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
-    .optional(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
-    .optional(),
-  categoryId: z.string().uuid().optional(),
+  startDate: dateYmdSchema.optional(),
+  endDate: dateYmdSchema.optional(),
+  categoryId: uuidSchema.optional(),
   type: transactionTypeSchema.optional(),
-  search: z.string().max(100).optional(),
+  search: z
+    .string()
+    .max(SEARCH_MAX)
+    .transform(normalizeWhitespace)
+    .refine(isSafePlainText, 'Pencarian mengandung karakter tidak diizinkan')
+    .optional(),
   sortBy: z.enum(['date', 'amount', 'createdAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 export const dashboardQuerySchema = z.object({
   period: z.enum(['week', 'month', 'year']).default('month'),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
-    .optional(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
-    .optional(),
+  startDate: dateYmdSchema.optional(),
+  endDate: dateYmdSchema.optional(),
 });
 
-// ==================== BUDGET SCHEMAS ====================
+// ==================== BUDGET ====================
+
 export const createBudgetSchema = z.object({
-  month: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/, 'Month must be in YYYY-MM format'),
-  totalBudget: z
-    .number()
-    .positive('Total budget must be positive')
-    .max(999999999999.99, 'Total budget is too large'),
+  month: z.string().regex(/^\d{4}-\d{2}$/, 'Bulan harus format YYYY-MM'),
+  totalBudget: amountSchema,
   categoryBudgets: z
     .array(
       z.object({
-        categoryId: z.string().uuid('Invalid category ID'),
-        amount: z
-          .number()
-          .positive('Amount must be positive')
-          .max(999999999999.99, 'Amount is too large'),
+        categoryId: uuidSchema,
+        amount: amountSchema,
       })
     )
+    .max(100, 'Terlalu banyak kategori anggaran')
     .optional(),
 });
 
@@ -284,11 +310,82 @@ export const updateBudgetSchema = createBudgetSchema.partial();
 export const budgetQuerySchema = z.object({
   month: z
     .string()
-    .regex(/^\d{4}-\d{2}$/, 'Month must be in YYYY-MM format')
+    .regex(/^\d{4}-\d{2}$/, 'Bulan harus format YYYY-MM')
     .optional(),
 });
 
+// ==================== RECURRING ====================
+
+export const createRecurringSchema = z.object({
+  categoryId: uuidSchema,
+  type: transactionTypeSchema.optional(),
+  amount: amountSchema,
+  note: optionalSafeNote,
+  frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
+  startDate: dateYmdSchema,
+  endDate: dateYmdSchema.optional(),
+});
+
+export const setRecurringActiveSchema = z.object({
+  isActive: z.boolean(),
+});
+
+// ==================== SAVINGS ====================
+
+export const createSavingsSchema = z.object({
+  name: safePlainText('Nama target', 80),
+  targetAmount: amountSchema,
+  deadline: dateYmdSchema.optional().nullable(),
+  icon: iconSchema.optional(),
+  color: hexColorSchema.optional(),
+});
+
+export const updateSavingsSchema = z.object({
+  name: safePlainText('Nama target', 80).optional(),
+  targetAmount: amountSchema.optional(),
+  savedAmount: z
+    .number()
+    .finite()
+    .min(0, 'Jumlah tersimpan tidak boleh negatif')
+    .max(AMOUNT_MAX)
+    .optional(),
+  deadline: dateYmdSchema.optional().nullable(),
+  icon: iconSchema.optional(),
+  color: hexColorSchema.optional(),
+});
+
+export const addSavingsAmountSchema = z.object({
+  amount: amountSchema,
+});
+
+// ==================== FEEDBACK ====================
+
+export const createFeedbackSchema = z.object({
+  name: z
+    .string()
+    .max(NAME_MAX)
+    .optional()
+    .nullable()
+    .transform((v) => {
+      if (v == null || v === '') return null;
+      return normalizeWhitespace(v);
+    })
+    .refine(
+      (v) => v === null || (v.length >= 2 && isSafePlainText(v)),
+      'Nama tidak valid'
+    ),
+  message: z
+    .string()
+    .min(1, 'Pesan wajib diisi')
+    .max(2000, 'Pesan maksimal 2000 karakter')
+    .transform(normalizeMultiline)
+    .refine((v) => v.length >= 3, 'Pesan minimal 3 karakter')
+    .refine(isSafePlainText, 'Pesan mengandung karakter tidak diizinkan'),
+  rating: z.coerce.number().int().min(0).max(5).default(0),
+});
+
 // ==================== TYPE EXPORTS ====================
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
@@ -308,3 +405,7 @@ export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 export type BudgetQueryInput = z.infer<typeof budgetQuerySchema>;
 export type TransactionTypeInput = z.infer<typeof transactionTypeSchema>;
+export type CreateRecurringInput = z.infer<typeof createRecurringSchema>;
+export type CreateSavingsInput = z.infer<typeof createSavingsSchema>;
+export type UpdateSavingsInput = z.infer<typeof updateSavingsSchema>;
+export type CreateFeedbackInput = z.infer<typeof createFeedbackSchema>;

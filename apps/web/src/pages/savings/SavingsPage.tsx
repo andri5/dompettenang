@@ -19,6 +19,7 @@ import {
   deleteSavingsGoal,
   type SavingsGoal,
 } from '@/services/savings.service';
+import { savingsSchema } from '@/lib/validations';
 
 function formatNominal(n: number) {
   return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
@@ -116,34 +117,44 @@ export function SavingsPage() {
 
   const handleCreate = () => {
     const parsed = parseAmountInput(target);
-    if (!name.trim() || !parsed || parsed <= 0) {
-      toast.error('Nama dan target harus diisi');
+    const checked = savingsSchema.safeParse({
+      name,
+      targetAmount: parsed ?? 0,
+      deadline: deadline || undefined,
+    });
+    if (!checked.success) {
+      toast.error(checked.error.errors[0]?.message || 'Data tidak valid');
       return;
     }
     createMut.mutate({
-      name: name.trim(),
-      targetAmount: parsed,
-      deadline: deadline || null,
+      name: checked.data.name,
+      targetAmount: checked.data.targetAmount,
+      deadline: checked.data.deadline || null,
     });
   };
 
   const handleUpdate = () => {
     if (!editGoal) return;
     const parsed = parseAmountInput(target);
-    if (!name.trim() || !parsed || parsed <= 0) {
-      toast.error('Nama dan target harus diisi');
+    const checked = savingsSchema.safeParse({
+      name,
+      targetAmount: parsed ?? 0,
+      deadline: deadline || undefined,
+    });
+    if (!checked.success) {
+      toast.error(checked.error.errors[0]?.message || 'Data tidak valid');
       return;
     }
-    if (parsed < editGoal.savedAmount) {
+    if (checked.data.targetAmount < editGoal.savedAmount) {
       toast.error('Target tidak boleh lebih kecil dari jumlah yang sudah terkumpul');
       return;
     }
     updateMut.mutate({
       id: editGoal.id,
       data: {
-        name: name.trim(),
-        targetAmount: parsed,
-        deadline: deadline || null,
+        name: checked.data.name,
+        targetAmount: checked.data.targetAmount,
+        deadline: checked.data.deadline || null,
       },
     });
   };

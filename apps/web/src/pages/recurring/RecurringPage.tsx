@@ -17,6 +17,7 @@ import {
   setRecurringActive,
   type RecurringTransaction,
 } from '@/services/recurring.service';
+import { recurringSchema } from '@/lib/validations';
 
 const FREQUENCY_OPTIONS = [
   { value: 'DAILY', label: 'Harian' },
@@ -56,18 +57,25 @@ export function RecurringPage() {
 
   const handleCreate = async () => {
     const parsed = parseAmountInput(amount);
-    if (!categoryId || !parsed || parsed <= 0) {
-      toast.error('Lengkapi kategori dan jumlah');
+    const checked = recurringSchema.safeParse({
+      categoryId,
+      amount: parsed ?? 0,
+      frequency,
+      note: note.trim(),
+      startDate,
+    });
+    if (!checked.success) {
+      toast.error(checked.error.errors[0]?.message || 'Lengkapi data dengan benar');
       return;
     }
     setSaving(true);
     try {
       await createRecurringTransaction({
-        categoryId,
-        amount: parsed,
-        frequency,
-        note: note.trim() || undefined,
-        startDate,
+        categoryId: checked.data.categoryId,
+        amount: checked.data.amount,
+        frequency: checked.data.frequency,
+        note: checked.data.note || undefined,
+        startDate: checked.data.startDate,
         type: 'EXPENSE',
       });
       toast.success('Transaksi berulang ditambahkan');

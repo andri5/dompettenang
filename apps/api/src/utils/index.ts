@@ -13,4 +13,5 @@
 export { prisma } from './prisma.js';
 export * from './response.js';
 export * from './validation.js';
+export * from './sanitize.js';
 export * from './jwt.js';

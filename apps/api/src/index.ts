@@ -52,8 +52,9 @@ app.use(cors({
 }));
 
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// OWASP: limit request body size (DoS / oversized payload)
+app.use(express.json({ limit: '256kb' }));
+app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
 // NOTE: uploads are NOT publicly static — use GET /api/v1/uploads/content/:kind/:filename
 
