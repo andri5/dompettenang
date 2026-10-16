@@ -121,7 +121,8 @@ export class AuthController {
       setAuthCookies(res, result);
       sendSuccess(res, result, 'Token refreshed successfully');
     } catch (error) {
-      clearAuthCookies(res);
+      // Do not clear cookies here: parallel refresh races used to wipe a
+      // just-rotated session. Client clears on definitive auth failure.
       sendUnauthorized(res, AUTH_SAFE.sessionInvalid);
     }
   }
@@ -195,7 +196,15 @@ export class AuthController {
       const { userId } = (req as AuthenticatedRequest).user!;
       const data = req.body as { currentPassword: string; newPassword: string };
       const result = await authService.changePassword(userId, data);
-      sendSuccess(res, result, result.message);
+      setAuthCookies(res, {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      });
+      sendSuccess(
+        res,
+        { message: result.message },
+        result.message
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : AUTH_SAFE.changePasswordFailed;
       if (message !== AUTH_SAFE.changePasswordFailed) {

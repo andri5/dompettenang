@@ -10,7 +10,8 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, 'Email wajib diisi')
-    .email('Format email tidak valid'),
+    .email('Format email tidak valid')
+    .transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1, 'Password wajib diisi'),
 });
 
@@ -30,7 +31,8 @@ export const registerSchema = z
     email: z
       .string()
       .min(1, 'Email wajib diisi')
-      .email('Format email tidak valid'),
+      .email('Format email tidak valid')
+      .transform((v) => v.trim().toLowerCase()),
     password: z
       .string()
       .min(1, 'Password wajib diisi')
@@ -67,7 +69,8 @@ export const forgotPasswordSchema = z.object({
   email: z
     .string()
     .min(1, 'Email wajib diisi')
-    .email('Format email tidak valid'),
+    .email('Format email tidak valid')
+    .transform((v) => v.trim().toLowerCase()),
 });
 
 export const resetPasswordSchema = z

@@ -42,6 +42,16 @@ function App() {
     initThemeFromStorage();
   }, [initAuth]);
 
+  // If a hard redirect cleared tokens but persist still says logged-in, reconcile on login
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path !== '/login' && path !== '/register') return;
+    const { isAuthenticated, user } = useAuthStore.getState();
+    if (isAuthenticated && !user) {
+      useAuthStore.setState({ isAuthenticated: false });
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <HelmetProvider>

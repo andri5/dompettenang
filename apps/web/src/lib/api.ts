@@ -80,6 +80,58 @@ function shouldRedirectToLogin(): boolean {
   );
 }
 
+/** Single-flight refresh — parallel 401s share one refresh call */
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    // Cookies are authoritative on web (withCredentials). Do not send a
+    // sessionStorage refresh in the body — it can be stale after password change
+    // and would override a valid HttpOnly cookie on the server.
+    const response = await axios.post(
+      `${API_BASE_URL}/auth/refresh-token`,
+      {},
+      { withCredentials: true }
+    );
+
+    const { accessToken, refreshToken: newRefreshToken } = response.data.data || {};
+    if (accessToken) setAccessToken(accessToken);
+    if (newRefreshToken) setRefreshToken(newRefreshToken);
+    return accessToken || null;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
+function clearClientSession(): void {
+  clearTokens();
+  localStorage.removeItem(STORAGE_KEYS.USER);
+  try {
+    // Keep persist shape; drop auth so PublicRoute does not bounce to dashboard
+    const raw = localStorage.getItem('dompettenang-auth');
+    if (raw) {
+      const parsed = JSON.parse(raw) as { state?: Record<string, unknown>; version?: number };
+      localStorage.setItem(
+        'dompettenang-auth',
+        JSON.stringify({
+          ...parsed,
+          state: {
+            ...(parsed.state || {}),
+            user: null,
+            isAuthenticated: false,
+          },
+        })
+      );
+    }
+  } catch {
+    localStorage.removeItem('dompettenang-auth');
+  }
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -94,19 +146,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh-token`,
-          {},
-          { withCredentials: true }
-        );
-
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data || {};
-        if (accessToken) setAccessToken(accessToken);
-        if (newRefreshToken) setRefreshToken(newRefreshToken);
+        const accessToken = await refreshAccessToken();
 
         if (accessToken && originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -114,8 +158,7 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch (refreshError) {
-        clearTokens();
-        localStorage.removeItem(STORAGE_KEYS.USER);
+        clearClientSession();
 
         if (shouldRedirectToLogin()) {
           window.location.href = '/login';

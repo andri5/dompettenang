@@ -21,8 +21,9 @@ import { hasProAccess } from '../utils/plan.js';
 
 export class AuthService {
   async register(data: RegisterInput): Promise<AuthResponse> {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
+    const email = data.email.trim().toLowerCase();
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
 
     if (existingUser) {
@@ -35,7 +36,7 @@ export class AuthService {
     const user = await prisma.user.create({
       data: {
         name: data.name,
-        email: data.email,
+        email,
         password: hashedPassword,
         gender: data.gender,
         birthDate: new Date(`${data.birthDate}T00:00:00.000Z`),
@@ -56,8 +57,10 @@ export class AuthService {
   }
 
   async login(data: LoginInput): Promise<AuthResponse> {
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
+    const email = data.email.trim().toLowerCase();
+    // Case-insensitive match for legacy accounts stored with mixed casing
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
 
     // Dummy compare when user missing — reduces timing side-channels
@@ -96,6 +99,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Issue a new access token. Refresh token is reused (not rotated) so parallel
+   * 401→refresh races cannot invalidate each other and wipe cookies.
+   */
   async refreshTokens(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = verifyRefreshToken(refreshToken);
 
@@ -124,17 +131,12 @@ export class AuthService {
       throw new Error(AUTH_SAFE.sessionInvalid);
     }
 
-    await prisma.refreshToken.delete({ where: { id: storedToken.id } });
-
     const tokenPayload = { userId: user.id, email: user.email, role: user.role };
     const newAccessToken = generateAccessToken(tokenPayload);
-    const newRefreshToken = generateRefreshToken(tokenPayload);
-
-    await this.saveRefreshToken(user.id, newRefreshToken);
 
     return {
       accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
+      refreshToken,
     };
   }
 
@@ -147,7 +149,9 @@ export class AuthService {
     data: ForgotPasswordInput
   ): Promise<{ message: string; resetUrl?: string }> {
     const email = data.email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+    });
 
     const generic = {
       message: AUTH_SAFE.forgotPassword,
@@ -309,10 +313,10 @@ export class AuthService {
   async changePassword(
     userId: string,
     data: { currentPassword: string; newPassword: string }
-  ): Promise<{ message: string }> {
+  ): Promise<{ message: string; accessToken: string; refreshToken: string }> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, password: true },
+      select: { id: true, email: true, role: true, password: true },
     });
 
     if (!user) {
@@ -329,12 +333,27 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(data.newPassword, 12);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    const tokenPayload = { userId: user.id, email: user.email, role: user.role };
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
 
-    return { message: 'Password berhasil diubah' };
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      }),
+      // Drop other sessions; current tab gets fresh cookies below
+      prisma.refreshToken.deleteMany({
+        where: { userId },
+      }),
+    ]);
+    await this.saveRefreshToken(user.id, refreshToken);
+
+    return {
+      message: 'Password berhasil diubah',
+      accessToken,
+      refreshToken,
+    };
   }
 
   private async saveRefreshToken(userId: string, token: string): Promise<void> {
