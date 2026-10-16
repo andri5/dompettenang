@@ -44,8 +44,8 @@ Jangan commit langsung ke `main` kecuali hotfix darurat. Rilis normal lewat **Pr
    GitHub Actions **CI** + **Deploy to Staging** jalan otomatis.
 4. **QA di staging** — uji login, fitur, regresi di `https://staging.dompet-tenang.web.id`.
 5. **Promote ke prod** setelah QA OK (1 klik + approve):
-   - Actions → **Promote to Production** → **Run workflow**
-   - Jika environment `production` punya Required reviewers: klik **Review deployments** → **Approve**
+   - Actions → **Promote to Production** → branch **`develop`** → **Run workflow**
+   - Klik **Review deployments** → **Approve** (Required reviewers)
    - Workflow merge `develop` → `main` → **Deploy to Production** otomatis
 6. **Verifikasi prod** — health + smoke test di `https://dompet-tenang.web.id`.
 
