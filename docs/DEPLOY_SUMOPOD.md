@@ -274,10 +274,15 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 Staging URL: **https://staging.dompet-tenang.web.id**  
 Stack terpisah (`docker-compose.staging.yml`) + DB sendiri, Caddy production mem-proxy subdomain `staging.*`.
 
+**Status setup kode/CI:** selesai (compose, Caddy block, workflow bootstrap + deploy).  
+**Yang sering masih kurang:** DNS `A` `staging` → IP VPS. Tanpa itu browser dapat **NXDOMAIN** meskipun container jalan.
+
+Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).
+
 ### Setup sekali
 
 1. **DNS** (Sumopod Domains → DNS Management):  
-   Type `A`, Name `staging`, Value = IP VPS (sama seperti apex).
+   Type `A`, Name `staging`, Value = IP VPS (sama seperti apex, mis. `43.133.135.215`).
 2. GitHub → **Actions** → **Bootstrap staging env** → Run workflow  
    (membuat `deploy/.env.staging` di VPS; butuh secrets `PROD_SSH_*` + SMTP/bank yang sudah ada).
 3. **Actions** → **Deploy to Staging** → Run workflow  
@@ -292,6 +297,17 @@ Stack terpisah (`docker-compose.staging.yml`) + DB sendiri, Caddy production mem
 - [`.github/workflows/bootstrap-staging-env.yml`](../.github/workflows/bootstrap-staging-env.yml)
 
 Staging memakai header `X-Robots-Tag: noindex` agar tidak terindeks search engine.
+
+### SSH password ditolak
+
+CI deploy memakai **SSH key** (`PROD_SSH_KEY`), bukan password.  
+Jika login root dengan **password** gagal dari laptop:
+
+1. Actions → **Fix VPS SSH access** → Run workflow  
+2. Isi `client_pubkey` = isi file `.pub` laptop  
+3. Opsional: set `new_root_password` hanya jika benar-benar perlu password login  
+
+Workflow: [`.github/workflows/fix-vps-ssh-access.yml`](../.github/workflows/fix-vps-ssh-access.yml)
 
 ---
 
@@ -369,10 +385,13 @@ Opsional aman: Environment `production` → **Required reviewers** sebelum deplo
 
 ### 10.3 Alur kerja harian
 
-1. Push ke `feature/...`
-2. Buka PR ke `main`, tunggu CI hijau
-3. Merge ke `main` → workflow **Deploy to Production** jalan otomatis
-4. Atau **Actions** → **Deploy to Production** → **Run workflow**
+1. Develop di `feature/...`
+2. Merge/push ke `feature/testing-qa` (atau `develop`) → **staging** auto-deploy → QA
+3. Setelah QA OK, PR ke `main`, tunggu CI hijau
+4. Merge ke `main` → **Deploy to Production** otomatis
+5. Atau **Actions** → **Deploy to Production** → **Run workflow**
+
+Detail: [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).
 
 ### 10.4 Troubleshooting autodeploy
 

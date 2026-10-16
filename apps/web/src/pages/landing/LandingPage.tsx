@@ -32,7 +32,6 @@ import { ROUTES } from '@/lib/constants';
 import {
   SITE_NAME,
   SITE_URL,
-  ANDROID_APK_URL,
   absoluteUrl,
 } from '@/lib/site';
 import { useAuthStore } from '@/stores';
@@ -164,7 +163,7 @@ export function LandingPage() {
       name: SITE_NAME,
       url: SITE_URL,
       applicationCategory: 'FinanceApplication',
-      operatingSystem: 'Web, Android, iOS',
+      operatingSystem: 'Web',
       inLanguage: 'id-ID',
       offers: [
         {
@@ -579,7 +578,7 @@ export function LandingPage() {
                   {[
                     'Gratis tanpa iklan untuk fitur inti',
                     'Tampilan modern & responsif',
-                    'Tersedia web & mobile',
+                    'Aplikasi mobile akan segera rilis',
                     'Data terenkripsi & privat',
                     'Budget alerts otomatis',
                     'Export Excel gratis · PDF di Pro',
@@ -679,29 +678,20 @@ export function LandingPage() {
       {/* ---- FEEDBACK FORM ---- */}
       <FeedbackSection />
 
-      {/* ---- ANDROID DOWNLOAD ---- */}
-      <section id="download" className="relative py-20 sm:py-28">
+      {/* ---- MOBILE COMING SOON ---- */}
+      <section id="mobile" className="relative py-20 sm:py-28">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-10 h-[280px] w-[280px] rounded-full bg-[#5eead4]/10 blur-[100px]" />
         </div>
         <div className="relative mx-auto max-w-2xl px-4 text-center sm:px-5">
           <Smartphone className="mx-auto mb-5 h-10 w-10 text-accent" />
           <h2 className="font-display text-3xl font-extrabold sm:text-4xl">
-            Download Android
+            Aplikasi mobile
           </h2>
           <p className="mx-auto mt-4 max-w-md text-white/50">
-            Install APK Dompet Tenang di HP. Gratis, tanpa Play Store. Izinkan “sumber tidak
-            dikenal” saat install.
+            Versi Android &amp; iOS akan segera rilis. Sementara ini, gunakan Dompet Tenang lewat
+            browser di HP atau desktop.
           </p>
-          <div className="mt-10 flex justify-center">
-            <a
-              href={ANDROID_APK_URL}
-              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-[#1cc8b4] px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/30 transition hover:shadow-2xl hover:shadow-accent/40"
-            >
-              Download APK
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-            </a>
-          </div>
         </div>
       </section>
 
@@ -741,8 +731,8 @@ export function LandingPage() {
             <a href="#harga" className="transition hover:text-white/70">
               Free & Pro
             </a>
-            <a href="#download" className="transition hover:text-white/70">
-              Download Android
+            <a href="#mobile" className="transition hover:text-white/70">
+              Mobile segera rilis
             </a>
             <Link to={ROUTES.TERMS} className="transition hover:text-white/70">
               Syarat & Ketentuan

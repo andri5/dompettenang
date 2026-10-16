@@ -1,15 +1,7 @@
-# Android downloads (served at `/download/*`)
+# downloads/ (opsional, internal)
 
-Taruh file APK di sini dengan nama:
+Folder mount Caddy untuk file statis di `/download/*`.
 
-```text
-dompet-tenang.apk
-```
+Landing page **tidak** mempromosikan unduh APK. Folder ini hanya untuk artifact internal jika diperlukan.
 
-URL publik setelah deploy Caddy:
-
-```text
-https://dompet-tenang.web.id/download/dompet-tenang.apk
-```
-
-Jangan commit file `.apk` ke git. Pakai `deploy/publish-apk.sh` atau salin manual ke VPS.
+Jangan commit file `.apk` ke git.

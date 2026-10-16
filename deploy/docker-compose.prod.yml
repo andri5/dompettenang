@@ -72,8 +72,6 @@ services:
       args:
         VITE_API_URL: /api/v1
         VITE_SITE_URL: https://${DOMAIN}
-        VITE_ANDROID_APK_URL: ${VITE_ANDROID_APK_URL:-/download/dompet-tenang.apk}
-        VITE_EXPO_BUILDS_URL: ${VITE_EXPO_BUILDS_URL:-https://expo.dev/accounts/andri5/projects/duitdiary/builds}
     restart: unless-stopped
     networks:
       - internal

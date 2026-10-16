@@ -51,14 +51,16 @@ npm start
 ## Making Changes
 
 1. Make your changes in your branch
-2. Test your changes thoroughly
-3. Ensure code formatting is correct
+2. Test locally, then deploy/QA on **staging** (`feature/testing-qa` or `develop`)
+3. After QA passes, open a PR into **`main`** for production
 4. Commit with clear, descriptive messages:
    ```bash
    git commit -m "feat: add new feature" 
    # or
    git commit -m "fix: resolve issue with X"
    ```
+
+Full branch & release flow: [docs/DEV_WORKFLOW.md](./docs/DEV_WORKFLOW.md).
 
 ## Commit Message Format
 
