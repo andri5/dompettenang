@@ -309,30 +309,32 @@ Pastikan public key deploy ada di `authorized_keys` root/user VPS.
 Setelah VPS jalan manual sekali, production di-update lewat jalur QA:
 
 ```text
-feature → develop → Deploy Staging → QA uji → Promote to Production (Approve)
-  → merge develop→main → Deploy to Production → SSH VPS
+feature → develop → Deploy Staging (tanpa approval)
+  → QA uji staging → Promote to Production (merge ke main, tanpa approval)
+  → Deploy to Production → QA Approve → SSH VPS
 ```
 
-Branch `feature/*` **tidak** auto-deploy ke prod. Rilis normal: **Promote to Production**.
+- **Staging:** auto, **tidak** perlu approval QA  
+- **Production:** approval QA hanya di job **Deploy to Production**
 
 Workflows:
-- [`.github/workflows/promote-to-production.yml`](../.github/workflows/promote-to-production.yml) — 1 klik + environment approval
-- [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml) — deploy VPS dari `main`  
+- [`.github/workflows/promote-to-production.yml`](../.github/workflows/promote-to-production.yml) — merge `develop` → `main` + start deploy
+- [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml) — deploy VPS (environment `production` + Required reviewers)  
 Script VPS: [`deploy/remote-deploy.sh`](../deploy/remote-deploy.sh)
 
 ### 10.0 Setup QA approve (Required reviewers) — sekali
 
-Agar promote menunggu klik manusia (bukan full-auto ke prod):
+Approval hanya untuk **production deploy**, bukan staging:
 
-1. Repo → **Settings** → **Environments** → buka **production** (buat jika belum ada)
+1. Repo → **Settings** → **Environments** → buka **production**
 2. Enable **Required reviewers** → tambahkan akun QA / maintainer
-3. Save
+3. Save (jangan pasang Required reviewers di environment staging)
 
 Cara pakai setelah staging OK:
 
-1. Actions → **Promote to Production** → pilih branch **`develop`** → Run workflow  
-2. Buka banner **Review deployments** → **Approve**  
-3. Workflow merge `develop` → `main` lalu dispatch **Deploy to Production**
+1. Actions → **Promote to Production** → branch **`develop`** → Run workflow  
+2. Tunggu **Deploy to Production** muncul → **Review deployments** → **Approve**  
+3. Deploy ke VPS jalan setelah Approve
 
 Jika branch protection di `main` menolak **push** oleh `GITHUB_TOKEN`, tambahkan secret Actions **`GH_PAT`** (Personal Access Token, scope `repo`).
 
