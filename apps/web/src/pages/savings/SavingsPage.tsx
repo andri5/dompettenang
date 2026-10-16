@@ -19,7 +19,7 @@ import {
   deleteSavingsGoal,
   type SavingsGoal,
 } from '@/services/savings.service';
-import { savingsSchema } from '@/lib/validations';
+import { firstZodMessage, savingsSchema } from '@/lib/validations';
 
 function formatNominal(n: number) {
   return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
@@ -123,7 +123,7 @@ export function SavingsPage() {
       deadline: deadline || undefined,
     });
     if (!checked.success) {
-      toast.error(checked.error.errors[0]?.message || 'Data tidak valid');
+      toast.error(firstZodMessage(checked.error));
       return;
     }
     createMut.mutate({
@@ -142,7 +142,7 @@ export function SavingsPage() {
       deadline: deadline || undefined,
     });
     if (!checked.success) {
-      toast.error(checked.error.errors[0]?.message || 'Data tidak valid');
+      toast.error(firstZodMessage(checked.error));
       return;
     }
     if (checked.data.targetAmount < editGoal.savedAmount) {

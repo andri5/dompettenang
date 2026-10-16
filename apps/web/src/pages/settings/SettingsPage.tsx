@@ -33,7 +33,7 @@ import { updateProfile, changePassword } from '@/services/auth.service';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 import { GENDER_OPTIONS, type Gender } from '@/lib/gender';
 import { hasProAccess } from '@/lib/plan';
-import { feedbackSchema } from '@/lib/validations';
+import { feedbackSchema, firstZodMessage } from '@/lib/validations';
 
 const CURRENCIES = [
   { code: 'IDR' as const, label: 'Rupiah', hint: 'Indonesia', symbol: 'Rp' },
@@ -226,7 +226,7 @@ export function SettingsPage() {
       rating: feedbackRating,
     });
     if (!checked.success) {
-      toast.error(checked.error.errors[0]?.message || 'Tulis saran atau masukan dulu ya.');
+      toast.error(firstZodMessage(checked.error, 'Tulis saran atau masukan dulu ya.'));
       return;
     }
 

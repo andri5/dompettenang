@@ -17,7 +17,7 @@ import {
   setRecurringActive,
   type RecurringTransaction,
 } from '@/services/recurring.service';
-import { recurringSchema } from '@/lib/validations';
+import { firstZodMessage, recurringSchema } from '@/lib/validations';
 
 const FREQUENCY_OPTIONS = [
   { value: 'DAILY', label: 'Harian' },
@@ -65,7 +65,7 @@ export function RecurringPage() {
       startDate,
     });
     if (!checked.success) {
-      toast.error(checked.error.errors[0]?.message || 'Lengkapi data dengan benar');
+      toast.error(firstZodMessage(checked.error, 'Lengkapi data dengan benar'));
       return;
     }
     setSaving(true);
