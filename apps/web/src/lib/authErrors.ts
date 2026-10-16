@@ -12,6 +12,7 @@ export const AUTH_SAFE = {
   changePasswordFailed: 'Tidak dapat mengubah password. Periksa input lalu coba lagi.',
   network: 'Tidak dapat terhubung ke server. Periksa koneksi lalu coba lagi.',
   captchaFailed: 'Verifikasi captcha gagal. Silakan coba lagi.',
+  rateLimited: 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.',
   generic: 'Permintaan tidak dapat diproses. Silakan coba lagi.',
 } as const;
 
@@ -36,6 +37,10 @@ export function authErrorMessage(
     // Prefer known safe login phrasing when present
     if (msg === AUTH_SAFE.loginFailed) return AUTH_SAFE.loginFailed;
     return AUTH_SAFE.loginFailed;
+  }
+
+  if (status === 429 || code === 'RATE_LIMIT_EXCEEDED') {
+    return AUTH_SAFE.rateLimited;
   }
 
   if (code === 'REGISTRATION_FAILED' || status === 409) {
