@@ -46,11 +46,15 @@ const optionalSafeNote = z
     'Catatan mengandung karakter tidak diizinkan'
   );
 
-const emailSchema = z
-  .string()
-  .max(EMAIL_MAX, 'Email terlalu panjang')
-  .email('Format email tidak valid')
-  .transform((v) => v.trim().toLowerCase());
+/** Canonicalize before format check (OWASP: normalize then validate). */
+const emailSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+  z
+    .string()
+    .min(1, 'Email wajib diisi')
+    .max(EMAIL_MAX, 'Email terlalu panjang')
+    .email('Format email tidak valid')
+);
 
 const strongPassword = z
   .string()

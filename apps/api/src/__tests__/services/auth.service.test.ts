@@ -88,7 +88,7 @@ describe('Auth Service', () => {
 
   describe('register()', () => {
     it('should register a new user with valid data', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (prisma.user.create as ReturnType<typeof vi.fn>).mockResolvedValue({ ...mockUser, password: 'hashed' });
 
       const result = await auth.register(registerPayload);
@@ -101,11 +101,9 @@ describe('Auth Service', () => {
     });
 
     it('should fail if email already exists', async () => {
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
 
-      await expect(
-        auth.register({ ...registerPayload, name: 'A' })
-      ).rejects.toThrow(
+      await expect(auth.register(registerPayload)).rejects.toThrow(
         'Tidak dapat membuat akun. Coba email lain atau masuk jika sudah punya akun.'
       );
       expect(prisma.user.create).not.toHaveBeenCalled();
@@ -113,7 +111,7 @@ describe('Auth Service', () => {
 
     it('should not store plaintext password', async () => {
       const plaintext = 'MyP@ssw0rd!';
-      (prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (prisma.user.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (prisma.user.create as ReturnType<typeof vi.fn>).mockImplementation(async ({ data }: { data: { password: string } }) => {
         expect(data.password).not.toBe(plaintext);
         const isHashed = await bcrypt.compare(plaintext, data.password);
@@ -123,7 +121,6 @@ describe('Auth Service', () => {
 
       await auth.register({
         ...registerPayload,
-        name: 'A',
         email: 'new@example.com',
         password: plaintext,
       });

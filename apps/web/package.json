@@ -8,7 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test tests/validation.spec.ts tests/smoke.spec.ts --project=chromium",
+    "test:e2e:full": "playwright test --project=chromium",
+    "test:e2e:all": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed"
@@ -48,7 +52,8 @@
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "npm:rolldown-vite@7.2.5"
+    "vite": "npm:rolldown-vite@7.2.5",
+    "vitest": "^2.1.9"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"
