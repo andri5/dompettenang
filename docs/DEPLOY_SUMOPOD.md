@@ -160,7 +160,7 @@ Clone repo (pakai URL GitHub kamu):
 
 ```bash
 mkdir -p /opt && cd /opt
-git clone https://github.com/andri5/duitdiary.git dompettenang
+git clone https://github.com/andri5/dompettenang.git
 cd dompettenang
 git checkout feature/testing-qa   # atau main setelah merge
 ```
@@ -274,7 +274,7 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 Staging URL: **https://staging.dompet-tenang.web.id**  
 Stack terpisah (`docker-compose.staging.yml`) + DB sendiri, Caddy production mem-proxy subdomain `staging.*`.
 
-**Status setup kode/CI:** selesai (compose, Caddy block, workflow bootstrap + deploy).  
+**Status setup kode/CI:** selesai (compose, Caddy block, workflow deploy staging + production).  
 **Yang sering masih kurang:** DNS `A` `staging` → IP VPS. Tanpa itu browser dapat **NXDOMAIN** meskipun container jalan.
 
 Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).
@@ -282,9 +282,8 @@ Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md
 ### Setup sekali
 
 1. **DNS** (Sumopod Domains → DNS Management):  
-   Type `A`, Name `staging`, Value = IP VPS (sama seperti apex, mis. `43.133.135.215`).
-2. GitHub → **Actions** → **Bootstrap staging env** → Run workflow  
-   (membuat `deploy/.env.staging` di VPS; butuh secrets `PROD_SSH_*` + SMTP/bank yang sudah ada).
+   Type `A`, Name `staging`, Value = IP VPS (sama seperti apex).
+2. Di VPS: salin `deploy/.env.staging.example` → `deploy/.env.staging`, isi secret staging.
 3. **Actions** → **Deploy to Staging** → Run workflow  
    (juga auto saat push ke `feature/testing-qa` atau `develop`).
 
@@ -294,20 +293,13 @@ Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md
 - [`deploy/.env.staging.example`](../deploy/.env.staging.example)
 - [`deploy/remote-deploy-staging.sh`](../deploy/remote-deploy-staging.sh)
 - [`.github/workflows/deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
-- [`.github/workflows/bootstrap-staging-env.yml`](../.github/workflows/bootstrap-staging-env.yml)
 
 Staging memakai header `X-Robots-Tag: noindex` agar tidak terindeks search engine.
 
-### SSH password ditolak
+### SSH
 
-CI deploy memakai **SSH key** (`PROD_SSH_KEY`), bukan password.  
-Jika login root dengan **password** gagal dari laptop:
-
-1. Actions → **Fix VPS SSH access** → Run workflow  
-2. Isi `client_pubkey` = isi file `.pub` laptop  
-3. Opsional: set `new_root_password` hanya jika benar-benar perlu password login  
-
-Workflow: [`.github/workflows/fix-vps-ssh-access.yml`](../.github/workflows/fix-vps-ssh-access.yml)
+CI deploy memakai **SSH key** (`PROD_SSH_KEY` di GitHub secrets), bukan password.  
+Pastikan public key deploy ada di `authorized_keys` root/user VPS.
 
 ---
 

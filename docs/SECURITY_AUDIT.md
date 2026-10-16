@@ -62,7 +62,7 @@
 ## Recommended Next Audit Actions
 
 1. Deploy staging and run OWASP ZAP baseline scan
-2. Run `scripts/security/run-all-tests.ps1` against staging
+2. Run `npm audit` on API/web workspaces
 3. Document production secret rotation procedure
 4. Add integration tests for budget authorization boundaries
 

@@ -61,8 +61,8 @@ Jangan commit langsung ke `main` kecuali hotfix darurat yang sudah disepakati. P
 
 ## Prasyarat staging (sekali)
 
-1. DNS `A` record: `staging` → IP VPS (`43.133.135.215`)
-2. Actions → **Bootstrap staging env** (membuat `deploy/.env.staging`)
+1. DNS `A` record: `staging` → IP VPS
+2. Buat `deploy/.env.staging` di VPS dari `deploy/.env.staging.example`
 3. Deploy staging sekali
 
 Tanpa DNS, URL staging tidak resolve (NXDOMAIN) meskipun container sudah ada di VPS.
@@ -74,5 +74,4 @@ Distribusi internal / EAS tetap bisa dipakai tim (lihat [MOBILE_DISTRIBUTE.md](.
 
 ## SSH VPS
 
-Deploy CI memakai key di secret `PROD_SSH_*`.  
-Jika login password root gagal, pakai workflow **Fix VPS SSH access** (pasang public key laptop). Lihat [DEPLOY_SUMOPOD.md](./DEPLOY_SUMOPOD.md) § SSH.
+Deploy CI memakai key di secret `PROD_SSH_*`. Detail: [DEPLOY_SUMOPOD.md](./DEPLOY_SUMOPOD.md).
