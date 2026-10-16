@@ -63,4 +63,11 @@ tmp/
 test-*.ps1
 
 .local-ssh/
+.tmp-check.sh
+.tmp*/
+
+# Playwright / local artifacts (do not commit)
+**/playwright-report/
+**/test-results/
+apps/mobile/expo-qr.png
 
