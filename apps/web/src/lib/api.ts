@@ -150,6 +150,16 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        // Drop stale in-memory Bearer so retries can rely on HttpOnly cookies
+        // if refresh body is empty / delayed.
+        setAccessToken(null);
+        if (originalRequest.headers) {
+          delete originalRequest.headers.Authorization;
+          if (typeof originalRequest.headers.delete === 'function') {
+            originalRequest.headers.delete('Authorization');
+          }
+        }
+
         const accessToken = await refreshAccessToken();
 
         if (accessToken && originalRequest.headers) {
@@ -159,7 +169,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // Only clear session when the server rejects the refresh.
-        // Network/timeouts must NOT force logout (common cause of "logout tiba-tiba").
+        // Network/timeouts/429 must NOT force logout (common "logout tiba-tiba").
         const refreshStatus = (refreshError as AxiosError | undefined)?.response?.status;
         if (refreshStatus === 401 || refreshStatus === 403) {
           clearClientSession();
