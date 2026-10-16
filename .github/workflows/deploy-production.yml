@@ -130,6 +130,7 @@ jobs:
           if command -v rsync >/dev/null 2>&1; then
             rsync -a --delete \
               --exclude 'deploy/.env.production' \
+              --exclude 'deploy/.env.staging' \
               --exclude 'deploy/downloads/' \
               --exclude '.git/' \
               "${STAGE}/" "${APP_DIR}/"
