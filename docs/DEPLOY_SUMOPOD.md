@@ -330,10 +330,9 @@ Agar promote menunggu klik manusia (bukan full-auto ke prod):
 
 Cara pakai setelah staging OK:
 
-1. Actions → **Promote to Production** → Run workflow  
-2. Isi confirm = `promote`  
-3. Buka banner **Review deployments** → **Approve**  
-4. Workflow merge `develop` → `main` lalu dispatch **Deploy to Production**
+1. Actions → **Promote to Production** → pilih branch **`develop`** → Run workflow  
+2. Buka banner **Review deployments** → **Approve**  
+3. Workflow merge `develop` → `main` lalu dispatch **Deploy to Production**
 
 Jika branch protection di `main` menolak merge oleh `GITHUB_TOKEN`, tambahkan secret Actions **`GH_PAT`** (Personal Access Token, scope `repo`).
 
