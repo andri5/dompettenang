@@ -274,10 +274,10 @@ Support Sumopod: `support@sumopod.com` (lihat juga kontak di situs).
 Staging URL: **https://staging.dompet-tenang.web.id**  
 Stack terpisah (`docker-compose.staging.yml`) + DB sendiri, Caddy production mem-proxy subdomain `staging.*`.
 
-**Status setup kode/CI:** selesai (compose, Caddy block, workflow deploy staging + production).  
+**Status setup kode/CI:** selesai (compose, Caddy block, workflow staging + promote + production).  
 **Yang sering masih kurang:** DNS `A` `staging` → IP VPS. Tanpa itu browser dapat **NXDOMAIN** meskipun container jalan.
 
-Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).
+Alur kerja lengkap (branch → QA approve → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md).
 
 ### Setup sekali
 
@@ -285,7 +285,7 @@ Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md
    Type `A`, Name `staging`, Value = IP VPS (sama seperti apex).
 2. Di VPS: salin `deploy/.env.staging.example` → `deploy/.env.staging`, isi secret staging.
 3. **Actions** → **Deploy to Staging** → Run workflow  
-   (juga auto saat push ke `feature/testing-qa` atau `develop`).
+   (juga auto saat push ke **`develop`** atau `feature/testing-qa`).
 
 ### File terkait
 
@@ -293,6 +293,7 @@ Alur kerja lengkap (branch → QA → prod): [DEV_WORKFLOW.md](./DEV_WORKFLOW.md
 - [`deploy/.env.staging.example`](../deploy/.env.staging.example)
 - [`deploy/remote-deploy-staging.sh`](../deploy/remote-deploy-staging.sh)
 - [`.github/workflows/deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
+- [`.github/workflows/promote-to-production.yml`](../.github/workflows/promote-to-production.yml)
 
 Staging memakai header `X-Robots-Tag: noindex` agar tidak terindeks search engine.
 
@@ -305,16 +306,36 @@ Pastikan public key deploy ada di `authorized_keys` root/user VPS.
 
 ## 10. Autodeploy production (GitHub Actions + SSH)
 
-Setelah VPS jalan manual sekali, production bisa di-update otomatis:
+Setelah VPS jalan manual sekali, production di-update lewat jalur QA:
 
 ```text
-Merge/push ke main → GitHub Actions → SSH VPS → git pull + docker compose up --build
+feature → develop → Deploy Staging → QA uji → Promote to Production (Approve)
+  → merge develop→main → Deploy to Production → SSH VPS
 ```
 
-Branch `feature/*` **tidak** auto-deploy. Hanya **`main`** (atau `master`) + tombol **Run workflow** manual.
+Branch `feature/*` **tidak** auto-deploy ke prod. Rilis normal: **Promote to Production**.
 
-Workflow: [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml)  
+Workflows:
+- [`.github/workflows/promote-to-production.yml`](../.github/workflows/promote-to-production.yml) — 1 klik + environment approval
+- [`.github/workflows/deploy-production.yml`](../.github/workflows/deploy-production.yml) — deploy VPS dari `main`  
 Script VPS: [`deploy/remote-deploy.sh`](../deploy/remote-deploy.sh)
+
+### 10.0 Setup QA approve (Required reviewers) — sekali
+
+Agar promote menunggu klik manusia (bukan full-auto ke prod):
+
+1. Repo → **Settings** → **Environments** → buka **production** (buat jika belum ada)
+2. Enable **Required reviewers** → tambahkan akun QA / maintainer
+3. Save
+
+Cara pakai setelah staging OK:
+
+1. Actions → **Promote to Production** → Run workflow  
+2. Isi confirm = `promote`  
+3. Buka banner **Review deployments** → **Approve**  
+4. Workflow merge `develop` → `main` lalu dispatch **Deploy to Production**
+
+Jika branch protection di `main` menolak merge oleh `GITHUB_TOKEN`, tambahkan secret Actions **`GH_PAT`** (Personal Access Token, scope `repo`).
 
 ### 10.1 Setup SSH deploy key (sekali)
 
