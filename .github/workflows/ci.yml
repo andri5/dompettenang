@@ -88,8 +88,10 @@ jobs:
       - name: Install Playwright browsers
         run: npx --workspace apps/web playwright install --with-deps chromium
 
-      - name: Run E2E tests (chromium only)
-        run: npx --workspace apps/web playwright test --project=chromium
+      # Full suite needs a live API + auth; in CI we only run public smoke/validation.
+      - name: Run E2E smoke + validation (chromium)
+        timeout-minutes: 8
+        run: npm --workspace apps/web run test:e2e
         continue-on-error: true
         env:
           CI: true
