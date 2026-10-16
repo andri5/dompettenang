@@ -51,8 +51,8 @@ npm start
 ## Making Changes
 
 1. Make your changes in your branch
-2. Test locally, then deploy/QA on **staging** (`feature/testing-qa` or `develop`)
-3. After QA passes, open a PR into **`main`** for production
+2. Open a PR into **`develop`** (auto-deploys staging)
+3. After QA passes on staging, run Actions → **Promote to Production** (approve environment)
 4. Commit with clear, descriptive messages:
    ```bash
    git commit -m "feat: add new feature" 

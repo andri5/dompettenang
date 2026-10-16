@@ -6,13 +6,14 @@
 #   2. deploy/.env.staging on VPS (copy from deploy/.env.staging.example)
 #   3. Secrets: PROD_SSH_* (same as production)
 #
-# Triggers: push to feature/testing-qa, or manual Run workflow
+# Triggers: push to develop (canonical) or feature/testing-qa, or manual Run workflow
+# After QA on staging: Actions → Promote to Production (see promote-to-production.yml)
 
 name: Deploy to Staging
 
 on:
   push:
-    branches: [feature/testing-qa, develop]
+    branches: [develop, feature/testing-qa]
   workflow_dispatch:
 
 concurrency:

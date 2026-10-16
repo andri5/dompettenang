@@ -1,0 +1,145 @@
+# After QA verifies staging, promote develop → main (1-click + environment approval).
+# Merges via git push (no PR) so GITHUB_TOKEN does not need "create pull requests" permission.
+# Then explicitly triggers Deploy to Production.
+#
+# Setup (once): Settings → Environments → production → Required reviewers
+# Optional: secret GH_PAT (repo scope) if main branch protection blocks GITHUB_TOKEN push
+
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: promote-to-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+  checks: read
+
+jobs:
+  check-ci:
+    name: Verify develop CI
+    runs-on: ubuntu-latest
+    outputs:
+      develop_sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: develop
+
+      - name: Resolve develop tip
+        id: sha
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "develop HEAD: ${SHA}"
+
+      - name: Require develop ahead of main
+        run: |
+          set -euo pipefail
+          git fetch origin main develop
+          AHEAD=$(git rev-list --count origin/main..origin/develop)
+          echo "Commits on develop not in main: ${AHEAD}"
+          if [ "${AHEAD}" -eq 0 ]; then
+            echo "ERROR: develop has nothing new to promote to main"
+            exit 1
+          fi
+
+      - name: Wait for CI success on develop tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DEVELOP_SHA="${{ steps.sha.outputs.sha }}"
+          echo "Waiting for CI - Build & Test on develop @ ${DEVELOP_SHA}"
+
+          # Poll up to ~20 minutes for the run that matches develop tip
+          for i in $(seq 1 60); do
+            ROW=$(gh run list \
+              --branch develop \
+              --workflow "CI - Build & Test" \
+              --limit 30 \
+              --json databaseId,conclusion,headSha,status \
+              --jq "[.[] | select(.headSha == \"${DEVELOP_SHA}\")] | .[0] // empty")
+
+            if [ -n "${ROW}" ] && [ "${ROW}" != "null" ]; then
+              STATUS=$(echo "${ROW}" | jq -r .status)
+              CONCLUSION=$(echo "${ROW}" | jq -r .conclusion)
+              RUN_ID=$(echo "${ROW}" | jq -r .databaseId)
+              echo "Attempt ${i}: run=${RUN_ID} status=${STATUS} conclusion=${CONCLUSION}"
+
+              if [ "${STATUS}" = "completed" ]; then
+                if [ "${CONCLUSION}" = "success" ]; then
+                  echo "CI gate OK"
+                  exit 0
+                fi
+                echo "ERROR: CI on develop tip failed (${CONCLUSION})"
+                echo "See: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+                exit 1
+              fi
+
+              # In progress — wait on this run (falls through if watch returns early)
+              gh run watch "${RUN_ID}" --exit-status && {
+                echo "CI gate OK"
+                exit 0
+              } || {
+                echo "ERROR: CI on develop tip did not succeed"
+                echo "See: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+                exit 1
+              }
+            fi
+
+            echo "Attempt ${i}: no CI run for tip yet; sleeping 20s..."
+            sleep 20
+          done
+
+          echo "ERROR: timed out waiting for CI on develop tip ${DEVELOP_SHA}"
+          exit 1
+
+  promote:
+    name: Merge develop into main
+    needs: check-ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dompet-tenang.web.id
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Merge develop into main and push
+        env:
+          DEVELOP_SHA: ${{ needs.check-ci.outputs.develop_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main develop
+          git checkout -B main origin/main
+
+          if git merge-base --is-ancestor origin/develop main; then
+            echo "develop tip already contained in main — nothing to merge"
+          else
+            git merge --no-ff "origin/develop" \
+              -m "Promote develop → production (${DEVELOP_SHA:0:7})"
+          fi
+
+          git push origin HEAD:main
+          echo "Pushed main @ $(git rev-parse --short HEAD)"
+
+      - name: Trigger Deploy to Production
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -euo pipefail
+          # Push with GITHUB_TOKEN does not start other workflows; dispatch explicitly.
+          gh workflow run "Deploy to Production" --ref main
+          echo "Dispatched Deploy to Production on main"
