@@ -74,3 +74,16 @@ eas build --platform android --profile production
 | Deploy to Staging | push `develop` |
 | Promote to Production | manual setelah QA |
 | Deploy to Production | setelah Promote (+ Approve) |
+
+## Agar muncul di Google (SEO)
+
+Situs sudah boleh diindeks (`robots.txt` + meta `index,follow`). Google **tidak otomatis** langsung menampilkan domain baru — perlu submit & menunggu.
+
+1. Buka [Google Search Console](https://search.google.com/search-console)
+2. Tambah properti URL: `https://dompet-tenang.web.id`
+3. Verifikasi (meta tag verification sudah ada di situs)
+4. Menu **Sitemaps** → submit: `https://dompet-tenang.web.id/sitemap.xml`
+5. **URL Inspection** → masukkan homepage → **Request indexing**
+6. Tunggu beberapa hari–minggu. Cek dengan pencarian: `site:dompet-tenang.web.id`
+
+Staging (`staging.dompet-tenang.web.id`) sengaja `noindex` — tidak masuk Google.
