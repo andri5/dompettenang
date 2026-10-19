@@ -406,7 +406,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               >
                 <Shield className="h-4 w-4" />
                 {proOpenCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-ink">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                     {proOpenCount > 99 ? '99+' : proOpenCount}
                   </span>
                 ) : null}
@@ -415,7 +415,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <span className="flex flex-1 items-center justify-between gap-2">
                   Admin Panel
                   {proOpenCount > 0 ? (
-                    <span className="rounded-full bg-amber-400/90 px-1.5 py-0.5 text-[10px] font-bold text-ink">
+                    <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                       Pro {proOpenCount}
                     </span>
                   ) : null}
