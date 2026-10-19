@@ -1,0 +1,95 @@
+# One-off ops: promote a staging user to ADMIN.
+# Run: Actions → Set staging user ADMIN → Run workflow
+name: Set staging user ADMIN
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Email user di staging
+        required: true
+        type: string
+        default: faizalandri04@gmail.com
+
+jobs:
+  set-admin:
+    name: Update role on staging DB
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.dompet-tenang.web.id
+    steps:
+      - name: Prepare SSH key and known_hosts
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?Set secret PROD_SSH_HOST}"
+          PORT="${PROD_SSH_PORT:-22}"
+          KEY_RAW="${PROD_SSH_KEY:?Set secret PROD_SSH_KEY}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$KEY_RAW" \
+            | tr -d '\r' \
+            | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" \
+            > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if ! head -1 ~/.ssh/id_deploy | grep -q 'BEGIN .*PRIVATE KEY'; then
+            echo "ERROR: PROD_SSH_KEY must be the PRIVATE key"
+            exit 1
+          fi
+
+          ssh-keyscan -p "${PORT}" -H "${HOST}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Set user role to ADMIN on staging
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          TARGET_EMAIL: ${{ inputs.email }}
+        run: |
+          set -euo pipefail
+          HOST="${PROD_SSH_HOST:?}"
+          USER_NAME="${PROD_SSH_USER:?}"
+          PORT="${PROD_SSH_PORT:-22}"
+          EMAIL="${TARGET_EMAIL:?}"
+
+          ssh -i ~/.ssh/id_deploy -p "${PORT}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "${USER_NAME}@${HOST}" \
+            EMAIL="$EMAIL" bash -s <<'EOF'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/opt/dompettenang}"
+          COMPOSE_FILE="${APP_DIR}/deploy/docker-compose.staging.yml"
+          ENV_FILE="${APP_DIR}/deploy/.env.staging"
+
+          if [[ ! -f "${ENV_FILE}" ]]; then
+            echo "ERROR: missing ${ENV_FILE}"
+            exit 1
+          fi
+
+          # shellcheck disable=SC1090
+          set -a
+          # Only need DB identity vars; password unused for peer-less docker exec as POSTGRES_USER
+          # shellcheck source=/dev/null
+          source <(grep -E '^(POSTGRES_USER|POSTGRES_DB)=' "${ENV_FILE}")
+          set +a
+          PGUSER="${POSTGRES_USER:-dompet_stg}"
+          PGDB="${POSTGRES_DB:-dompettenang_staging}"
+
+          RESULT=$(docker compose -p dompettenang-staging -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+            exec -T postgres \
+            psql -U "${PGUSER}" -d "${PGDB}" -v ON_ERROR_STOP=1 -tA -c \
+            "UPDATE users SET role = 'ADMIN', updated_at = NOW() WHERE email = '${EMAIL}' RETURNING email, role;")
+
+          if [[ -z "${RESULT}" ]]; then
+            echo "ERROR: no user found with email=${EMAIL}"
+            exit 1
+          fi
+
+          echo "OK: ${RESULT}"
+          EOF
