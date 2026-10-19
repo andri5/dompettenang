@@ -51,8 +51,18 @@ const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const USD_URL = 'https://open.er-api.com/v6/latest/USD';
 const GOLD_URL = 'https://logam-mulia-api.iamutaki.workers.dev/api/prices/anekalogam';
 const BI_RATE_URL = 'https://bi-rate.vercel.app/api/bi-rate?startPage=1&endPage=1';
-const IHSG_URL =
-  'https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d';
+const IHSG_URLS = [
+  'https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d',
+  'https://query2.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d',
+] as const;
+
+/** Yahoo often rejects bare Node fetch (esp. from VPS); send a browser-like UA. */
+const YAHOO_HEADERS: HeadersInit = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'application/json,text/plain,*/*',
+  'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+};
 
 let cache: CacheEntry | null = null;
 
@@ -173,52 +183,70 @@ async function fetchBiRate(): Promise<BiRateQuote> {
   };
 }
 
-async function fetchIhsg(): Promise<IhsgQuote> {
-  const response = await fetch(IHSG_URL);
-  if (!response.ok) {
-    throw new Error(`IHSG upstream failed (${response.status})`);
-  }
-
-  const json = (await response.json()) as {
-    chart?: {
-      result?: Array<{
-        timestamp?: number[];
-        indicators?: {
-          quote?: Array<{
-            close?: Array<number | null>;
-          }>;
-        };
-      }>;
-    };
+type YahooChartResult = {
+  meta?: {
+    regularMarketPrice?: number;
+    fulldayPrice?: number;
+    chartPreviousClose?: number;
+    previousClose?: number;
+    regularMarketTime?: number;
+    regularMarketChange?: number;
+    fulldayChange?: number;
+    regularMarketChangePercent?: number;
+    fulldayChangePercent?: number;
   };
+  timestamp?: number[];
+  indicators?: {
+    quote?: Array<{
+      close?: Array<number | null>;
+    }>;
+  };
+};
 
-  const result = json.chart?.result?.[0];
-  const closes = result?.indicators?.quote?.[0]?.close ?? [];
-  if (!Array.isArray(closes) || closes.length === 0) {
-    throw new Error('IHSG payload invalid');
+function finiteNumber(...candidates: Array<number | undefined>): number {
+  for (const n of candidates) {
+    if (typeof n === 'number' && Number.isFinite(n)) return n;
   }
+  return NaN;
+}
 
-  let lastIdx = -1;
-  let prevIdx = -1;
-  for (let i = 0; i < closes.length; i++) {
-    const v = closes[i];
-    if (typeof v === 'number' && Number.isFinite(v)) {
-      prevIdx = lastIdx;
-      lastIdx = i;
+function parseIhsgFromChart(result: YahooChartResult): IhsgQuote {
+  const meta = result.meta ?? {};
+  const closes = result.indicators?.quote?.[0]?.close ?? [];
+
+  let value = finiteNumber(meta.regularMarketPrice, meta.fulldayPrice);
+  let changePct = finiteNumber(meta.regularMarketChangePercent, meta.fulldayChangePercent);
+  let change = finiteNumber(meta.regularMarketChange, meta.fulldayChange);
+
+  // Fallback: last two finite daily closes (helps when meta is incomplete)
+  if (!Number.isFinite(value) || !Number.isFinite(changePct)) {
+    let lastIdx = -1;
+    let prevIdx = -1;
+    for (let i = 0; i < closes.length; i++) {
+      const v = closes[i];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        prevIdx = lastIdx;
+        lastIdx = i;
+      }
+    }
+    if (lastIdx < 0) {
+      throw new Error('IHSG close not found');
+    }
+    if (!Number.isFinite(value)) value = Number(closes[lastIdx]);
+    const prev = prevIdx >= 0 ? Number(closes[prevIdx]) : value;
+    if (!Number.isFinite(change)) change = value - prev;
+    if (!Number.isFinite(changePct)) {
+      changePct = prev !== 0 ? (change / prev) * 100 : 0;
     }
   }
 
-  if (lastIdx < 0) {
-    throw new Error('IHSG close not found');
+  if (!Number.isFinite(change)) {
+    // Prefer % from meta over chartPreviousClose delta (index level can re-base)
+    change = 0;
   }
 
-  const value = Number(closes[lastIdx]);
-  const prev = prevIdx >= 0 ? Number(closes[prevIdx]) : value;
-  const change = value - prev;
-  const changePct = prev !== 0 ? (change / prev) * 100 : 0;
   const changePctLabel = `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`;
-
-  const ts = result?.timestamp?.[lastIdx];
+  const ts = meta.regularMarketTime;
   const updatedAt =
     typeof ts === 'number' ? new Date(ts * 1000).toISOString() : new Date().toISOString();
 
@@ -230,6 +258,32 @@ async function fetchIhsg(): Promise<IhsgQuote> {
     updatedAt,
     source: 'Yahoo Finance ^JKSE',
   };
+}
+
+async function fetchIhsg(): Promise<IhsgQuote> {
+  let lastError: Error | null = null;
+
+  for (const url of IHSG_URLS) {
+    try {
+      const response = await fetch(url, { headers: YAHOO_HEADERS });
+      if (!response.ok) {
+        throw new Error(`IHSG upstream failed (${response.status})`);
+      }
+
+      const json = (await response.json()) as {
+        chart?: { result?: YahooChartResult[] };
+      };
+      const result = json.chart?.result?.[0];
+      if (!result) {
+        throw new Error('IHSG payload invalid');
+      }
+      return parseIhsgFromChart(result);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+
+  throw lastError ?? new Error('IHSG upstream failed');
 }
 
 export class MarketService {
@@ -263,7 +317,10 @@ export class MarketService {
       fetchedAt: new Date().toISOString(),
     };
 
-    cache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+    // Shorter cache when optional quotes fail so IHSG/BI can recover without waiting 30m
+    const ttl =
+      data.ihsg && data.biRate ? CACHE_TTL_MS : Math.min(CACHE_TTL_MS, 5 * 60 * 1000);
+    cache = { data, expiresAt: Date.now() + ttl };
     return data;
   }
 }
