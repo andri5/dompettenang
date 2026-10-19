@@ -51,13 +51,14 @@ const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const USD_URL = 'https://open.er-api.com/v6/latest/USD';
 const GOLD_URL = 'https://logam-mulia-api.iamutaki.workers.dev/api/prices/anekalogam';
 const BI_RATE_URL = 'https://bi-rate.vercel.app/api/bi-rate?startPage=1&endPage=1';
-const IHSG_URLS = [
+const TRADINGVIEW_SCAN_URL = 'https://scanner.tradingview.com/indonesia/scan';
+const IHSG_YAHOO_URLS = [
   'https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d',
   'https://query2.finance.yahoo.com/v8/finance/chart/%5EJKSE?interval=1d&range=5d',
 ] as const;
 
-/** Yahoo often rejects bare Node fetch (esp. from VPS); send a browser-like UA. */
-const YAHOO_HEADERS: Record<string, string> = {
+/** Browser-like headers — Yahoo often blocks bare Node/VPS fetch. */
+const BROWSER_HEADERS: Record<string, string> = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   Accept: 'application/json,text/plain,*/*',
@@ -260,14 +261,56 @@ function parseIhsgFromChart(result: YahooChartResult): IhsgQuote {
   };
 }
 
-async function fetchIhsg(): Promise<IhsgQuote> {
+async function fetchIhsgFromTradingView(): Promise<IhsgQuote> {
+  const response = await fetch(TRADINGVIEW_SCAN_URL, {
+    method: 'POST',
+    headers: {
+      ...BROWSER_HEADERS,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      symbols: { tickers: ['IDX:COMPOSITE'], query: { types: [] } },
+      columns: ['close', 'change', 'change_abs', 'name'],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`IHSG TradingView failed (${response.status})`);
+  }
+
+  const json = (await response.json()) as {
+    data?: Array<{ s?: string; d?: Array<number | string | null> }>;
+  };
+  const row = json.data?.[0]?.d;
+  if (!row || row.length < 3) {
+    throw new Error('IHSG TradingView payload invalid');
+  }
+
+  const value = Number(row[0]);
+  const changePct = Number(row[1]);
+  const change = Number(row[2]);
+  if (![value, changePct, change].every((n) => Number.isFinite(n))) {
+    throw new Error('IHSG TradingView values invalid');
+  }
+
+  return {
+    value,
+    change,
+    changePct,
+    changePctLabel: `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`,
+    updatedAt: new Date().toISOString(),
+    source: 'TradingView IDX:COMPOSITE',
+  };
+}
+
+async function fetchIhsgFromYahoo(): Promise<IhsgQuote> {
   let lastError: Error | null = null;
 
-  for (const url of IHSG_URLS) {
+  for (const url of IHSG_YAHOO_URLS) {
     try {
-      const response = await fetch(url, { headers: YAHOO_HEADERS });
+      const response = await fetch(url, { headers: BROWSER_HEADERS });
       if (!response.ok) {
-        throw new Error(`IHSG upstream failed (${response.status})`);
+        throw new Error(`IHSG Yahoo failed (${response.status})`);
       }
 
       const json = (await response.json()) as {
@@ -275,7 +318,7 @@ async function fetchIhsg(): Promise<IhsgQuote> {
       };
       const result = json.chart?.result?.[0];
       if (!result) {
-        throw new Error('IHSG payload invalid');
+        throw new Error('IHSG Yahoo payload invalid');
       }
       return parseIhsgFromChart(result);
     } catch (err) {
@@ -283,7 +326,16 @@ async function fetchIhsg(): Promise<IhsgQuote> {
     }
   }
 
-  throw lastError ?? new Error('IHSG upstream failed');
+  throw lastError ?? new Error('IHSG Yahoo upstream failed');
+}
+
+async function fetchIhsg(): Promise<IhsgQuote> {
+  // Prefer TradingView — Yahoo is frequently blocked from VPS/cloud IPs.
+  try {
+    return await fetchIhsgFromTradingView();
+  } catch {
+    return fetchIhsgFromYahoo();
+  }
 }
 
 export class MarketService {
