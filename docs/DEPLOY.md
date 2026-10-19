@@ -57,6 +57,34 @@ Jangan push langsung ke `main` kecuali hotfix darurat.
 
 Script di server: `deploy/remote-deploy.sh`, `deploy/remote-deploy-staging.sh`.
 
+## DBeaver → DB staging
+
+Postgres staging **tidak** terbuka ke internet. Bind hanya `127.0.0.1:15432` di VPS; akses lewat SSH tunnel.
+
+1. Pastikan key ada di `.local-ssh/id_ed25519` (sama seperti deploy SSH).
+2. Ambil kredensial (tersimpan di `.local-ssh/staging-dbeaver.env`, gitignored):
+   ```powershell
+   .\scripts\fetch-staging-db-creds.ps1
+   ```
+3. Buka tunnel dan biarkan tetap terbuka:
+   ```powershell
+   .\scripts\staging-db-tunnel.ps1
+   ```
+4. Di DBeaver → New Connection → PostgreSQL:
+
+   | Field | Nilai |
+   |-------|--------|
+   | Host | `localhost` |
+   | Port | `15432` |
+   | Database | `POSTGRES_DB` dari file di langkah 2 (default `dompettenang_staging`) |
+   | Username | `POSTGRES_USER` (default `dompet_stg`) |
+   | Password | `POSTGRES_PASSWORD` dari file di langkah 2 |
+   | SSL | off (tunnel sudah SSH) |
+
+Tab SSH di DBeaver tidak perlu jika sudah pakai script tunnel.
+
+Opsional env untuk script: `STAGING_SSH_HOST`, `STAGING_SSH_USER`, `STAGING_SSH_PORT`.
+
 ## Mobile (internal)
 
 Landing tidak unduh APK publik. Build internal: EAS / workflow **Publish Android APK**.
