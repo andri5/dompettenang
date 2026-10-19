@@ -28,10 +28,9 @@ Monorepo:
 - **Admin** — Panel penuh di web (flags, traffic, activity, legal); ringkas di mobile
 - **Responsif** — Desktop sidebar + mobile bottom nav
 
-> **Production:** https://dompet-tenang.web.id — deploy VPS Sumopod.  
-> **Staging (QA):** https://staging.dompet-tenang.web.id — butuh DNS `A` `staging` → IP VPS.  
-> Alur branch & rilis: [docs/DEV_WORKFLOW.md](./docs/DEV_WORKFLOW.md). Detail VPS: [docs/DEPLOY_SUMOPOD.md](./docs/DEPLOY_SUMOPOD.md).  
-> Landing: aplikasi **mobile akan segera rilis** (bukan unduh APK publik).
+> **Production:** https://dompet-tenang.web.id  
+> **Staging:** https://staging.dompet-tenang.web.id  
+> Alur deploy: [docs/DEPLOY.md](./docs/DEPLOY.md)
 
 ## Quick Start
 
@@ -45,8 +44,8 @@ Monorepo:
 ### Installation
 
 ```bash
-git clone https://github.com/andri5/Dompet Tenang.git
-cd Dompet Tenang
+git clone https://github.com/andri5/dompettenang.git
+cd dompettenang
 npm install
 ```
 
@@ -112,11 +111,9 @@ npm run mobile
 
 ## Documentation
 
-- [Alur Development → Staging → Production](./docs/DEV_WORKFLOW.md) ⭐
-- [Deploy ke Sumopod (VPS + bayar + DNS + autodeploy)](./docs/DEPLOY_SUMOPOD.md)
-- [Distribusi mobile (internal)](./docs/MOBILE_DISTRIBUTE.md)
-- [Backend](./apps/api/README.md)
-- [Web](./apps/web/README.md)
+- [Deploy (staging → prod)](./docs/DEPLOY.md)
+- [API overview](./docs/API.md)
+- [Backend](./apps/api/README.md) · [Web](./apps/web/README.md)
 - [Contributing](./CONTRIBUTING.md)
 
 ## License

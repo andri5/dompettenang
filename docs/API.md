@@ -1,7 +1,7 @@
 # 🔧 API Documentation
 
 **Last Updated:** January 1, 2026  
-**Base URL:** `http://localhost:3000/api/v1`
+**Base URL:** `http://localhost:3001/api/v1` (production: `https://dompet-tenang.web.id/api/v1`)
 
 ---
 
