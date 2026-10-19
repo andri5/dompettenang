@@ -291,7 +291,7 @@ export function UpgradePage() {
 
                     {activeRequest.status === 'REJECTED' && activeRequest.adminNote ? (
                       <p className="rounded-xl border border-coral/20 bg-coral-soft px-3 py-2 text-sm text-ink">
-                        Catatan admin: {activeRequest.adminNote}
+                        Alasan penolakan: {activeRequest.adminNote}
                       </p>
                     ) : null}
 

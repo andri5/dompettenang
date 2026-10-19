@@ -542,7 +542,11 @@ router.post('/pro-requests/:id/reject', async (req: Request, res: Response) => {
   try {
     const id = paramString(req.params.id);
     const adminNote =
-      typeof req.body?.adminNote === 'string' ? req.body.adminNote.slice(0, 500) : undefined;
+      typeof req.body?.adminNote === 'string' ? req.body.adminNote.trim().slice(0, 500) : '';
+    if (!adminNote) {
+      res.status(400).json({ success: false, message: 'Alasan penolakan wajib diisi' });
+      return;
+    }
     const data = await rejectRequest(id, adminNote);
     const admin = (req as AuthenticatedRequest).user!;
     await auditService.log({
@@ -551,7 +555,7 @@ router.post('/pro-requests/:id/reject', async (req: Request, res: Response) => {
       action: 'REJECT_PRO_PURCHASE',
       entityType: 'pro_purchase_request',
       entityId: id,
-      summary: `Reject Pro purchase ${id}`,
+      summary: `Reject Pro purchase ${id}: ${adminNote.slice(0, 120)}`,
     });
     res.json({ success: true, data, message: 'Permintaan ditolak' });
   } catch (e: unknown) {

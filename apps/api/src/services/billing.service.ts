@@ -259,11 +259,16 @@ export async function rejectRequest(requestId: string, adminNote?: string) {
   if (!row) throw new Error('Permintaan tidak ditemukan');
   if (row.status === 'APPROVED') throw new Error('Tidak bisa menolak yang sudah disetujui');
 
+  const note = typeof adminNote === 'string' ? adminNote.trim().slice(0, 500) : '';
+  if (!note) {
+    throw new Error('Alasan penolakan wajib diisi');
+  }
+
   const updated = await prisma.proPurchaseRequest.update({
     where: { id: row.id },
     data: {
       status: 'REJECTED',
-      adminNote: adminNote || null,
+      adminNote: note,
       reviewedAt: new Date(),
     },
   });

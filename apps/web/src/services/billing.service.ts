@@ -102,11 +102,11 @@ export async function approveProRequest(
 
 export async function rejectProRequest(
   id: string,
-  adminNote?: string
+  adminNote: string
 ): Promise<ProPurchaseRequest> {
   const res = await api.post<ApiResponse<ProPurchaseRequest>>(
     `/admin/pro-requests/${id}/reject`,
-    adminNote ? { adminNote } : {}
+    { adminNote }
   );
   return res.data.data;
 }

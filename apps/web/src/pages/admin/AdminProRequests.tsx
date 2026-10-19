@@ -40,10 +40,28 @@ const STATUS_VARIANT: Record<
   REJECTED: 'danger',
 };
 
+/** Preset reject reasons stored in adminNote (wajib pilih satu). */
+const PRO_REJECT_REASONS = [
+  'Bukti transfer kurang jelas',
+  'Kode / berita transfer salah',
+  'Nominal atau rekening transfer salah',
+] as const;
+
+type ProRejectReason = (typeof PRO_REJECT_REASONS)[number];
+
+function buildRejectAdminNote(reason: ProRejectReason, extraNote?: string): string {
+  const extra = extraNote?.trim();
+  const combined = extra ? `${reason}. ${extra}` : reason;
+  return combined.slice(0, 500);
+}
+
 export function AdminProRequests() {
   const toast = useToast();
   const qc = useQueryClient();
   const [filter, setFilter] = useState('PROOF_SUBMITTED');
+  const [reasonById, setReasonById] = useState<Record<string, ProRejectReason | ''>>(
+    {}
+  );
   const [noteById, setNoteById] = useState<Record<string, string>>({});
   const [bankName, setBankName] = useState('');
   const [bankAccount, setBankAccount] = useState('');
@@ -109,7 +127,7 @@ export function AdminProRequests() {
   });
 
   const rejectMut = useMutation({
-    mutationFn: ({ id, adminNote }: { id: string; adminNote?: string }) =>
+    mutationFn: ({ id, adminNote }: { id: string; adminNote: string }) =>
       rejectProRequest(id, adminNote),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'pro-requests'] });
@@ -235,6 +253,10 @@ export function AdminProRequests() {
             <ProRequestCard
               key={row.id}
               row={row}
+              reason={reasonById[row.id] || ''}
+              onReasonChange={(v) =>
+                setReasonById((prev) => ({ ...prev, [row.id]: v }))
+              }
               note={noteById[row.id] || ''}
               onNoteChange={(v) =>
                 setNoteById((prev) => ({ ...prev, [row.id]: v }))
@@ -245,12 +267,25 @@ export function AdminProRequests() {
                   adminNote: noteById[row.id]?.trim() || undefined,
                 })
               }
-              onReject={() =>
-                rejectMut.mutate({
-                  id: row.id,
-                  adminNote: noteById[row.id]?.trim() || undefined,
-                })
-              }
+              onReject={() => {
+                const reason = reasonById[row.id];
+                if (!reason) {
+                  toast.error('Pilih alasan penolakan dulu');
+                  return;
+                }
+                const adminNote = buildRejectAdminNote(
+                  reason,
+                  noteById[row.id]
+                );
+                if (
+                  !window.confirm(
+                    `Tolak permintaan ini?\n\nAlasan: ${adminNote}`
+                  )
+                ) {
+                  return;
+                }
+                rejectMut.mutate({ id: row.id, adminNote });
+              }}
               busy={approveMut.isPending || rejectMut.isPending}
             />
           ))}
@@ -262,6 +297,8 @@ export function AdminProRequests() {
 
 function ProRequestCard({
   row,
+  reason,
+  onReasonChange,
   note,
   onNoteChange,
   onApprove,
@@ -269,6 +306,8 @@ function ProRequestCard({
   busy,
 }: {
   row: AdminProPurchaseRequest;
+  reason: ProRejectReason | '';
+  onReasonChange: (v: ProRejectReason | '') => void;
   note: string;
   onNoteChange: (v: string) => void;
   onApprove: () => void;
@@ -332,12 +371,40 @@ function ProRequestCard({
       </div>
 
       {canAct ? (
-        <div className="mt-4 space-y-2 border-t border-line pt-3">
+        <div className="mt-4 space-y-3 border-t border-line pt-3">
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted">
+              Alasan tolak (wajib jika menolak)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PRO_REJECT_REASONS.map((label) => {
+                const selected = reason === label;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      onReasonChange(selected ? '' : label)
+                    }
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-left text-xs font-medium transition-colors',
+                      selected
+                        ? 'border-coral bg-coral-soft text-ink'
+                        : 'border-line bg-surface text-muted hover:border-accent hover:text-ink'
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <input
             type="text"
             value={note}
             onChange={(e) => onNoteChange(e.target.value)}
-            placeholder="Catatan admin (opsional)"
+            placeholder="Catatan tambahan (opsional)"
             className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
             maxLength={500}
           />
@@ -357,7 +424,7 @@ function ProRequestCard({
               size="sm"
               variant="danger"
               leftIcon={<X className="h-3.5 w-3.5" />}
-              disabled={busy}
+              disabled={busy || !reason}
               onClick={onReject}
             >
               Tolak
