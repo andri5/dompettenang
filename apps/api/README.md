@@ -580,7 +580,7 @@ Solution: Refresh token using `/auth/refresh` endpoint
 
 ### Getting Help
 
-- Check [docs/DEV_WORKFLOW.md](../../docs/DEV_WORKFLOW.md) for project documentation
+- Check [docs/DEPLOY.md](../../docs/DEPLOY.md) for deploy / release flow
 - Review error logs in terminal
 - Check PostgreSQL logs if database issues
 
