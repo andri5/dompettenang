@@ -62,14 +62,27 @@ Script di server: `deploy/remote-deploy.sh`, `deploy/remote-deploy-staging.sh`.
 Postgres staging **tidak** terbuka ke internet. Bind hanya `127.0.0.1:15432` di VPS; akses lewat SSH tunnel.
 
 1. Pastikan key ada di `.local-ssh/id_ed25519` (sama seperti deploy SSH).
-2. Ambil kredensial (tersimpan di `.local-ssh/staging-dbeaver.env`, gitignored):
+2. Ambil kredensial ke `.local-ssh/staging-dbeaver.env` (gitignored):
+
+   **A — lewat Actions** (disarankan jika SSH lokal ke VPS timeout/firewall):
+   ```powershell
+   gh workflow run "Prepare staging DBeaver" --ref feature/testing-qa
+   # tunggu sukses, lalu download artifact:
+   gh run list --workflow=prepare-staging-dbeaver.yml --limit 1
+   gh run download <RUN_ID> -n staging-dbeaver-env -D .local-ssh
+   ```
+
+   **B — SSH langsung** (butuh akses outbound ke `PROD_SSH_HOST` / port SSH):
    ```powershell
    .\scripts\fetch-staging-db-creds.ps1
    ```
+
 3. Buka tunnel dan biarkan tetap terbuka:
    ```powershell
    .\scripts\staging-db-tunnel.ps1
    ```
+   Script membaca `SSH_HOST` / `SSH_PORT` dari file kredensial. Jika tunnel gagal timeout, set `STAGING_SSH_HOST` / `STAGING_SSH_PORT` dari file itu, atau pakai VPN / jaringan yang mengizinkan SSH ke VPS.
+
 4. Di DBeaver → New Connection → PostgreSQL:
 
    | Field | Nilai |

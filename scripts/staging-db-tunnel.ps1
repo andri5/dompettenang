@@ -10,10 +10,23 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $KeyPath = Join-Path $RepoRoot '.local-ssh\id_ed25519'
-$SshHost = if ($env:STAGING_SSH_HOST) { $env:STAGING_SSH_HOST } else { 'staging.dompet-tenang.web.id' }
-$SshUser = if ($env:STAGING_SSH_USER) { $env:STAGING_SSH_USER } else { 'root' }
-$SshPort = if ($env:STAGING_SSH_PORT) { $env:STAGING_SSH_PORT } else { '22' }
+$CredFile = Join-Path $RepoRoot '.local-ssh\staging-dbeaver.env'
 $LocalPort = 15432
+
+# Prefer explicit env, then values from fetch/prepare artifact, then defaults.
+$SshHost = $env:STAGING_SSH_HOST
+$SshUser = $env:STAGING_SSH_USER
+$SshPort = $env:STAGING_SSH_PORT
+if (Test-Path $CredFile) {
+  Get-Content $CredFile | ForEach-Object {
+    if ($_ -match '^SSH_HOST=(.+)$' -and -not $SshHost) { $SshHost = $Matches[1].Trim() }
+    if ($_ -match '^SSH_USER=(.+)$' -and -not $SshUser) { $SshUser = $Matches[1].Trim() }
+    if ($_ -match '^SSH_PORT=(.+)$' -and -not $SshPort) { $SshPort = $Matches[1].Trim() }
+  }
+}
+if (-not $SshHost) { $SshHost = 'staging.dompet-tenang.web.id' }
+if (-not $SshUser) { $SshUser = 'root' }
+if (-not $SshPort) { $SshPort = '22' }
 
 if (-not (Test-Path $KeyPath)) {
   Write-Error "SSH key not found: $KeyPath`nPlace the deploy private key there (see .local-ssh)."
