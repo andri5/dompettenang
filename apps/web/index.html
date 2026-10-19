@@ -23,6 +23,7 @@
     <meta name="twitter:description" content="Aplikasi pencatatan keuangan pribadi gratis untuk mengelola pemasukan, pengeluaran, budget, dan target tabungan." />
     <meta name="twitter:image" content="https://dompet-tenang.web.id/og-image.png" />
     <title>Dompet Tenang — Catat Keuangan Pribadi</title>
+    <meta name="keywords" content="Dompet Tenang, aplikasi keuangan, catat pengeluaran, pencatatan keuangan pribadi, budget bulanan, expense tracker Indonesia" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://challenges.cloudflare.com" />
@@ -30,6 +31,41 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Static JSON-LD so crawlers see structured data without waiting for JS -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Dompet Tenang",
+            "url": "https://dompet-tenang.web.id/",
+            "inLanguage": "id-ID",
+            "description": "Aplikasi pencatatan keuangan pribadi gratis untuk mengelola pemasukan, pengeluaran, budget, dan target tabungan."
+          },
+          {
+            "@type": "Organization",
+            "name": "Dompet Tenang",
+            "url": "https://dompet-tenang.web.id/",
+            "logo": "https://dompet-tenang.web.id/favicon.svg"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Dompet Tenang",
+            "url": "https://dompet-tenang.web.id/",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "id-ID",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "IDR"
+            },
+            "description": "Catat pemasukan & pengeluaran, atur budget bulanan, dan pantau target tabungan. Gratis, dengan Pro Lifetime opsional."
+          }
+        ]
+      }
+    </script>
     <script
       id="cf-turnstile-script"
       src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
@@ -39,6 +75,22 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Dompet Tenang — Catat Keuangan Pribadi</h1>
+        <p>
+          Aplikasi pencatatan keuangan pribadi gratis. Catat pemasukan &amp; pengeluaran,
+          atur budget, pantau tabungan.
+        </p>
+        <ul>
+          <li><a href="https://dompet-tenang.web.id/">Beranda</a></li>
+          <li><a href="https://dompet-tenang.web.id/register">Daftar</a></li>
+          <li><a href="https://dompet-tenang.web.id/login">Masuk</a></li>
+          <li><a href="https://dompet-tenang.web.id/terms">Syarat &amp; Ketentuan</a></li>
+          <li><a href="https://dompet-tenang.web.id/privacy">Privasi</a></li>
+        </ul>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

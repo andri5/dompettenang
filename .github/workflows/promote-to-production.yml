@@ -1,8 +1,7 @@
-# After QA verifies staging, promote develop → main (1-click + environment approval).
-# Merges via git push (no PR) so GITHUB_TOKEN does not need "create pull requests" permission.
-# Then explicitly triggers Deploy to Production.
+# After QA verifies staging: merge develop → main, then start Deploy to Production.
+# QA approval is NOT here — only on Deploy to Production (environment: production).
+# Staging deploy never requires approval.
 #
-# Setup (once): Settings → Environments → production → Required reviewers
 # Optional: secret GH_PAT (repo scope) if main branch protection blocks GITHUB_TOKEN push
 
 name: Promote to Production
@@ -105,9 +104,6 @@ jobs:
     name: Merge develop into main
     needs: check-ci
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://dompet-tenang.web.id
     steps:
       - uses: actions/checkout@v4
         with:
