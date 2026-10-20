@@ -59,6 +59,15 @@ export function UpgradePage() {
     queryKey: ['billing', 'my-requests'],
     queryFn: fetchMyPurchaseRequests,
     enabled: Boolean(user) && !isPro,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: (query) => {
+      const rows = query.state.data || [];
+      const waiting = rows.some(
+        (r) => r.status === 'PENDING' || r.status === 'PROOF_SUBMITTED'
+      );
+      return waiting ? 15_000 : false;
+    },
   });
 
   const activeRequest = useMemo(() => {
@@ -289,9 +298,11 @@ export function UpgradePage() {
                       </div>
                     ) : null}
 
-                    {activeRequest.status === 'REJECTED' && activeRequest.adminNote ? (
+                    {activeRequest.status === 'REJECTED' ? (
                       <p className="rounded-xl border border-coral/20 bg-coral-soft px-3 py-2 text-sm text-ink">
-                        Alasan penolakan: {activeRequest.adminNote}
+                        {activeRequest.adminNote
+                          ? `Alasan penolakan: ${activeRequest.adminNote}`
+                          : 'Pembayaran Pro ditolak. Silakan buat permintaan baru dan unggah bukti yang benar.'}
                       </p>
                     ) : null}
 
