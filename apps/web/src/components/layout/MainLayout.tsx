@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   Target,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore, useUIStore } from '@/stores';
@@ -81,6 +82,13 @@ const primaryNav: Array<{
     path: ROUTES.BUDGET,
   },
   {
+    icon: Sparkles,
+    label: 'Insight bulanan',
+    shortLabel: 'Insight',
+    path: ROUTES.INSIGHT,
+    pro: true,
+  },
+  {
     icon: Target,
     label: 'Target Tabungan',
     shortLabel: 'Tabungan',
@@ -123,6 +131,12 @@ const moreMenuItems: Array<{
   flag?: FeatureFlagKey;
   pro?: boolean;
 }> = [
+  {
+    icon: Sparkles,
+    label: 'Insight bulanan',
+    path: ROUTES.INSIGHT,
+    pro: true,
+  },
   {
     icon: Target,
     label: 'Target Tabungan',

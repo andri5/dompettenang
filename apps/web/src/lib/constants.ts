@@ -144,6 +144,7 @@ export const ROUTES = {
   INCOME_EDIT: '/incomes/:id/edit',
   CATEGORIES: '/categories',
   BUDGET: '/budget',
+  INSIGHT: '/insight',
   RECURRING: '/recurring',
   SAVINGS: '/savings',
   ADMIN: '/admin',
