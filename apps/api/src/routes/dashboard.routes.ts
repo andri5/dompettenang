@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { dashboardController } from '../controllers/dashboard.controller.js';
-import { authMiddleware } from '../middlewares/index.js';
+import { authMiddleware, requireProMiddleware } from '../middlewares/index.js';
 
 const router = Router();
 
@@ -13,5 +13,14 @@ router.use(authMiddleware);
  * @access  Private
  */
 router.get('/summary', (req, res) => dashboardController.getSummary(req, res));
+
+/**
+ * @route   GET /api/v1/dashboard/monthly-insight
+ * @desc    Month-to-date vs previous month insight (Pro)
+ * @access  Private + Pro
+ */
+router.get('/monthly-insight', requireProMiddleware, (req, res) =>
+  dashboardController.getMonthlyInsight(req, res)
+);
 
 export default router;

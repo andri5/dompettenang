@@ -54,6 +54,7 @@ import { SEO } from '@/components/SEO';
 import { runRecurringDue } from '@/services/recurring.service';
 import type { CategoryBreakdown } from '@/types';
 import { DashboardInsights } from './components/DashboardInsights';
+import { MonthlyInsight } from './components/MonthlyInsight';
 import { CollapsibleSection } from './components/CollapsibleSection';
 import { MarketRates } from './components/MarketRates';
 import { BudgetSummaryCard } from './components/BudgetSummaryCard';
@@ -586,6 +587,8 @@ export function DashboardPage() {
                 />
               </div>
             </CollapsibleSection>
+
+            {amountsVisible ? <MonthlyInsight /> : null}
 
             {amountsVisible ? <DashboardInsights summary={summary} /> : null}
 

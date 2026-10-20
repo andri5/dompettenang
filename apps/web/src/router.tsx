@@ -16,6 +16,7 @@ import {
   CategoriesPage,
   BudgetPage,
   RecurringPage,
+  InsightPage,
   SavingsPage,
   LandingPage,
   AdminLayout,
@@ -148,6 +149,19 @@ const appRoutes = [
     element: (
       <ProtectedRoute>
         <BudgetPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.INSIGHT,
+    element: (
+      <ProtectedRoute>
+        <ProFeatureGate
+          title="Insight bulanan"
+          description="Bandingkan bulan ini dengan bulan lalu — fitur Pro"
+        >
+          <InsightPage />
+        </ProFeatureGate>
       </ProtectedRoute>
     ),
   },

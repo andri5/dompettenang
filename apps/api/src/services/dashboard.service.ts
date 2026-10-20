@@ -61,6 +61,86 @@ export class DashboardService {
     };
   }
 
+  /**
+   * Pro: compare this month-to-date with the same day range last month.
+   */
+  async getMonthlyInsight(userId: string) {
+    const now = new Date();
+    const current = this.comparableMonthWindow(now, 0);
+    const previous = this.comparableMonthWindow(now, -1);
+
+    const [curIncome, curExpense, prevIncome, prevExpense, curCats, prevCats] =
+      await Promise.all([
+        this.getStats(userId, 'INCOME', current.start, current.end),
+        this.getStats(userId, 'EXPENSE', current.start, current.end),
+        this.getStats(userId, 'INCOME', previous.start, previous.end),
+        this.getStats(userId, 'EXPENSE', previous.start, previous.end),
+        this.getCategoryBreakdown(userId, 'EXPENSE', current.start, current.end),
+        this.getCategoryBreakdown(userId, 'EXPENSE', previous.start, previous.end),
+      ]);
+
+    const currentCats = curCats ?? [];
+    const previousCats = prevCats ?? [];
+    const currentBalance = curIncome.total - curExpense.total;
+    const previousBalance = prevIncome.total - prevExpense.total;
+    const top = currentCats[0] || null;
+    const prevTop = previousCats[0] || null;
+    const prevSame = top
+      ? previousCats.find((c) => c.categoryId === top.categoryId) || null
+      : null;
+
+    const highlights = buildMonthlyHighlights({
+      currentIncome: curIncome.total,
+      currentExpense: curExpense.total,
+      previousIncome: prevIncome.total,
+      previousExpense: prevExpense.total,
+      currentBalance,
+      previousBalance,
+      topName: top?.categoryName || null,
+      topTotal: top?.total || 0,
+      topPct: top?.percentage || 0,
+      prevSameTotal: prevSame?.total ?? null,
+      prevTopName: prevTop?.categoryName || null,
+    });
+
+    return {
+      monthLabel: formatMonthLabel(current.start),
+      previousMonthLabel: formatMonthLabel(previous.start),
+      comparedThroughDay: current.end.getDate(),
+      current: {
+        income: curIncome.total,
+        expense: curExpense.total,
+        balance: currentBalance,
+        expenseCount: curExpense.count,
+      },
+      previous: {
+        income: prevIncome.total,
+        expense: prevExpense.total,
+        balance: previousBalance,
+        expenseCount: prevExpense.count,
+      },
+      incomeChangePct: percentChange(curIncome.total, prevIncome.total),
+      expenseChangePct: percentChange(curExpense.total, prevExpense.total),
+      topCategory: top
+        ? { name: top.categoryName, total: top.total, percentage: top.percentage }
+        : null,
+      highlights,
+    };
+  }
+
+  /** Same calendar-day window: this month so far vs last month through the same day. */
+  private comparableMonthWindow(now: Date, monthOffset: number) {
+    const anchor = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+    const year = anchor.getFullYear();
+    const month = anchor.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const day = Math.min(now.getDate(), lastDay);
+    return {
+      start: new Date(year, month, 1, 0, 0, 0, 0),
+      end: new Date(year, month, day, 23, 59, 59, 999),
+    };
+  }
+
   private resolvePeriod(query: DashboardQueryInput): { startDate: Date; endDate: Date } {
     if (query.startDate && query.endDate) {
       return {
@@ -284,6 +364,139 @@ export class DashboardService {
       };
     });
   }
+}
+
+function formatMonthLabel(date: Date) {
+  return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+}
+
+function percentChange(current: number, previous: number): number | null {
+  if (previous === 0) return current === 0 ? 0 : null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function formatIdr(amount: number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function buildMonthlyHighlights(input: {
+  currentIncome: number;
+  currentExpense: number;
+  previousIncome: number;
+  previousExpense: number;
+  currentBalance: number;
+  previousBalance: number;
+  topName: string | null;
+  topTotal: number;
+  topPct: number;
+  prevSameTotal: number | null;
+  prevTopName: string | null;
+}) {
+  const highlights: Array<{
+    id: string;
+    tone: 'warning' | 'success' | 'info' | 'caution';
+    title: string;
+    message: string;
+    tip?: string;
+  }> = [];
+
+  const hasData =
+    input.currentIncome > 0 ||
+    input.currentExpense > 0 ||
+    input.previousIncome > 0 ||
+    input.previousExpense > 0;
+
+  if (!hasData) {
+    return [
+      {
+        id: 'empty',
+        tone: 'info' as const,
+        title: 'Belum ada data bulan ini',
+        message:
+          'Catat pemasukan dan pengeluaran supaya insight bisa membandingkan bulan ini dengan bulan lalu.',
+        tip: 'Mulai dari transaksi harian yang paling sering.',
+      },
+    ];
+  }
+
+  const expensePct = percentChange(input.currentExpense, input.previousExpense);
+  if (expensePct === null && input.currentExpense > 0) {
+    highlights.push({
+      id: 'expense-new',
+      tone: 'info',
+      title: 'Pengeluaran mulai tercatat',
+      message: `Bulan lalu belum ada pengeluaran di periode yang sama. Bulan ini sudah ${formatIdr(input.currentExpense)}.`,
+    });
+  } else if (expensePct !== null && expensePct >= 15) {
+    highlights.push({
+      id: 'expense-up',
+      tone: 'warning',
+      title: 'Pengeluaran naik',
+      message: `Pengeluaran naik ${expensePct}% dibanding periode yang sama bulan lalu (${formatIdr(input.previousExpense)} → ${formatIdr(input.currentExpense)}).`,
+      tip: 'Cek kategori terbesar dan tunda belanja yang bisa ditunda.',
+    });
+  } else if (expensePct !== null && expensePct <= -10) {
+    highlights.push({
+      id: 'expense-down',
+      tone: 'success',
+      title: 'Pengeluaran turun',
+      message: `Pengeluaran turun ${Math.abs(expensePct)}% dibanding periode yang sama bulan lalu (${formatIdr(input.previousExpense)} → ${formatIdr(input.currentExpense)}).`,
+      tip: 'Pertahankan pola ini dan alihkan selisihnya ke tabungan.',
+    });
+  }
+
+  if (input.topName && input.topTotal > 0) {
+    const grew =
+      input.prevSameTotal != null && input.topTotal > input.prevSameTotal
+        ? ` Naik dari ${formatIdr(input.prevSameTotal)} bulan lalu.`
+        : input.prevSameTotal != null && input.topTotal < input.prevSameTotal
+          ? ` Turun dari ${formatIdr(input.prevSameTotal)} bulan lalu.`
+          : '';
+    highlights.push({
+      id: 'top-category',
+      tone: input.topPct >= 40 ? 'caution' : 'info',
+      title: `Terbesar: ${input.topName}`,
+      message: `“${input.topName}” memakai ${input.topPct}% pengeluaran bulan ini (${formatIdr(input.topTotal)}).${grew}`,
+      tip:
+        input.topPct >= 40
+          ? 'Proporsi ini cukup dominan. Cek apakah masih sesuai prioritasmu.'
+          : undefined,
+    });
+  }
+
+  if (input.currentBalance < 0) {
+    highlights.push({
+      id: 'deficit',
+      tone: 'warning',
+      title: 'Bulan ini masih defisit',
+      message: `Sampai hari ini saldo ${formatIdr(input.currentBalance)}. Bulan lalu di periode yang sama ${formatIdr(input.previousBalance)}.`,
+      tip: 'Prioritaskan kebutuhan pokok sampai pemasukan berikutnya masuk.',
+    });
+  } else if (input.currentIncome > 0 && input.currentBalance > 0) {
+    const rate = Math.round((input.currentBalance / input.currentIncome) * 100);
+    highlights.push({
+      id: 'surplus',
+      tone: 'success',
+      title: 'Masih ada sisa',
+      message: `Sisa bulan ini ${formatIdr(input.currentBalance)} (~${rate}% dari pemasukan). Bulan lalu di periode yang sama ${formatIdr(input.previousBalance)}.`,
+      tip: rate >= 20 ? 'Alokasikan sisa ke target tabungan.' : 'Coba tahan belanja agar sisa naik ke 20%.',
+    });
+  }
+
+  if (highlights.length === 0 && input.prevTopName) {
+    highlights.push({
+      id: 'steady',
+      tone: 'info',
+      title: 'Pola relatif stabil',
+      message: `Pengeluaran tidak bergeser jauh dari bulan lalu. Kategori terbesar sebelumnya: ${input.prevTopName}.`,
+    });
+  }
+
+  return highlights.slice(0, 3);
 }
 
 export const dashboardService = new DashboardService();

@@ -199,6 +199,7 @@ export function UpgradePage() {
 
                 <ul className="mt-6 space-y-2.5 text-sm text-ink">
                   {[
+                    'Insight bulanan vs bulan lalu',
                     'Export laporan PDF',
                     'Bagikan ringkasan dari mobile',
                     'Akses Pro tanpa langganan bulanan',

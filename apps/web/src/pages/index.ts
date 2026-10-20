@@ -9,6 +9,7 @@ export { IncomesPage } from './incomes';
 export { CategoriesPage } from './categories';
 export { BudgetPage } from './budget';
 export { RecurringPage } from './recurring';
+export { InsightPage } from './insight';
 export { SavingsPage } from './savings';
 export { LandingPage } from './landing';
 export {
