@@ -3,7 +3,7 @@
  * Desktop rail + mobile bottom navigation
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -36,7 +36,10 @@ import { UserAvatar } from '@/components/ui';
 import { useFeatureEnabled } from '@/hooks';
 import type { FeatureFlagKey } from '@/hooks';
 import { fetchProRequestsSummary } from '@/services/billing.service';
+import { getCurrentUser } from '@/services/auth.service';
 import { hasProAccess } from '@/lib/plan';
+import { shouldOfferProWelcome } from '@/lib/proWelcome';
+import { ProWelcomeTour } from '@/components/pro/ProWelcomeTour';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -154,7 +157,7 @@ function isTransactionActive(pathname: string) {
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
   const { isSidebarOpen, toggleSidebar, setMobileMenuOpen } = useUIStore();
   const showSavings = useFeatureEnabled('savings_goals');
   const showRecurring = useFeatureEnabled('recurring_transactions');
@@ -173,6 +176,44 @@ export function MainLayout({ children }: MainLayoutProps) {
   );
   const [mobileTransactionOpen, setMobileTransactionOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [proWelcomeOpen, setProWelcomeOpen] = useState(false);
+
+  const refreshUserAndMaybeOfferProWelcome = useCallback(async () => {
+    if (!useAuthStore.getState().user) return;
+    try {
+      const me = await getCurrentUser();
+      setUser(me);
+      if (shouldOfferProWelcome(me)) {
+        setProWelcomeOpen(true);
+      }
+    } catch {
+      /* ignore — session may be mid-refresh */
+    }
+  }, [setUser]);
+
+  useEffect(() => {
+    if (shouldOfferProWelcome(user)) {
+      setProWelcomeOpen(true);
+    }
+  }, [user?.id, user?.plan]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const onFocus = () => {
+      void refreshUserAndMaybeOfferProWelcome();
+    };
+    window.addEventListener('focus', onFocus);
+
+    const intervalId = window.setInterval(() => {
+      void refreshUserAndMaybeOfferProWelcome();
+    }, 60_000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [user?.id, refreshUserAndMaybeOfferProWelcome]);
 
   const flagOn = (flag?: FeatureFlagKey) => {
     if (!flag) return true;
@@ -736,6 +777,13 @@ export function MainLayout({ children }: MainLayoutProps) {
           </button>
         </div>
       </nav>
+
+      <ProWelcomeTour
+        isOpen={proWelcomeOpen}
+        userId={user?.id}
+        userName={user?.name}
+        onClose={() => setProWelcomeOpen(false)}
+      />
     </div>
   );
 }
