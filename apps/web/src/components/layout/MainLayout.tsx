@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore, useUIStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import { UserAvatar } from '@/components/ui';
-import { useFeatureEnabled } from '@/hooks';
+import { useFeatureEnabled, useWatchProPurchaseRejection } from '@/hooks';
 import type { FeatureFlagKey } from '@/hooks';
 import { fetchProRequestsSummary } from '@/services/billing.service';
 import { getCurrentUser } from '@/services/auth.service';
@@ -177,6 +177,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [mobileTransactionOpen, setMobileTransactionOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [proWelcomeOpen, setProWelcomeOpen] = useState(false);
+  useWatchProPurchaseRejection();
 
   const refreshUserAndMaybeOfferProWelcome = useCallback(async () => {
     if (!useAuthStore.getState().user) return;

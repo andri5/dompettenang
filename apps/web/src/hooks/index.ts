@@ -13,3 +13,4 @@ export { useFeatureFlags, useFeatureEnabled } from './useFeatureFlags';
 export type { FeatureFlag, FeatureFlagKey } from './useFeatureFlags';
 export { useCaptchaConfig } from './useCaptchaConfig';
 export type { CaptchaPublicConfig } from './useCaptchaConfig';
+export { useWatchProPurchaseRejection } from './useWatchProPurchaseRejection';
