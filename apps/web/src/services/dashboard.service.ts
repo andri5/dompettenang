@@ -31,3 +31,28 @@ export async function getDashboardSummary(
   );
   return response.data.data;
 }
+
+export interface MonthlyInsightHighlight {
+  id: string;
+  tone: 'warning' | 'success' | 'info' | 'caution';
+  title: string;
+  message: string;
+  tip?: string;
+}
+
+export interface MonthlyInsight {
+  monthLabel: string;
+  previousMonthLabel: string;
+  comparedThroughDay: number;
+  current: { income: number; expense: number; balance: number; expenseCount: number };
+  previous: { income: number; expense: number; balance: number; expenseCount: number };
+  incomeChangePct: number | null;
+  expenseChangePct: number | null;
+  topCategory: { name: string; total: number; percentage: number } | null;
+  highlights: MonthlyInsightHighlight[];
+}
+
+export async function getMonthlyInsight(): Promise<MonthlyInsight> {
+  const response = await api.get<ApiResponse<MonthlyInsight>>('/dashboard/monthly-insight');
+  return response.data.data;
+}

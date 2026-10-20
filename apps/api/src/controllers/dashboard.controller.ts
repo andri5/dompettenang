@@ -16,6 +16,17 @@ export class DashboardController {
       sendError(res, message, 500, 'GET_DASHBOARD_FAILED');
     }
   }
+
+  async getMonthlyInsight(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = (req as AuthenticatedRequest).user!;
+      const insight = await dashboardService.getMonthlyInsight(userId);
+      sendSuccess(res, insight, 'Monthly insight retrieved successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to get monthly insight';
+      sendError(res, message, 500, 'GET_MONTHLY_INSIGHT_FAILED');
+    }
+  }
 }
 
 export const dashboardController = new DashboardController();

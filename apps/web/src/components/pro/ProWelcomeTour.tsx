@@ -14,6 +14,7 @@ import {
 } from '@/lib/proWelcome';
 
 const STEP_ICONS: Record<string, typeof Crown> = {
+  insight: Sparkles,
   pdf: FileText,
   share: Share2,
   recurring: Repeat,

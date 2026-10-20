@@ -68,6 +68,13 @@ const FEATURES = [
     tier: 'free' as const,
   },
   {
+    icon: Sparkles,
+    title: 'Insight Bulanan',
+    desc: 'Bandingkan bulan ini dengan bulan lalu, plus saran singkat.',
+    tone: 'bg-accent-soft text-accent',
+    tier: 'pro' as const,
+  },
+  {
     icon: Target,
     title: 'Target Tabungan',
     desc: 'Set goal saving dan lihat progresmu naik terus.',
@@ -110,6 +117,7 @@ const PRO_PLAN_ITEMS = [
   'Semua fitur Free',
   'Target tabungan',
   'Transaksi otomatis',
+  'Insight bulanan',
   'Export laporan PDF',
   'Bagikan ringkasan dari mobile',
   'Sekali bayar — lifetime',
