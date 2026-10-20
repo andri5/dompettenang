@@ -75,7 +75,7 @@ export function AdminLayout() {
               <n.icon className="h-4 w-4" />
               <span className="flex-1">{n.label}</span>
               {n.badgeKey === 'pro' && proBadge > 0 ? (
-                <span className="rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                   {proBadge > 99 ? '99+' : proBadge}
                 </span>
               ) : null}
@@ -113,7 +113,7 @@ export function AdminLayout() {
               >
                 {n.label}
                 {n.badgeKey === 'pro' && proBadge > 0 ? (
-                  <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[9px] font-bold text-white">
+                  <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                     {proBadge}
                   </span>
                 ) : null}
