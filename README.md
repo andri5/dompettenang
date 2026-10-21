@@ -1,6 +1,6 @@
 # Dompet Tenang — Catat Keuangan
 
-Aplikasi pencatatan keuangan pribadi (pemasukan & pengeluaran) dengan dashboard, kategori, upload struk, dan saran finansial otomatis.
+Aplikasi pencatatan keuangan pribadi (pemasukan & pengeluaran). Gratis untuk catat, budget, dan export Excel. **Pro Lifetime** menambah insight bulanan, tabungan, transaksi otomatis, PDF, dan bagikan ringkasan.
 
 ## Project Structure
 
@@ -15,18 +15,31 @@ Monorepo:
 
 ## Features
 
+### Gratis
+
 - **Auth** — Register, login, logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile)
-- **Transaksi** — Pemasukan & pengeluaran (menu Transaksi dengan submenu)
-- **Kategori** — Default + kustom, ikon Lucide, kategori default terkunci
-- **Dashboard** — Ringkasan saldo, grafik perbandingan, breakdown per kategori, AI saran & notice
-- **Budget / Recurring / Savings** — Limit bulanan, transaksi otomatis, target tabungan (bisa di-gate feature flag)
-- **Struk** — Upload gambar/PDF sebagai bukti transaksi (akses privat ber-auth; mobile + kamera)
-- **Kalkulator** — Hitung nominal cepat di form transaksi
-- **Profil** — Upload foto profil, gender & tanggal lahir, 3 tema
+- **Transaksi** — Pemasukan & pengeluaran
+- **Kategori** — Default + kustom
+- **Dashboard** — Saldo, grafik, breakdown kategori, saran periode berjalan
+- **Budget** — Limit pengeluaran bulanan
+- **Struk** — Upload gambar/PDF (akses privat ber-auth)
+- **Export Excel** — Unduh ringkasan + daftar transaksi
+- **Profil** — Foto, gender, tanggal lahir, tema
+
+### Pro Lifetime (sekali bayar)
+
+- **Insight bulanan** — Menu `/insight`: bandingkan bulan ini (sampai tanggal yang sama) dengan bulan lalu, kategori terbesar, dan saran singkat. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro)
+- **Target tabungan** dan **transaksi otomatis**
+- **Export PDF** dan **bagikan ringkasan** dari mobile
+- **Splash panduan Pro** — sekali per akun setelah plan menjadi PRO (tanpa logout paksa)
+- **Upgrade manual** — transfer bank + unggah bukti. Admin menolak wajib memilih alasan: bukti kurang jelas, kode transfer salah, atau nominal/rekening salah. User melihat alasan itu dan mendapat toast saat status jadi ditolak
+
+### Lainnya
+
 - **Legal dinamis** — Syarat & Ketentuan / Privasi dikelola admin
-- **Mobile offline** — Simpan transaksi ke antrian saat offline, sync otomatis saat online
-- **Admin** — Panel penuh di web (flags, traffic, activity, legal); ringkas di mobile
-- **Responsif** — Desktop sidebar + mobile bottom nav
+- **Mobile offline** — Antrian transaksi saat offline, sync saat online
+- **Admin** — Panel web (user, Pro, flags, traffic, activity, legal)
+- **Responsif** — Sidebar desktop + bottom nav mobile
 
 > **Production:** https://dompet-tenang.web.id  
 > **Staging:** https://staging.dompet-tenang.web.id  
