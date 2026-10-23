@@ -69,6 +69,8 @@ export interface ExpenseResponse {
   date: string;
   receiptUrl: string | null;
   createdAt: Date;
+  /** Saldo buku setelah transaksi ini. Null di luar daftar. */
+  balanceAfter?: number | null;
 }
 
 export interface CategoryBreakdownItem {

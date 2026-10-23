@@ -84,6 +84,8 @@ export interface Expense {
   receiptUrl?: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Saldo setelah transaksi ini (pemasukan menambah, pengeluaran mengurangi). */
+  balanceAfter?: number | null;
 }
 
 export interface CreateExpenseData {
@@ -111,6 +113,7 @@ export interface ExpenseFilters {
   startDate?: string;
   endDate?: string;
   type?: TransactionType;
+  search?: string;
   sortBy?: 'date' | 'amount' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
 }

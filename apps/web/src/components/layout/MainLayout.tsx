@@ -41,6 +41,7 @@ import { getCurrentUser } from '@/services/auth.service';
 import { hasProAccess } from '@/lib/plan';
 import { shouldOfferProWelcome } from '@/lib/proWelcome';
 import { ProWelcomeTour } from '@/components/pro/ProWelcomeTour';
+import { DailyLogReminder } from '@/components/layout/DailyLogReminder';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -634,6 +635,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         )}
       >
         <div className="mx-auto min-h-full w-full max-w-6xl px-3 py-4 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <DailyLogReminder />
           {children}
         </div>
       </main>

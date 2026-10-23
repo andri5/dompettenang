@@ -114,7 +114,7 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
                 type="button"
                 onClick={() => setValue('type', option.value)}
                 className={cn(
-                  'relative rounded-2xl border px-3 py-3 text-left transition',
+                  'relative min-w-0 rounded-2xl border px-3 py-3 pr-8 text-left transition',
                   active
                     ? option.activeClass
                     : 'border-line bg-surface text-muted hover:border-accent/40'
@@ -126,10 +126,10 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
                   </span>
                 ) : null}
                 <Icon className={cn('mb-2 h-5 w-5', active ? option.iconClass : 'text-muted')} />
-                <p className={cn('text-sm font-extrabold', active ? undefined : 'text-ink')}>
+                <p className={cn('text-sm font-extrabold leading-tight', active ? undefined : 'text-ink')}>
                   {option.label}
                 </p>
-                <p className="text-[11px] font-semibold opacity-80">{option.hint}</p>
+                <p className="mt-0.5 text-[11px] font-semibold leading-tight opacity-80">{option.hint}</p>
               </button>
             );
           })}
@@ -142,15 +142,15 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
           <span>Warna</span>
           <FieldTooltip content="Warna dipakai di daftar transaksi dan grafik kategori agar mudah dibedakan." />
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-5 gap-2.5 px-0.5 py-1 sm:grid-cols-10">
           {CATEGORY_COLORS.map((color) => (
             <button
               key={color}
               type="button"
               onClick={() => setValue('color', color)}
               className={cn(
-                'h-8 w-8 rounded-xl transition-transform',
-                selectedColor === color && 'scale-110 ring-2 ring-offset-2'
+                'mx-auto h-8 w-8 rounded-xl transition',
+                selectedColor === color && 'ring-2 ring-offset-2'
               )}
               style={{
                 backgroundColor: color,
@@ -167,7 +167,7 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
           <span>Ikon</span>
           <FieldTooltip content="Pilih ikon yang mewakili kategori. Ikon tampil di daftar dan form transaksi." />
         </label>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        <div className="grid grid-cols-5 gap-2 sm:grid-cols-8">
           {CATEGORY_ICON_OPTIONS.map((icon) => {
             const active = selectedIcon === icon;
             return (
@@ -217,12 +217,13 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
         </div>
       </div>
 
-      <ModalFooter className="border-t-0 pt-0">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+      <ModalFooter className="flex-row border-t-0 pt-1">
+        <Button type="button" variant="ghost" className="min-h-11 flex-1" onClick={onCancel}>
           Batal
         </Button>
         <Button
           type="submit"
+          className="min-h-11 flex-1"
           isLoading={isSubmitting}
           leftIcon={<Save className="h-4 w-4" />}
         >
