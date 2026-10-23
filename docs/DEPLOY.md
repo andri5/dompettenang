@@ -5,7 +5,7 @@
 | | URL | Branch | Approve QA? |
 |---|-----|--------|-------------|
 | Local | `http://127.0.0.1:5173` + API `:3001` | — | — |
-| Staging | https://staging.dompet-tenang.web.id | `develop` | **Tidak** |
+| Staging | https://staging.dompet-tenang.web.id | `develop` (juga push `feature/testing-qa`) | **Tidak** |
 | Production | https://dompet-tenang.web.id | `main` | **Ya** (Deploy Production) |
 
 Staging & production di VPS yang sama, database terpisah. File compose: `deploy/`.
@@ -62,20 +62,11 @@ Script di server: `deploy/remote-deploy.sh`, `deploy/remote-deploy-staging.sh`.
 Postgres staging **tidak** terbuka ke internet. Bind hanya `127.0.0.1:15432` di VPS; akses lewat SSH tunnel.
 
 1. Pastikan key ada di `.local-ssh/id_ed25519` (sama seperti deploy SSH).
-2. Ambil kredensial ke `.local-ssh/staging-dbeaver.env` (gitignored):
-
-   **A — lewat Actions** (disarankan jika SSH lokal ke VPS timeout/firewall):
-   ```powershell
-   gh workflow run "Prepare staging DBeaver" --ref feature/testing-qa
-   # tunggu sukses, lalu download artifact:
-   gh run list --workflow=prepare-staging-dbeaver.yml --limit 1
-   gh run download <RUN_ID> -n staging-dbeaver-env -D .local-ssh
-   ```
-
-   **B — SSH langsung** (butuh akses outbound ke `PROD_SSH_HOST` / port SSH):
+2. Ambil kredensial ke `.local-ssh/staging-dbeaver.env` (gitignored). Butuh SSH ke VPS:
    ```powershell
    .\scripts\fetch-staging-db-creds.ps1
    ```
+   Jika port 22 diblokir dari jaringan ini, pakai jaringan/VPN yang bisa SSH, atau salin `POSTGRES_*` dari `deploy/.env.staging` di VPS ke file itu.
 
 3. Buka tunnel dan biarkan tetap terbuka:
    ```powershell
@@ -112,7 +103,7 @@ eas build --platform android --profile production
 | Workflow | Kapan |
 |----------|--------|
 | CI - Build & Test | push / PR |
-| Deploy to Staging | push `develop` |
+| Deploy to Staging | push `develop` atau `feature/testing-qa` |
 | Promote to Production | manual setelah QA |
 | Deploy to Production | setelah Promote (+ Approve) |
 
