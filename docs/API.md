@@ -191,45 +191,49 @@ Response: 204 No Content
 
 ### Get Summary
 ```
-GET /dashboard/summary?startDate=2025-12-01&endDate=2025-12-31
+GET /dashboard/summary?period=month
 Authorization: Bearer {accessToken}
-
-Response: 200 OK
-{
-  "totalIncome": 5000000,
-  "totalExpense": 1500000,
-  "balance": 3500000,
-  "savingRate": 70
-}
 ```
 
-### Get Breakdown
+`period` adalah `week`, `month`, atau `year`. Boleh diganti `startDate` + `endDate` (`YYYY-MM-DD`).
+
+Response `data` mencakup `totalIncome`, `totalExpenses`, `balance`, `expenseCategoryBreakdown`, `incomeCategoryBreakdown`, dan `overview`.
+
+### Monthly insight (Pro)
 ```
-GET /dashboard/breakdown?startDate=2025-12-01&endDate=2025-12-31
+GET /dashboard/monthly-insight
 Authorization: Bearer {accessToken}
-
-Response: 200 OK
-{
-  "byCategory": [
-    { "category": "Food", "amount": 500000, "percentage": 33 },
-    { "category": "Transport", "amount": 300000, "percentage": 20 }
-  ]
-}
 ```
 
-### Get Trends
-```
-GET /dashboard/trends?startDate=2025-12-01&endDate=2025-12-31&period=daily
-Authorization: Bearer {accessToken}
+Membandingkan bulan berjalan sampai hari ini dengan rentang tanggal yang sama di bulan lalu. Butuh plan PRO (atau role ADMIN). Bukan Pro → `403` dengan kode `PRO_REQUIRED`.
 
-Response: 200 OK
-{
-  "data": [
-    { "date": "2025-12-01", "income": 100000, "expense": 50000 },
-    { "date": "2025-12-02", "income": 150000, "expense": 75000 }
-  ]
-}
+Response `data`: `monthLabel`, `previousMonthLabel`, `comparedThroughDay`, `current`, `previous`, `expenseChangePct`, `topCategory`, `highlights`.
+
+---
+
+## Pro Lifetime (transfer manual)
+
 ```
+GET  /billing/plans
+POST /billing/purchase-request          (auth)
+GET  /billing/my-requests               (auth)
+POST /billing/purchase-request/:id/proof  (auth, multipart field `proof`)
+```
+
+Admin:
+
+```
+GET  /admin/pro-requests
+GET  /admin/pro-requests/summary
+POST /admin/pro-requests/:id/approve    body opsional { "adminNote" }
+POST /admin/pro-requests/:id/reject     body wajib { "adminNote" }
+```
+
+`adminNote` saat tolak wajib terisi (maks. 500 karakter). Web mengirim salah satu alasan tetap, plus catatan tambahan bila ada:
+
+- `Bukti transfer kurang jelas`
+- `Kode / berita transfer salah`
+- `Nominal atau rekening transfer salah`
 
 ---
 
