@@ -93,8 +93,8 @@ export function CategoriesPage() {
                           <CategoryIcon icon={category.icon} size={22} />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="truncate font-display text-lg font-bold text-ink">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <p className="min-w-0 truncate font-display text-base font-bold text-ink sm:text-lg">
                               {category.name}
                             </p>
                             {isDefault && (
@@ -174,6 +174,7 @@ export function CategoriesPage() {
           isOpen={formModal.isOpen}
           onClose={closeFormModal}
           title={formModal.category ? 'Edit Kategori' : 'Tambah Kategori'}
+          size="lg"
         >
           <CategoryForm
             category={formModal.category}
