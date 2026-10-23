@@ -53,7 +53,7 @@ export function Modal({
               exit={{ opacity: 0, y: 16, scale: 0.98 }}
               transition={{ type: 'spring', damping: 24, stiffness: 280 }}
               className={cn(
-                'relative w-full rounded-t-[1.5rem] bg-surface shadow-2xl sm:rounded-[1.5rem]',
+                'relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-[1.5rem] bg-surface shadow-2xl sm:max-h-[min(92dvh,760px)] sm:rounded-[1.5rem]',
                 sizeStyles[size]
               )}
               role="dialog"
@@ -61,7 +61,7 @@ export function Modal({
               aria-labelledby={title ? 'modal-title' : undefined}
             >
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+                <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3.5 sm:px-6 sm:py-4">
                   {title ? (
                     <div className="flex min-w-0 items-center gap-3">
                       {showBrand && (
@@ -91,7 +91,9 @@ export function Modal({
                   )}
                 </div>
               )}
-              <div className="max-h-[75vh] overflow-y-auto p-5 sm:p-6">{children}</div>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+                {children}
+              </div>
             </motion.div>
           </div>
         </>

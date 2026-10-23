@@ -31,6 +31,10 @@ function normalizeExpense(raw: any): Expense {
     receiptUrl: raw.receiptUrl ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
+    balanceAfter:
+      raw.balanceAfter === null || raw.balanceAfter === undefined
+        ? null
+        : Number(raw.balanceAfter),
   };
 }
 
@@ -58,6 +62,7 @@ export async function getExpenses(
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.type) params.append('type', filters.type);
+    if (filters.search) params.append('search', filters.search);
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
     if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
   }
