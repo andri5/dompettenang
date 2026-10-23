@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma.js';
 import type { CreateExpenseInput, UpdateExpenseInput, ExpenseQueryInput } from '../utils/validation.js';
 import type { ExpenseResponse, PaginationMeta } from '../types/index.js';
@@ -50,7 +51,10 @@ export class ExpenseService {
     }
 
     if (search) {
-      where.note = { contains: search, mode: 'insensitive' };
+      (where as { OR?: unknown }).OR = [
+        { note: { contains: search, mode: 'insensitive' } },
+        { category: { name: { contains: search, mode: 'insensitive' } } },
+      ];
     }
 
     const total = await prisma.expense.count({ where: where as any });
@@ -73,8 +77,15 @@ export class ExpenseService {
       take: limit,
     });
 
+    const balances = await this.runningBalances(
+      userId,
+      expenses.map((exp) => exp.id)
+    );
+
     return {
-      expenses: expenses.map((exp: any) => this.formatExpense(exp)),
+      expenses: expenses.map((exp: any) =>
+        this.formatExpense(exp, balances.get(exp.id))
+      ),
       meta: {
         page,
         limit,
@@ -226,6 +237,31 @@ export class ExpenseService {
     return true;
   }
 
+  /** Saldo setelah transaksi ini, dihitung dari semua catatan user (pemasukan +, pengeluaran -). */
+  private async runningBalances(userId: string, ids: string[]) {
+    const map = new Map<string, number>();
+    if (ids.length === 0) return map;
+
+    const rows = await prisma.$queryRaw<Array<{ id: string; balance_after: unknown }>>(
+      Prisma.sql`
+        SELECT id::text AS id, balance_after
+        FROM (
+          SELECT id,
+            SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END)
+              OVER (ORDER BY date ASC, created_at ASC, id ASC) AS balance_after
+          FROM expenses
+          WHERE user_id = ${userId}::uuid AND deleted_at IS NULL
+        ) ledger
+        WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+      `
+    );
+
+    for (const row of rows) {
+      map.set(row.id, Number(row.balance_after));
+    }
+    return map;
+  }
+
   private formatExpense(expense: {
     id: string;
     type: 'EXPENSE' | 'INCOME';
@@ -241,7 +277,7 @@ export class ExpenseService {
       color: string;
       type?: 'EXPENSE' | 'INCOME';
     };
-  }): ExpenseResponse {
+  }, balanceAfter?: number): ExpenseResponse {
     return {
       id: expense.id,
       type: expense.type,
@@ -253,6 +289,7 @@ export class ExpenseService {
       date: expense.date.toISOString().split('T')[0],
       receiptUrl: expense.receiptUrl,
       createdAt: expense.createdAt,
+      balanceAfter: balanceAfter ?? null,
     };
   }
 }

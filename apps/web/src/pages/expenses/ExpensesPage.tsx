@@ -2,7 +2,7 @@
  * Dompet Tenang - Expenses List Page
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -44,7 +44,7 @@ export function ExpensesPage() {
   const [receiptPreview, setReceiptPreview] = useState<Expense | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
 
   const filters: ExpenseFilters = {
     page: Number(searchParams.get('page')) || 1,
@@ -52,6 +52,7 @@ export function ExpensesPage() {
     categoryId: searchParams.get('categoryId') || undefined,
     startDate: searchParams.get('startDate') || undefined,
     endDate: searchParams.get('endDate') || undefined,
+    search: searchParams.get('search') || undefined,
     type: 'EXPENSE',
     sortBy: (searchParams.get('sortBy') as ExpenseFilters['sortBy']) || 'date',
     sortOrder: (searchParams.get('sortOrder') as ExpenseFilters['sortOrder']) || 'desc',
@@ -82,7 +83,20 @@ export function ExpensesPage() {
     setDeleteModal(null);
   };
 
-  const clearFilters = () => setSearchParams({});
+  const clearFilters = () => {
+    setSearch('');
+    setSearchParams({});
+  };
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const current = searchParams.get('search') || '';
+      const next = search.trim();
+      if (current === next) return;
+      updateFilters({ search: next || undefined });
+    }, 350);
+    return () => window.clearTimeout(handle);
+  }, [search]);
 
   const categoryOptions =
     categories?.map((cat) => ({
@@ -90,17 +104,10 @@ export function ExpensesPage() {
       label: cat.name,
     })) || [];
 
-  const hasActiveFilters = filters.categoryId || filters.startDate || filters.endDate;
+  const hasActiveFilters =
+    filters.categoryId || filters.startDate || filters.endDate || filters.search;
 
-  const filteredData =
-    expenses?.data?.filter((expense) => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
-      return (
-        expense.description.toLowerCase().includes(q) ||
-        expense.category?.name?.toLowerCase().includes(q)
-      );
-    }) || [];
+  const filteredData = expenses?.data || [];
 
   return (
     <PageTransition>
@@ -360,9 +367,16 @@ export function ExpensesPage() {
                         viewMode === 'grid' ? 'mt-2 justify-between' : 'justify-between sm:justify-end'
                       )}
                     >
-                      <p className="text-base font-bold amount-negative sm:text-lg">
-                        -{formatCurrency(expense.amount)}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-base font-bold amount-negative sm:text-lg">
+                          -{formatCurrency(expense.amount)}
+                        </p>
+                        {typeof expense.balanceAfter === 'number' ? (
+                          <p className="text-[11px] text-muted">
+                            Saldo {formatCurrency(expense.balanceAfter)}
+                          </p>
+                        ) : null}
+                      </div>
                       <div className="flex items-center gap-1">
                         <Link
                           to={`/expenses/${expense.id}/edit`}
