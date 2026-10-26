@@ -8,8 +8,6 @@ import { z } from 'zod';
 import { VALIDATION } from '@/lib/constants';
 import { isSafePlainText } from '@/lib/sanitize';
 
-const PASSWORD_MAX = 72;
-
 const safeName = (label: string, min: number, max: number) =>
   z
     .string()
@@ -24,7 +22,10 @@ const strongPassword = z
     VALIDATION.PASSWORD_MIN_LENGTH,
     `Password minimal ${VALIDATION.PASSWORD_MIN_LENGTH} karakter`
   )
-  .max(PASSWORD_MAX, `Password maksimal ${PASSWORD_MAX} karakter`)
+  .max(
+    VALIDATION.PASSWORD_MAX_LENGTH,
+    `Password maksimal ${VALIDATION.PASSWORD_MAX_LENGTH} karakter`
+  )
   .refine((pwd) => /[A-Za-z]/.test(pwd) && /\d/.test(pwd), {
     message: 'Password harus mengandung huruf dan angka',
   })
@@ -64,7 +65,7 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(1, 'Password wajib diisi')
-    .max(PASSWORD_MAX, 'Password terlalu panjang'),
+    .max(VALIDATION.PASSWORD_MAX_LENGTH, 'Password terlalu panjang'),
 });
 
 export const registerSchema = z
