@@ -11,14 +11,14 @@ Monorepo:
 | [apps/api](./apps/api) | Backend API (Node.js + Express + TypeScript + Prisma + PostgreSQL) |
 | [apps/web](./apps/web) | Web frontend (React + Vite + TypeScript + Tailwind CSS) |
 | [apps/mobile](./apps/mobile) | Mobile app (React Native + Expo) — fitur inti siap; admin penuh di web |
-| [packages/shared](./packages/shared) | Shared utilities & types |
 
 ## Features
 
 ### Gratis
 
 - **Auth** — Register, login, logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile)
-- **Transaksi** — Pemasukan & pengeluaran
+- **Transaksi** — Pemasukan & pengeluaran, pencarian catatan atau nama kategori, dan saldo berjalan di tiap baris
+- **Pengingat harian** — Banner jika hari ini belum ada catatan; notifikasi lokal setelah pukul 18.00 bila diizinkan
 - **Kategori** — Default + kustom
 - **Dashboard** — Saldo, grafik, breakdown kategori, saran periode berjalan
 - **Budget** — Limit pengeluaran bulanan

@@ -1,7 +1,9 @@
 # 🔧 API Documentation
 
-**Last Updated:** January 1, 2026  
+**Last Updated:** October 26, 2026  
 **Base URL:** `http://localhost:3001/api/v1` (production: `https://dompet-tenang.web.id/api/v1`)
+
+Web memakai cookie HttpOnly (`access` + `refresh`). Mobile dan klien lain memakai `Authorization: Bearer`. Login/register tetap mengembalikan token di body JSON.
 
 ---
 
@@ -78,36 +80,24 @@ Authorization: Bearer {accessToken}
 
 {
   "amount": 50000,
-  "description": "Lunch meeting",
+  "note": "Makan siang",
   "categoryId": "category_id",
+  "type": "EXPENSE",
   "date": "2025-12-31"
 }
-
-Response: 201 Created
-{
-  "id": "expense_id",
-  "amount": 50000,
-  "description": "Lunch meeting",
-  "categoryId": "category_id",
-  "date": "2025-12-31",
-  "createdAt": "2025-12-31T14:30:00Z"
-}
 ```
+
+`type` adalah `EXPENSE` atau `INCOME`. Field `description` masih diterima dan disimpan sebagai `note`.
 
 ### Get Expenses
 ```
-GET /expenses?startDate=2025-12-01&endDate=2025-12-31
+GET /expenses?type=EXPENSE&search=makan&startDate=2025-12-01&endDate=2025-12-31
 Authorization: Bearer {accessToken}
-
-Response: 200 OK
-{
-  "data": [
-    { "id", "amount", "description", "categoryId", "date" }
-  ],
-  "total": 150000,
-  "count": 3
-}
 ```
+
+Query: `page`, `limit` (maks. 100), `startDate`, `endDate`, `categoryId`, `type`, `search`, `sortBy` (`date` | `amount` | `createdAt`), `sortOrder` (`asc` | `desc`).
+
+`search` mencocokkan catatan **atau** nama kategori (case-insensitive). Tiap item di daftar punya `balanceAfter`: saldo buku setelah transaksi itu (semua transaksi user yang belum dihapus, bukan hanya halaman yang sedang difilter). Di luar daftar, `balanceAfter` bisa `null`.
 
 ### Update Expense
 ```
@@ -116,11 +106,11 @@ Authorization: Bearer {accessToken}
 
 {
   "amount": 75000,
-  "description": "Updated description"
+  "note": "Catatan diperbarui"
 }
 
 Response: 200 OK
-{ "id", "amount", "description", "categoryId", "date" }
+{ "id", "amount", "note", "categoryId", "date", "balanceAfter" }
 ```
 
 ### Delete Expense
@@ -294,9 +284,11 @@ POST /admin/pro-requests/:id/reject     body wajib { "adminNote" }
 
 ## Rate Limiting
 
-- **Auth endpoints:** 5 requests per 15 minutes per IP
-- **API endpoints:** 100 requests per minute per user
-- **Reset:** Automatic after time window
+Angka di bawah untuk production. Development lebih longgar.
+
+- **Login / register:** 20 permintaan per 15 menit per IP
+- **Lupa / reset password:** 5 permintaan per jam per IP
+- **API umum:** 120 permintaan per menit per IP
 
 ---
 
@@ -307,9 +299,10 @@ All protected endpoints require:
 Authorization: Bearer {accessToken}
 ```
 
-Tokens expire in:
-- Access Token: 1 hour
-- Refresh Token: 7 days
+Masa berlaku default di `.env.example`:
+
+- Access token: 15 menit (`JWT_EXPIRES_IN`)
+- Refresh token: 7 hari (`JWT_REFRESH_EXPIRES_IN`)
 
 ---
 
