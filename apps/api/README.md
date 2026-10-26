@@ -91,7 +91,7 @@ Make sure you have the following installed:
 6. **Verify installation**:
    ```bash
    # Should return: {"success":true,"message":"Dompet Tenang API is running",...}
-   curl http://localhost:3000/api/v1/health
+   curl http://localhost:3001/api/v1/health
    ```
 
 ---
@@ -209,7 +209,7 @@ apps/api/
 ### Base URL
 
 ```
-http://localhost:3000/api/v1
+http://localhost:3001/api/v1
 ```
 
 ### Authentication
@@ -331,15 +331,19 @@ Authorization: Bearer <access_token>
 | startDate | string | - | Filter by start date (YYYY-MM-DD) |
 | endDate | string | - | Filter by end date (YYYY-MM-DD) |
 | categoryId | string | - | Filter by category |
-| search | string | - | Search in notes |
+| type | string | - | `EXPENSE` atau `INCOME` |
+| search | string | - | Catatan atau nama kategori |
 | sortBy | string | createdAt | Sort field (date/amount/createdAt) |
 | sortOrder | string | desc | Sort order (asc/desc) |
+
+Item di daftar menyertakan `balanceAfter` (saldo buku setelah transaksi itu). Di luar daftar nilainya bisa `null`.
 
 #### 📊 Dashboard
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | GET | `/dashboard/summary` | Get dashboard summary | ✅ |
+| GET | `/dashboard/monthly-insight` | Bandingkan bulan ini vs bulan lalu (Pro) | ✅ |
 
 **Response includes:**
 - Today's expenses (total & count)
@@ -419,10 +423,10 @@ Create a `.env` file based on `.env.example`:
 ```env
 # Server Configuration
 NODE_ENV=development
-PORT=3000
+PORT=3001
 
 # Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/Dompet Tenang?schema=public"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/dompettenang?schema=public"
 
 # JWT Secrets (generate secure random strings for production)
 JWT_SECRET=your-super-secret-jwt-key
@@ -519,34 +523,24 @@ Use any HTTP client (Postman, Insomnia, curl):
 
 ```bash
 # Health check
-curl http://localhost:3000/api/v1/health
+curl http://localhost:3001/api/v1/health
 
 # Register
-curl -X POST http://localhost:3000/api/v1/auth/register \
+curl -X POST http://localhost:3001/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Test","email":"test@example.com","password":"Test123!"}'
 
 # Login
-curl -X POST http://localhost:3000/api/v1/auth/login \
+curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Test123!"}'
 
 # Get categories (with token)
-curl http://localhost:3000/api/v1/categories \
+curl http://localhost:3001/api/v1/categories \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### Test Results (29 Dec 2024)
-
-| Endpoint | Status |
-|----------|--------|
-| GET /health | ✅ PASSED |
-| POST /auth/register | ✅ PASSED |
-| POST /auth/login | ✅ PASSED |
-| GET /categories | ✅ PASSED |
-| POST /expenses | ✅ PASSED |
-| GET /expenses | ✅ PASSED |
-| GET /dashboard/summary | ✅ PASSED |
+Daftar endpoint yang lebih lengkap ada di [docs/API.md](../../docs/API.md).
 
 ---
 
@@ -562,7 +556,7 @@ Solution: Make sure PostgreSQL is running and credentials are correct in `.env`
 
 **2. Port already in use**
 ```
-Error: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3001
 ```
 Solution: Change PORT in `.env` or kill the process using the port
 
@@ -588,7 +582,7 @@ Solution: Refresh token using `/auth/refresh` endpoint
 
 ## 📄 License
 
-This project is proprietary software. All rights reserved.
+MIT — lihat [LICENSE](../../LICENSE) di root repo.
 
 ---
 

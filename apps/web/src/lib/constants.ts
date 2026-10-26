@@ -34,11 +34,6 @@ export function getUploadContentPath(path?: string | null): string | null {
   return normalized;
 }
 
-/** @deprecated Prefer useAuthenticatedFileUrl for private uploads */
-export function resolveUploadUrl(path?: string | null): string | null {
-  return getUploadContentPath(path);
-}
-
 // Storage Keys
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'dompettenang_access_token',
@@ -74,15 +69,11 @@ export const THEME_OPTIONS: {
 
 // Pagination
 export const DEFAULT_PAGE_SIZE = 10;
-export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 // Date Formats
 export const DATE_FORMATS = {
   DISPLAY: 'dd MMM yyyy',
-  DISPLAY_FULL: 'dd MMMM yyyy',
-  DISPLAY_WITH_TIME: 'dd MMM yyyy HH:mm',
   INPUT: 'yyyy-MM-dd',
-  API: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
 } as const;
 
 // Currency
@@ -104,28 +95,6 @@ export const CATEGORY_COLORS = [
   '#84CC16', // Lime
   '#F97316', // Orange
   '#6366F1', // Indigo
-] as const;
-
-// Category Icons (Lucide keys — keep in sync with CategoryIcon)
-export const CATEGORY_ICONS = [
-  'utensils',
-  'car',
-  'shopping-bag',
-  'gamepad-2',
-  'heart-pulse',
-  'graduation-cap',
-  'home',
-  'zap',
-  'plane',
-  'gift',
-  'wallet',
-  'banknote',
-  'briefcase',
-  'laptop',
-  'line-chart',
-  'piggy-bank',
-  'sparkles',
-  'more-horizontal',
 ] as const;
 
 // Routes
@@ -166,7 +135,6 @@ export const ROUTES = {
 
 // Query Keys for React Query
 export const QUERY_KEYS = {
-  USER: ['user'],
   CATEGORIES: ['categories'],
   EXPENSES: ['expenses'],
   EXPENSE: (id: string) => ['expense', id],
@@ -184,6 +152,5 @@ export const VALIDATION = {
   NAME_MIN_LENGTH: 2,
   NAME_MAX_LENGTH: 100,
   DESCRIPTION_MAX_LENGTH: 1000,
-  AMOUNT_MIN: 0,
   AMOUNT_MAX: 999_999_999_999.99,
 } as const;
