@@ -57,6 +57,7 @@ import { DashboardInsights } from './components/DashboardInsights';
 import { MonthlyInsight } from './components/MonthlyInsight';
 import { CollapsibleSection } from './components/CollapsibleSection';
 import { MarketRates } from './components/MarketRates';
+import { BudgetAlerts } from './components/BudgetAlerts';
 import { BudgetSummaryCard } from './components/BudgetSummaryCard';
 import { fetchAllTransactionsForRange } from '@/lib/fetchTransactions';
 import { exportReportToExcel, exportReportToPdf } from '@/lib/exportReport';
@@ -544,6 +545,7 @@ export function DashboardPage() {
               ))}
             </div>
 
+            <BudgetAlerts />
             <BudgetSummaryCard />
 
             {showMarket && <MarketRates />}

@@ -25,6 +25,14 @@ export type ProWelcomeStep = {
 
 export const PRO_WELCOME_STEPS: ProWelcomeStep[] = [
   {
+    id: 'budget-alert',
+    title: 'Peringatan budget',
+    message:
+      'Di Dashboard, kamu dapat pemberitahuan saat budget total atau kategori mencapai 80% dan 100%. Notifikasi browser dikirim sekali untuk tiap ambang batas dalam sebulan.',
+    ctaLabel: 'Lanjut',
+    href: ROUTES.DASHBOARD,
+  },
+  {
     id: 'insight',
     title: 'Insight bulanan',
     message:
