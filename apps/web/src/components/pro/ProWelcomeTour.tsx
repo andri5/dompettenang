@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Crown, FileText, PiggyBank, Repeat, Share2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Crown, FileText, PiggyBank, Repeat, Share2, Sparkles } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import {
   PRO_WELCOME_SPLASH,
@@ -14,6 +14,7 @@ import {
 } from '@/lib/proWelcome';
 
 const STEP_ICONS: Record<string, typeof Crown> = {
+  'budget-alert': AlertTriangle,
   insight: Sparkles,
   pdf: FileText,
   share: Share2,
