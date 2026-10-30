@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, PiggyBank } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui';
 import { useBudget } from '@/hooks/useBudget';
+import { useAuthStore } from '@/stores';
+import { hasProAccess } from '@/lib/plan';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 import { BudgetProgress } from '@/pages/budget/components/BudgetProgress';
@@ -11,6 +13,8 @@ function formatNominal(n: number) {
 }
 
 export function BudgetSummaryCard() {
+  const user = useAuthStore((s) => s.user);
+  const isPro = hasProAccess(user);
   const { budget, isLoading } = useBudget();
 
   if (isLoading) {
@@ -60,7 +64,7 @@ export function BudgetSummaryCard() {
           </Link>
         </div>
 
-        {(budget.isNearLimit || budget.isOverLimit) && (
+        {!isPro && (budget.isNearLimit || budget.isOverLimit) && (
           <div
             className={cn(
               'mb-3 flex items-start gap-2 rounded-xl px-3 py-2 text-sm',

@@ -1,6 +1,6 @@
 # Dompet Tenang — Catat Keuangan
 
-Aplikasi pencatatan keuangan pribadi (pemasukan & pengeluaran). Gratis untuk catat, budget, dan export Excel. **Pro Lifetime** menambah insight bulanan, tabungan, transaksi otomatis, PDF, dan bagikan ringkasan.
+Aplikasi pencatatan keuangan pribadi (pemasukan & pengeluaran). Gratis untuk catat, budget, dan export Excel. **Pro Lifetime** menambah peringatan budget, insight bulanan, tabungan, transaksi otomatis, PDF, dan bagikan ringkasan.
 
 ## Project Structure
 
@@ -28,6 +28,7 @@ Monorepo:
 
 ### Pro Lifetime (sekali bayar)
 
+- **Peringatan budget** — Banner di dashboard saat budget total atau kategori mencapai 80% dan 100%. Notifikasi browser sekali per ambang batas per bulan bila diizinkan
 - **Insight bulanan** — Menu `/insight`: bandingkan bulan ini (sampai tanggal yang sama) dengan bulan lalu, kategori terbesar, dan saran singkat. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro)
 - **Target tabungan** dan **transaksi otomatis**
 - **Export PDF** dan **bagikan ringkasan** dari mobile
