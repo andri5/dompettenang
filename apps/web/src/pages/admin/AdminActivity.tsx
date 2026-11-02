@@ -39,7 +39,22 @@ export function AdminActivity() {
           </div>
         </Card>
       ) : (
-        <Card padding="none">
+        <>
+          <ul className="space-y-2 md:hidden">
+            {logs.map((log) => (
+              <li key={log.id} className="rounded-2xl border border-line bg-surface p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="default" size="sm">
+                    {log.action}
+                  </Badge>
+                  <span className="text-[11px] text-muted">{log.actorRole || '—'}</span>
+                  <span className="ml-auto text-xs text-muted">{formatDate(log.createdAt)}</span>
+                </div>
+                <p className="mt-2 break-words text-sm text-ink">{log.summary}</p>
+              </li>
+            ))}
+          </ul>
+          <Card padding="none" className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -68,7 +83,8 @@ export function AdminActivity() {
               </tbody>
             </table>
           </div>
-        </Card>
+          </Card>
+        </>
       )}
     </div>
   );
