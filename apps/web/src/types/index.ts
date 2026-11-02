@@ -39,8 +39,6 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
-  gender: Gender;
-  birthDate: string;
   captchaToken?: string;
 }
 

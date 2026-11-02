@@ -28,24 +28,10 @@ describe('FE validation schemas (OWASP)', () => {
       name: 'Andri',
       email: 'andri@example.com',
       password: 'Strong1!',
-      confirmPassword: 'Strong1!',
-      gender: 'MALE' as const,
-      birthDate: '1995-05-15',
     };
     expect(registerSchema.safeParse(base).success).toBe(true);
-    expect(
-      registerSchema.safeParse({ ...base, password: 'weak', confirmPassword: 'weak' })
-        .success
-    ).toBe(false);
-    expect(
-      registerSchema.safeParse({ ...base, name: '<b>x</b>' }).success
-    ).toBe(false);
-    expect(
-      registerSchema.safeParse({
-        ...base,
-        confirmPassword: 'Different1!',
-      }).success
-    ).toBe(false);
+    expect(registerSchema.safeParse({ ...base, password: 'weak' }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...base, name: '<b>x</b>' }).success).toBe(false);
   });
 
   it('expense rejects unsafe description and bad receipt URL', () => {

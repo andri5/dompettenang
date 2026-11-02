@@ -18,9 +18,7 @@ import { useCaptchaConfig } from '@/hooks/useCaptchaConfig';
 import { ROUTES } from '@/lib/constants';
 import { SEO } from '@/components/SEO';
 import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
-import { GENDER_OPTIONS } from '@/lib/gender';
 import { markWelcomePending } from '@/lib/welcome';
-import { cn } from '@/lib/utils';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -29,7 +27,6 @@ export function RegisterPage() {
   const { data: captcha, isLoading: captchaLoading, isError: captchaFetchError } =
     useCaptchaConfig();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -41,14 +38,10 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
-
-  const selectedGender = watch('gender');
 
   const onSubmit = async (data: RegisterFormData) => {
     if (!termsAccepted) {
@@ -66,8 +59,6 @@ export function RegisterPage() {
         name: data.name,
         email: data.email,
         password: data.password,
-        gender: data.gender,
-        birthDate: data.birthDate,
         ...(captchaToken ? { captchaToken } : {}),
       });
       markWelcomePending();
@@ -99,23 +90,6 @@ export function RegisterPage() {
     'bg-lime-500',
     'bg-lime',
   ];
-
-  const birthMax = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 10);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  })();
-  const birthMin = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 120);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  })();
 
   return (
     <PageTransition>
@@ -150,42 +124,6 @@ export function RegisterPage() {
             leftIcon={<Mail className="h-3.5 w-3.5" />}
             error={errors.email?.message}
             {...register('email')}
-          />
-
-          <div>
-            <p className="mb-1.5 text-sm font-semibold text-ink">Jenis kelamin</p>
-            <div className="grid grid-cols-2 gap-2">
-              {GENDER_OPTIONS.map((opt) => {
-                const active = selectedGender === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setValue('gender', opt.value, { shouldValidate: true })}
-                    className={cn(
-                      'rounded-2xl border px-3 py-2.5 text-center text-sm font-bold transition',
-                      active
-                        ? 'border-accent bg-accent text-white shadow-sm shadow-accent/25'
-                        : 'border-line bg-surface text-muted hover:border-accent/40 hover:bg-accent-soft/60'
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-            {errors.gender?.message && (
-              <p className="mt-1 text-[11px] text-coral">{errors.gender.message}</p>
-            )}
-          </div>
-
-          <Input
-            label="Tanggal lahir"
-            type="date"
-            min={birthMin}
-            max={birthMax}
-            error={errors.birthDate?.message}
-            {...register('birthDate')}
           />
 
           <div>
@@ -224,31 +162,6 @@ export function RegisterPage() {
               </div>
             )}
           </div>
-
-          <Input
-            label="Konfirmasi"
-            type={showConfirmPassword ? 'text' : 'password'}
-            placeholder="Ulangi password"
-            leftIcon={<Lock className="h-3.5 w-3.5" />}
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-muted transition hover:text-ink"
-                aria-label={
-                  showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'
-                }
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="h-3.5 w-3.5" />
-                )}
-              </button>
-            }
-            error={errors.confirmPassword?.message}
-            {...register('confirmPassword')}
-          />
 
           {captchaLoading && (
             <p className="text-center text-[11px] text-muted">Memuat captcha…</p>

@@ -14,7 +14,7 @@ export function InsightPage() {
         <PageHeader
           eyebrow="Pro"
           title="Insight bulanan"
-          description="Bandingkan pengeluaran bulan ini dengan periode yang sama bulan lalu."
+          description="Pengeluaran bulan ini dibanding periode yang sama bulan lalu, plus kategori terbesar."
         />
         <MonthlyInsight />
       </MainLayout>

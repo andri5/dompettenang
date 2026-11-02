@@ -50,7 +50,17 @@ describe('validation schemas (OWASP)', () => {
       ).toThrow();
     });
 
-    it('rejects invalid birth date calendar', () => {
+    it('accepts name, email, and password without profile details', () => {
+      const parsed = registerSchema.parse({
+        name: 'Andri Faizal',
+        email: 'user@example.com',
+        password: 'Strong1!',
+      });
+      expect(parsed.gender).toBeUndefined();
+      expect(parsed.birthDate).toBeUndefined();
+    });
+
+    it('rejects invalid birth date when one is sent', () => {
       expect(() =>
         registerSchema.parse({ ...validRegister, birthDate: '2020-02-30' })
       ).toThrow();

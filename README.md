@@ -29,7 +29,7 @@ Monorepo:
 ### Pro Lifetime (sekali bayar)
 
 - **Peringatan budget** — Banner di dashboard saat budget total atau kategori mencapai 80% dan 100%. Notifikasi browser sekali per ambang batas per bulan bila diizinkan
-- **Insight bulanan** — Menu `/insight`: bandingkan bulan ini (sampai tanggal yang sama) dengan bulan lalu, kategori terbesar, dan saran singkat. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro)
+- **Insight bulanan** — Menu `/insight`: satu kalimat perbandingan pengeluaran sampai tanggal yang sama, plus kategori terbesar. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro)
 - **Target tabungan** dan **transaksi otomatis**
 - **Export PDF** dan **bagikan ringkasan** dari mobile
 - **Splash panduan Pro** — sekali per akun setelah plan menjadi PRO (tanpa logout paksa)
