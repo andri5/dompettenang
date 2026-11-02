@@ -129,8 +129,8 @@ export const registerSchema = z.object({
   ),
   email: emailSchema,
   password: strongPassword,
-  gender: genderSchema,
-  birthDate: birthDateSchema,
+  gender: genderSchema.optional(),
+  birthDate: birthDateSchema.optional(),
   captchaToken: z.string().max(2048).optional(),
 });
 

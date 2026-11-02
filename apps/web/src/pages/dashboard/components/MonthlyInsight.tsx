@@ -1,23 +1,32 @@
 /**
- * Pro monthly insight: this month-to-date vs the same window last month.
+ * Pro monthly insight: one sentence, this month's spending, and the top category.
  */
 
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Crown, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
+import { Crown, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { useAuthStore } from '@/stores';
 import { hasProAccess } from '@/lib/plan';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 import { getMonthlyInsight } from '@/services/dashboard.service';
 import { CollapsibleSection } from './CollapsibleSection';
 
-function changeLabel(pct: number | null) {
-  if (pct === null) return 'baru';
-  if (pct === 0) return 'stabil';
-  const sign = pct > 0 ? '+' : '';
-  return `${sign}${pct}%`;
+function summarySentence(pct: number | null, current: number, previous: number) {
+  if (current === 0 && previous === 0) {
+    return 'Belum ada pengeluaran untuk dibandingkan.';
+  }
+  if (pct === null) {
+    return 'Pengeluaran bulan ini mulai tercatat. Bulan lalu belum ada di periode yang sama.';
+  }
+  if (pct === 0) {
+    return 'Pengeluaran stabil dibanding periode yang sama bulan lalu.';
+  }
+  if (pct > 0) {
+    return `Pengeluaran naik ${pct}% dibanding periode yang sama bulan lalu.`;
+  }
+  return `Pengeluaran turun ${Math.abs(pct)}% dibanding periode yang sama bulan lalu.`;
 }
 
 export function MonthlyInsight() {
@@ -42,8 +51,7 @@ export function MonthlyInsight() {
             <div>
               <p className="font-display text-base font-bold text-ink">Insight bulanan</p>
               <p className="mt-1 text-sm text-muted">
-                Bandingkan pengeluaran bulan ini dengan periode yang sama bulan lalu, plus
-                kategori terbesar dan saran singkat. Termasuk Pro Lifetime.
+                Pengeluaran bulan ini dibanding periode yang sama bulan lalu, plus kategori terbesar.
               </p>
             </div>
           </div>
@@ -67,7 +75,11 @@ export function MonthlyInsight() {
     );
   }
 
-  const expenseUp = (data.expenseChangePct ?? 0) > 0;
+  const sentence = summarySentence(
+    data.expenseChangePct,
+    data.current.expense,
+    data.previous.expense
+  );
 
   return (
     <CollapsibleSection
@@ -80,46 +92,32 @@ export function MonthlyInsight() {
       }
       headerExtra={
         <p className="mt-0.5 text-xs font-medium text-muted">
-          {data.monthLabel} vs {data.previousMonthLabel} · sampai tanggal {data.comparedThroughDay}
+          Sampai tanggal {data.comparedThroughDay}
         </p>
       }
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <p className="text-sm font-semibold text-ink">{sentence}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-xs font-medium text-muted">Pengeluaran</p>
           <p className="mt-1 font-display text-xl font-bold text-ink">
             {formatCurrency(data.current.expense)}
           </p>
-          <p
-            className={cn(
-              'mt-1 inline-flex items-center gap-1 text-xs font-semibold',
-              expenseUp ? 'text-coral' : 'text-lime'
-            )}
-          >
-            {expenseUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            {changeLabel(data.expenseChangePct)} vs bulan lalu ({formatCurrency(data.previous.expense)})
+          <p className="mt-1 text-xs text-muted">
+            Bulan lalu {formatCurrency(data.previous.expense)}
           </p>
         </div>
         <div className="rounded-2xl border border-line bg-surface p-4">
-          <p className="text-xs font-medium text-muted">Sisa (pemasukan − pengeluaran)</p>
-          <p className="mt-1 font-display text-xl font-bold text-ink">
-            {formatCurrency(data.current.balance)}
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Bulan lalu {formatCurrency(data.previous.balance)}
-            {data.topCategory ? ` · terbesar: ${data.topCategory.name}` : ''}
-          </p>
+          <p className="text-xs font-medium text-muted">Kategori terbesar</p>
+          {data.topCategory ? (
+            <>
+              <p className="mt-1 font-display text-xl font-bold text-ink">{data.topCategory.name}</p>
+              <p className="mt-1 text-xs text-muted">{data.topCategory.percentage}% pengeluaran</p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-muted">Belum ada</p>
+          )}
         </div>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        {data.highlights.map((item) => (
-          <div key={item.id} className="rounded-2xl border border-line bg-mist/40 px-4 py-3">
-            <p className="text-sm font-semibold text-ink">{item.title}</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted">{item.message}</p>
-            {item.tip ? <p className="mt-2 text-xs text-accent">{item.tip}</p> : null}
-          </div>
-        ))}
       </div>
     </CollapsibleSection>
   );

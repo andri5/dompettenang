@@ -36,7 +36,7 @@ export const PRO_WELCOME_STEPS: ProWelcomeStep[] = [
     id: 'insight',
     title: 'Insight bulanan',
     message:
-      'Di Dashboard, lihat pengeluaran bulan ini dibanding periode yang sama bulan lalu, plus kategori terbesar dan saran singkat.',
+      'Di Dashboard, lihat pengeluaran bulan ini dibanding periode yang sama bulan lalu, plus kategori terbesar.',
     ctaLabel: 'Lanjut',
     href: ROUTES.DASHBOARD,
   },
