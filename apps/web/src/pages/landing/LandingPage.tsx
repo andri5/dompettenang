@@ -743,6 +743,9 @@ export function LandingPage() {
             <a href="#mobile" className="transition hover:text-white/70">
               Mobile segera rilis
             </a>
+            <Link to={ROUTES.GUIDE_MONTHLY_EXPENSE} className="transition hover:text-white/70">
+              Cara catat pengeluaran
+            </Link>
             <Link to={ROUTES.TERMS} className="transition hover:text-white/70">
               Syarat & Ketentuan
             </Link>

@@ -127,6 +127,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
   UPGRADE: '/upgrade',
   HELP: '/help',
+  GUIDE_MONTHLY_EXPENSE: '/cara-catat-pengeluaran-bulanan',
   TERMS: '/terms',
   PRIVACY: '/privacy',
   MAINTENANCE: '/maintenance',
