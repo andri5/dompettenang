@@ -70,7 +70,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: 'Insight Bulanan',
-    desc: 'Bandingkan bulan ini dengan bulan lalu, plus saran singkat.',
+    desc: 'Pengeluaran bulan ini dibanding periode yang sama bulan lalu, plus kategori terbesar.',
     tone: 'bg-accent-soft text-accent',
     tier: 'pro' as const,
   },
