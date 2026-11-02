@@ -77,4 +77,17 @@ else
   echo "    public health skipped/failed (TLS/DNS). API container is healthy."
 fi
 
+if [[ -f "${APP_DIR}/deploy/backup.sh" ]]; then
+  echo "==> Installing daily backup"
+  chmod +x "${APP_DIR}/deploy/backup.sh"
+  install -m 755 "${APP_DIR}/deploy/backup.sh" /usr/local/sbin/dompettenang-backup
+  cat > /etc/cron.d/dompettenang-backup <<'CRON'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=Asia/Jakarta
+15 2 * * * root /usr/local/sbin/dompettenang-backup >> /var/log/dompettenang-backup.log 2>&1
+CRON
+  chmod 644 /etc/cron.d/dompettenang-backup
+fi
+
 echo "==> Deploy OK"
