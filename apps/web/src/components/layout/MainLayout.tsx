@@ -663,6 +663,30 @@ export function MainLayout({ children }: MainLayoutProps) {
               <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">
                 Lainnya
               </p>
+              {user?.role === 'ADMIN' && showAdminPanel && (
+                <Link
+                  to={proOpenCount > 0 ? ROUTES.ADMIN_PRO : ROUTES.ADMIN}
+                  className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-mist"
+                  onClick={() => setMoreMenuOpen(false)}
+                >
+                  <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                    <Shield className="h-4 w-4" />
+                    {proOpenCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                        {proOpenCount > 99 ? '99+' : proOpenCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="flex flex-1 items-center justify-between gap-2 text-sm font-semibold text-ink">
+                    Admin Panel
+                    {proOpenCount > 0 ? (
+                      <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        Pro {proOpenCount}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              )}
               {filteredMoreMenu.map((item) => {
                 const active = isPathActive(location.pathname, item.path);
                 return (

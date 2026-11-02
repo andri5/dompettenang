@@ -95,10 +95,19 @@ export function AdminLayout() {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-line bg-surface px-4 py-3 lg:hidden">
-          <Shield className="h-4 w-4 text-violet-600" />
-          <span className="font-display text-sm font-bold">Admin</span>
-          <div className="ml-auto flex max-w-[70%] gap-1 overflow-x-auto">
+        <header className="border-b border-line bg-surface lg:hidden">
+          <div className="flex items-center gap-2 px-3 py-3">
+            <NavLink
+              to={ROUTES.DASHBOARD}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted transition hover:bg-mist hover:text-ink"
+              aria-label="Kembali ke aplikasi"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </NavLink>
+            <Shield className="h-4 w-4 text-violet-600" />
+            <span className="font-display text-sm font-bold">Admin Panel</span>
+          </div>
+          <nav className="flex gap-1 overflow-x-auto px-3 pb-3">
             {NAV.map((n) => (
               <NavLink
                 key={n.path}
@@ -106,7 +115,7 @@ export function AdminLayout() {
                 end={n.path === ROUTES.ADMIN}
                 className={({ isActive }) =>
                   cn(
-                    'relative shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition',
+                    'relative inline-flex shrink-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition',
                     isActive ? 'bg-violet-100 text-violet-700' : 'text-muted'
                   )
                 }
@@ -119,7 +128,7 @@ export function AdminLayout() {
                 ) : null}
               </NavLink>
             ))}
-          </div>
+          </nav>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
