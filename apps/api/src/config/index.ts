@@ -37,7 +37,7 @@ if (isProduction) {
   }
   if (!smtpEnabled) {
     console.warn(
-      '[warn] SMTP not configured — forgot-password will not send email in production.'
+      '[warn] SMTP not configured — password reset and Pro payment emails will not send in production.'
     );
   }
 } else if (jwtSecret === DEFAULT_JWT || jwtRefreshSecret === DEFAULT_JWT_REFRESH) {

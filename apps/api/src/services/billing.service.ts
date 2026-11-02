@@ -6,6 +6,12 @@ import crypto from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { config } from '../config/index.js';
 import { hasProAccess } from '../utils/plan.js';
+import {
+  isSmtpConfigured,
+  sendProApprovedEmail,
+  sendProProofSubmittedEmail,
+  sendProRejectedEmail,
+} from './email.service.js';
 
 const SETTING_KEYS = {
   price: 'pro_lifetime_price',
@@ -207,7 +213,9 @@ export async function submitProof(userId: string, requestId: string, proofPath: 
       status: 'PROOF_SUBMITTED',
     },
   });
-  return formatRequest(updated);
+  const formatted = formatRequest(updated);
+  await notifyAdminsOfProof(formatted);
+  return formatted;
 }
 
 export async function listAdminRequests(status?: string) {
@@ -251,7 +259,9 @@ export async function approveRequest(requestId: string, adminNote?: string) {
     }),
   ]);
 
-  return formatRequest(updated);
+  const formatted = formatRequest(updated);
+  await notifyBuyerApproved(formatted);
+  return formatted;
 }
 
 export async function rejectRequest(requestId: string, adminNote?: string) {
@@ -272,7 +282,100 @@ export async function rejectRequest(requestId: string, adminNote?: string) {
       reviewedAt: new Date(),
     },
   });
-  return formatRequest(updated);
+  const formatted = formatRequest(updated);
+  await notifyBuyerRejected(formatted, note);
+  return formatted;
+}
+
+async function notifyAdminsOfProof(row: ReturnType<typeof formatRequest>) {
+  try {
+    if (!isSmtpConfigured()) {
+      console.warn('[billing-email] SMTP off — proof notice not sent');
+      return;
+    }
+    const [buyer, admins] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: row.userId },
+        select: { name: true, email: true },
+      }),
+      prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { email: true },
+      }),
+    ]);
+    const to = admins.map((admin) => admin.email.trim()).filter(Boolean);
+    if (!buyer || to.length === 0) {
+      console.warn('[billing-email] proof notice skipped');
+      return;
+    }
+    await sendProProofSubmittedEmail({
+      to,
+      buyerName: buyer.name,
+      buyerEmail: buyer.email,
+      amount: row.amount,
+      transferNote: row.transferNote,
+      reviewUrl: `${appBaseUrl()}/admin/pro`,
+    });
+  } catch (err) {
+    console.error('[billing-email] proof notice failed', err instanceof Error ? err.message : 'send failed');
+  }
+}
+
+async function notifyBuyerApproved(row: ReturnType<typeof formatRequest>) {
+  try {
+    if (!isSmtpConfigured()) {
+      console.warn('[billing-email] SMTP off — approval email not sent');
+      return;
+    }
+    const buyer = await prisma.user.findUnique({
+      where: { id: row.userId },
+      select: { name: true, email: true },
+    });
+    if (!buyer?.email) {
+      console.warn('[billing-email] approval email skipped');
+      return;
+    }
+    await sendProApprovedEmail({
+      to: buyer.email,
+      name: buyer.name,
+      amount: row.amount,
+      transferNote: row.transferNote,
+      appUrl: appBaseUrl(),
+    });
+  } catch (err) {
+    console.error('[billing-email] approval email failed', err instanceof Error ? err.message : 'send failed');
+  }
+}
+
+async function notifyBuyerRejected(row: ReturnType<typeof formatRequest>, adminNote: string) {
+  try {
+    if (!isSmtpConfigured()) {
+      console.warn('[billing-email] SMTP off — rejection email not sent');
+      return;
+    }
+    const buyer = await prisma.user.findUnique({
+      where: { id: row.userId },
+      select: { name: true, email: true },
+    });
+    if (!buyer?.email) {
+      console.warn('[billing-email] rejection email skipped');
+      return;
+    }
+    await sendProRejectedEmail({
+      to: buyer.email,
+      name: buyer.name,
+      amount: row.amount,
+      transferNote: row.transferNote,
+      adminNote,
+      appUrl: `${appBaseUrl()}/upgrade`,
+    });
+  } catch (err) {
+    console.error('[billing-email] rejection email failed', err instanceof Error ? err.message : 'send failed');
+  }
+}
+
+function appBaseUrl() {
+  return config.appUrl.replace(/\/$/, '');
 }
 
 function formatRequest(row: {
