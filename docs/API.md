@@ -219,6 +219,8 @@ POST /admin/pro-requests/:id/approve    body opsional { "adminNote" }
 POST /admin/pro-requests/:id/reject     body wajib { "adminNote" }
 ```
 
+Saat bukti masuk, email dikirim ke setiap akun `ADMIN` (nama, email, nominal, kode, tautan antrian). Saat disetujui atau ditolak, email dikirim ke pembeli. Gagal kirim tidak membatalkan status permintaan. Butuh `SMTP_*` yang sama dengan reset password.
+
 `adminNote` saat tolak wajib terisi (maks. 500 karakter). Web mengirim salah satu alasan tetap, plus catatan tambahan bila ada:
 
 - `Bukti transfer kurang jelas`

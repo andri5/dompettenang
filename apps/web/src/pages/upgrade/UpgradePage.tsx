@@ -103,7 +103,7 @@ export function UpgradePage() {
       setSelectedFile(null);
       if (fileRef.current) fileRef.current.value = '';
       qc.invalidateQueries({ queryKey: ['billing', 'my-requests'] });
-      toast.success('Bukti terkirim. Admin akan memverifikasi.');
+      toast.success('Bukti terkirim. Kami email kamu setelah diperiksa.');
       try {
         const me = await getCurrentUser();
         setUser(me);
