@@ -57,6 +57,18 @@ Jangan push langsung ke `main` kecuali hotfix darurat.
 
 Script di server: `deploy/remote-deploy.sh`, `deploy/remote-deploy-staging.sh`.
 
+## Cadangan production
+
+Setiap hari 02:15 WIB, `deploy/backup.sh` menyimpan dump Postgres dan folder upload ke `/var/backups/dompettenang` di VPS (di luar folder aplikasi, disimpan 14 hari). Deploy berikutnya memasang ulang script yang sama ke `/usr/local/sbin/dompettenang-backup`.
+
+Salinan di VPS tidak selamat kalau disk server rusak. Untuk salinan di luar VPS, isi `BACKUP_RCLONE_DEST` di `deploy/.env.production` setelah remote rclone tersedia, lalu jalankan script sekali.
+
+Uji pemulihan memakai database sementara dan tidak mengubah data production:
+
+```bash
+/usr/local/sbin/dompettenang-backup --restore-test
+```
+
 ## DBeaver → DB staging
 
 Postgres staging **tidak** terbuka ke internet. Bind hanya `127.0.0.1:15432` di VPS; akses lewat SSH tunnel.
