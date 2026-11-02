@@ -64,6 +64,7 @@ test-*.ps1
 
 .local-ssh/
 .local-backups/
+.local-share/
 .tmp-check.sh
 .tmp*/
 
