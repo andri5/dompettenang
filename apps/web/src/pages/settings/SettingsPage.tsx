@@ -159,21 +159,13 @@ export function SettingsPage() {
       toast.error('Nama minimal 2 karakter');
       return;
     }
-    if (!gender) {
-      toast.error('Pilih jenis kelamin');
-      return;
-    }
-    if (!birthDate) {
-      toast.error('Isi tanggal lahir');
-      return;
-    }
     setSavingProfile(true);
     try {
       const updated = await updateProfile({
         name: name.trim(),
         currency: currency === 'USD' ? 'USD' : 'IDR',
-        gender,
-        birthDate,
+        ...(gender ? { gender } : {}),
+        ...(birthDate ? { birthDate } : {}),
       });
       setUser(updated);
       toast.success('Profil diperbarui');
@@ -515,7 +507,7 @@ export function SettingsPage() {
                   leftIcon={<User className="h-4 w-4" />}
                 />
                 <div>
-                  <p className="mb-2 text-sm font-medium text-ink">Jenis kelamin</p>
+                  <p className="mb-2 text-sm font-medium text-ink">Jenis kelamin <span className="font-normal text-muted">(opsional)</span></p>
                   <div className="grid grid-cols-2 gap-2">
                     {GENDER_OPTIONS.map((opt) => {
                       const active = gender === opt.value;
@@ -538,7 +530,7 @@ export function SettingsPage() {
                   </div>
                 </div>
                 <Input
-                  label="Tanggal lahir"
+                  label="Tanggal lahir (opsional)"
                   type="date"
                   min={(() => {
                     const d = new Date();

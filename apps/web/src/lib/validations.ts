@@ -33,19 +33,6 @@ const strongPassword = z
     message: 'Password tidak boleh mengandung spasi',
   });
 
-const birthDateSchema = z
-  .string()
-  .min(1, 'Tanggal lahir wajib diisi')
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal lahir tidak valid')
-  .refine((value) => {
-    const d = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return false;
-    const now = new Date();
-    const min = new Date(now.getFullYear() - 120, now.getMonth(), now.getDate());
-    const max = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
-    return d >= min && d <= max;
-  }, 'Usia harus antara 10–120 tahun');
-
 const dateYmd = z
   .string()
   .min(1, 'Tanggal wajib diisi')
@@ -68,25 +55,15 @@ export const loginSchema = z.object({
     .max(VALIDATION.PASSWORD_MAX_LENGTH, 'Password terlalu panjang'),
 });
 
-export const registerSchema = z
-  .object({
-    name: safeName(
-      'Nama',
-      VALIDATION.NAME_MIN_LENGTH,
-      VALIDATION.NAME_MAX_LENGTH
-    ),
-    email: emailField,
-    password: strongPassword,
-    confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
-    gender: z.enum(['MALE', 'FEMALE'], {
-      message: 'Pilih jenis kelamin',
-    }),
-    birthDate: birthDateSchema,
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Password tidak cocok',
-    path: ['confirmPassword'],
-  });
+export const registerSchema = z.object({
+  name: safeName(
+    'Nama',
+    VALIDATION.NAME_MIN_LENGTH,
+    VALIDATION.NAME_MAX_LENGTH
+  ),
+  email: emailField,
+  password: strongPassword,
+});
 
 export const forgotPasswordSchema = z.object({
   email: emailField,

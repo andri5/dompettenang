@@ -38,8 +38,10 @@ export class AuthService {
         name: data.name,
         email,
         password: hashedPassword,
-        gender: data.gender,
-        birthDate: new Date(`${data.birthDate}T00:00:00.000Z`),
+        gender: data.gender ?? null,
+        birthDate: data.birthDate
+          ? new Date(`${data.birthDate}T00:00:00.000Z`)
+          : null,
       },
     });
 
