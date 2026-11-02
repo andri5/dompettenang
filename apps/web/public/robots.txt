@@ -4,6 +4,7 @@ Allow: /register
 Allow: /login
 Allow: /terms
 Allow: /privacy
+Allow: /cara-catat-pengeluaran-bulanan
 
 Disallow: /dashboard
 Disallow: /expenses

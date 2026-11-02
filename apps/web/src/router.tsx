@@ -31,6 +31,7 @@ import {
   SettingsPage,
   UpgradePage,
   HelpPage,
+  MonthlyExpenseGuidePage,
   TermsPage,
   PrivacyPage,
   NotFoundPage,
@@ -63,6 +64,10 @@ const appRoutes = [
   {
     path: ROUTES.PRIVACY,
     element: <PrivacyPage />,
+  },
+  {
+    path: ROUTES.GUIDE_MONTHLY_EXPENSE,
+    element: <MonthlyExpenseGuidePage />,
   },
   {
     path: ROUTES.FORGOT_PASSWORD,
