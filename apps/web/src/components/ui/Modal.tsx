@@ -71,7 +71,7 @@ export function Modal({
                       )}
                       <h2
                         id="modal-title"
-                        className="font-display text-lg font-bold tracking-[-0.03em] text-ink"
+                        className="truncate font-display text-lg font-bold tracking-[-0.03em] text-ink"
                       >
                         {title}
                       </h2>
@@ -91,7 +91,7 @@ export function Modal({
                   )}
                 </div>
               )}
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+              <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-5">
                 {children}
               </div>
             </motion.div>
@@ -111,7 +111,7 @@ export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
     <div
       className={cn(
-        'mt-6 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3',
+        'mt-6 flex flex-col-reverse gap-2 border-t border-line pt-4 [&>button]:w-full sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:[&>button]:w-auto',
         className
       )}
     >

@@ -153,7 +153,7 @@ export function AdminProRequests() {
           </p>
         </div>
         {openCount > 0 ? (
-          <div className="rounded-xl bg-violet-100 px-3 py-2 text-sm font-bold text-violet-700">
+          <div className="w-full rounded-xl bg-violet-100 px-3 py-2 text-sm font-bold leading-snug text-violet-700 sm:w-auto">
             {openCount} permintaan terbuka
             {reviewCount > 0 ? ` · ${reviewCount} perlu review` : ''}
           </div>
@@ -161,8 +161,8 @@ export function AdminProRequests() {
       </div>
 
       <Card padding="md" className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
+        <div className="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h2 className="font-display text-base font-bold text-ink">
               Rekening pembayaran
             </h2>
@@ -174,7 +174,7 @@ export function AdminProRequests() {
             {configured ? 'Siap terima transfer' : 'Belum lengkap'}
           </Badge>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <Input
             label="Bank"
             value={bankName}
@@ -202,7 +202,7 @@ export function AdminProRequests() {
         </div>
         <Button
           type="button"
-          className="mt-4"
+          className="mt-4 w-full sm:w-auto"
           size="sm"
           leftIcon={<Save className="h-3.5 w-3.5" />}
           isLoading={saveSettingsMut.isPending}
@@ -344,10 +344,10 @@ function ProRequestCard({
             <p className="font-semibold text-ink">{row.user.name}</p>
             <Badge variant={STATUS_VARIANT[row.status]}>{row.status}</Badge>
           </div>
-          <p className="text-sm text-muted">{row.user.email}</p>
-          <p className="mt-2 text-sm text-ink">
+          <p className="break-all text-sm text-muted">{row.user.email}</p>
+          <p className="mt-2 break-words text-sm text-ink">
             {formatCurrency(row.amount, 'IDR')} · kode{' '}
-            <span className="font-mono font-bold">{row.transferNote}</span>
+            <span className="break-all font-mono font-bold">{row.transferNote}</span>
           </p>
           <p className="text-xs text-muted">{formatDate(row.createdAt)}</p>
           {row.adminNote ? (
@@ -360,6 +360,7 @@ function ProRequestCard({
             type="button"
             size="sm"
             variant="outline"
+            className="w-full sm:w-auto"
             leftIcon={<ExternalLink className="h-3.5 w-3.5" />}
             onClick={() => void openProof()}
           >
@@ -376,7 +377,7 @@ function ProRequestCard({
             <p className="mb-2 text-xs font-medium text-muted">
               Alasan tolak (wajib jika menolak)
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {PRO_REJECT_REASONS.map((label) => {
                 const selected = reason === label;
                 return (
@@ -388,7 +389,7 @@ function ProRequestCard({
                       onReasonChange(selected ? '' : label)
                     }
                     className={cn(
-                      'rounded-full border px-3 py-1.5 text-left text-xs font-medium transition-colors',
+                      'min-h-11 w-full rounded-xl border px-3 py-2 text-left text-sm font-medium leading-snug transition-colors',
                       selected
                         ? 'border-coral bg-coral-soft text-ink'
                         : 'border-line bg-surface text-muted hover:border-accent hover:text-ink'
@@ -405,24 +406,26 @@ function ProRequestCard({
             value={note}
             onChange={(e) => onNoteChange(e.target.value)}
             placeholder="Catatan tambahan (opsional)"
-            className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+            className="min-h-11 w-full rounded-xl border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus:border-accent"
             maxLength={500}
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Button
               type="button"
               size="sm"
               variant="primary"
+              className="w-full sm:w-auto"
               leftIcon={<Check className="h-3.5 w-3.5" />}
               disabled={busy}
               onClick={onApprove}
             >
-              Approve → Pro
+              Approve
             </Button>
             <Button
               type="button"
               size="sm"
               variant="danger"
+              className="w-full sm:w-auto"
               leftIcon={<X className="h-3.5 w-3.5" />}
               disabled={busy || !reason}
               onClick={onReject}
