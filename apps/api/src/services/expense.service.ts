@@ -244,15 +244,15 @@ export class ExpenseService {
 
     const rows = await prisma.$queryRaw<Array<{ id: string; balance_after: unknown }>>(
       Prisma.sql`
-        SELECT id::text AS id, balance_after
+        SELECT id, balance_after
         FROM (
           SELECT id,
             SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END)
               OVER (ORDER BY date ASC, created_at ASC, id ASC) AS balance_after
           FROM expenses
-          WHERE user_id = ${userId}::uuid AND deleted_at IS NULL
+          WHERE user_id = ${userId} AND deleted_at IS NULL
         ) ledger
-        WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+        WHERE id IN (${Prisma.join(ids)})
       `
     );
 
