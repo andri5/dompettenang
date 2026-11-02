@@ -108,15 +108,15 @@ export function AdminOverview() {
           {(data?.proProofSubmitted ?? 0) > 0 ? (
             <Link
               to={ROUTES.ADMIN_PRO}
-              className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 transition hover:bg-violet-100"
+              className="mb-4 flex flex-col items-start gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 transition hover:bg-violet-100 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-violet-700" />
-                <p className="text-sm font-semibold text-violet-800">
+              <div className="flex min-w-0 items-start gap-2">
+                <Crown className="mt-0.5 h-4 w-4 shrink-0 text-violet-700" />
+                <p className="text-sm font-semibold leading-snug text-violet-800">
                   {data?.proProofSubmitted} permintaan Pro menunggu review bukti transfer
                 </p>
               </div>
-              <span className="text-xs font-bold text-violet-700">Buka →</span>
+              <span className="shrink-0 text-xs font-bold text-violet-700">Buka →</span>
             </Link>
           ) : null}
 
@@ -168,9 +168,9 @@ export function AdminOverview() {
               ) : (
                 <ul className="divide-y divide-line">
                   {activity.map((item) => (
-                    <li key={item.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                      <div>
-                        <div className="mb-1 flex items-center gap-2">
+                    <li key={item.id} className="space-y-1 px-4 py-3 sm:flex sm:items-start sm:justify-between sm:gap-3">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
                           <Badge variant="default" size="sm">
                             {item.action}
                           </Badge>
@@ -178,7 +178,7 @@ export function AdminOverview() {
                             <span className="text-[11px] text-muted">{item.actorRole}</span>
                           )}
                         </div>
-                        <p className="text-sm text-ink">{item.summary}</p>
+                        <p className="break-words text-sm text-ink">{item.summary}</p>
                       </div>
                       <span className="shrink-0 text-xs text-muted">{formatDate(item.createdAt)}</span>
                     </li>

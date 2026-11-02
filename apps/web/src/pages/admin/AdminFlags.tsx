@@ -47,11 +47,11 @@ export function AdminFlags() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
                     <Flag className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-ink">{flag.label}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-muted">{flag.key}</p>
+                  <div className="min-w-0">
+                    <p className="break-words font-semibold text-ink">{flag.label}</p>
+                    <p className="mt-0.5 break-all font-mono text-[11px] text-muted">{flag.key}</p>
                     {flag.description && (
-                      <p className="mt-1 text-sm text-muted">{flag.description}</p>
+                      <p className="mt-1 break-words text-sm text-muted">{flag.description}</p>
                     )}
                     {flag.key === 'captcha_auth' && (
                       <p className="mt-1 text-xs text-muted">

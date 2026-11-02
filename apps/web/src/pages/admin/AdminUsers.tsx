@@ -33,6 +33,53 @@ const CURRENCIES = [
   { code: 'USD', label: 'US Dollar (USD)' },
 ] as const;
 
+function UserActions({
+  user,
+  rolePending,
+  onEdit,
+  onToggleRole,
+  onDelete,
+}: {
+  user: AdminUser;
+  rolePending: boolean;
+  onEdit: () => void;
+  onToggleRole: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onEdit}
+        className="rounded-lg p-1.5 text-muted transition hover:bg-accent-soft hover:text-accent"
+        title="Edit user"
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        disabled={rolePending}
+        onClick={onToggleRole}
+        className="rounded-lg p-1.5 text-muted transition hover:bg-violet-100 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60"
+        title={user.role === 'ADMIN' ? 'Jadikan User' : 'Jadikan Admin'}
+      >
+        {rolePending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : user.role === 'ADMIN' ? (
+          <ShieldOff className="h-4 w-4" />
+        ) : (
+          <Shield className="h-4 w-4" />
+        )}
+      </button>
+      <button
+        onClick={onDelete}
+        className="rounded-lg p-1.5 text-muted transition hover:bg-coral-soft hover:text-coral"
+        title="Hapus user"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function birthBounds() {
   const min = new Date();
   min.setFullYear(min.getFullYear() - 120);
@@ -152,79 +199,103 @@ export function AdminUsers() {
       {isLoading ? (
         <p className="text-muted">Memuat...</p>
       ) : (
-        <Card padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line bg-mist/40 text-left">
-                  <th className="px-4 py-3 font-semibold text-muted">User</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Role</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Transaksi</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Savings</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Budget</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Daftar</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-b border-line last:border-0 hover:bg-mist/20">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-ink">{u.name}</p>
-                      <p className="text-xs text-muted">{u.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={u.role === 'ADMIN' ? 'accent' : 'default'} size="sm">
-                        {u.role}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-ink">{u._count.expenses}</td>
-                    <td className="px-4 py-3 text-ink">{u._count.savingsGoals}</td>
-                    <td className="px-4 py-3 text-ink">{u._count.budgets}</td>
-                    <td className="px-4 py-3 text-xs text-muted">{formatDate(u.createdAt)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setEditUser(u)}
-                          className="rounded-lg p-1.5 text-muted transition hover:bg-accent-soft hover:text-accent"
-                          title="Edit user"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          disabled={roleMut.isPending}
-                          onClick={() =>
+        <>
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => (
+              <Card key={u.id} padding="md">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-ink">{u.name}</p>
+                    <p className="truncate text-xs text-muted">{u.email}</p>
+                  </div>
+                  <Badge variant={u.role === 'ADMIN' ? 'accent' : 'default'} size="sm">
+                    {u.role}
+                  </Badge>
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-mist/60 px-2 py-2">
+                    <dt className="text-[11px] text-muted">Transaksi</dt>
+                    <dd className="font-semibold text-ink">{u._count.expenses}</dd>
+                  </div>
+                  <div className="rounded-xl bg-mist/60 px-2 py-2">
+                    <dt className="text-[11px] text-muted">Savings</dt>
+                    <dd className="font-semibold text-ink">{u._count.savingsGoals}</dd>
+                  </div>
+                  <div className="rounded-xl bg-mist/60 px-2 py-2">
+                    <dt className="text-[11px] text-muted">Budget</dt>
+                    <dd className="font-semibold text-ink">{u._count.budgets}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted">{formatDate(u.createdAt)}</span>
+                  <UserActions
+                    user={u}
+                    rolePending={roleMut.isPending}
+                    onEdit={() => setEditUser(u)}
+                    onToggleRole={() =>
+                      roleMut.mutate({
+                        id: u.id,
+                        role: u.role === 'ADMIN' ? 'USER' : 'ADMIN',
+                      })
+                    }
+                    onDelete={() => setDeleteUser(u)}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card padding="none" className="hidden md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line bg-mist/40 text-left">
+                    <th className="px-4 py-3 font-semibold text-muted">User</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Role</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Transaksi</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Savings</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Budget</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Daftar</th>
+                    <th className="px-4 py-3 font-semibold text-muted">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b border-line last:border-0 hover:bg-mist/20">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-ink">{u.name}</p>
+                        <p className="text-xs text-muted">{u.email}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={u.role === 'ADMIN' ? 'accent' : 'default'} size="sm">
+                          {u.role}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-ink">{u._count.expenses}</td>
+                      <td className="px-4 py-3 text-ink">{u._count.savingsGoals}</td>
+                      <td className="px-4 py-3 text-ink">{u._count.budgets}</td>
+                      <td className="px-4 py-3 text-xs text-muted">{formatDate(u.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <UserActions
+                          user={u}
+                          rolePending={roleMut.isPending}
+                          onEdit={() => setEditUser(u)}
+                          onToggleRole={() =>
                             roleMut.mutate({
                               id: u.id,
                               role: u.role === 'ADMIN' ? 'USER' : 'ADMIN',
                             })
                           }
-                          className="rounded-lg p-1.5 text-muted transition hover:bg-violet-100 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          title={u.role === 'ADMIN' ? 'Jadikan User' : 'Jadikan Admin'}
-                        >
-                          {roleMut.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : u.role === 'ADMIN' ? (
-                            <ShieldOff className="h-4 w-4" />
-                          ) : (
-                            <Shield className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setDeleteUser(u)}
-                          className="rounded-lg p-1.5 text-muted transition hover:bg-coral-soft hover:text-coral"
-                          title="Hapus user"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                          onDelete={() => setDeleteUser(u)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
       )}
 
       <Modal
@@ -248,7 +319,7 @@ export function AdminUsers() {
             />
             <div>
               <p className="mb-2 text-sm font-semibold text-ink">Jenis kelamin</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {GENDER_OPTIONS.map((opt) => {
                   const active = form.gender === opt.value;
                   return (
@@ -257,7 +328,7 @@ export function AdminUsers() {
                       type="button"
                       onClick={() => setForm({ ...form, gender: opt.value })}
                       className={cn(
-                        'rounded-2xl border px-2 py-2.5 text-center text-sm font-semibold transition',
+                        'min-h-11 w-full rounded-2xl border px-3 py-2.5 text-center text-sm font-semibold transition',
                         active
                           ? 'border-accent bg-accent-soft text-accent'
                           : 'border-line bg-surface text-muted hover:border-accent/40'
@@ -279,7 +350,7 @@ export function AdminUsers() {
             />
             <div>
               <p className="mb-2 text-sm font-semibold text-ink">Mata uang</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {CURRENCIES.map((item) => {
                   const active = form.currency === item.code;
                   return (
@@ -288,7 +359,7 @@ export function AdminUsers() {
                       type="button"
                       onClick={() => setForm({ ...form, currency: item.code })}
                       className={cn(
-                        'rounded-2xl border px-2 py-2.5 text-center text-sm font-semibold transition',
+                        'min-h-11 w-full rounded-2xl border px-3 py-2.5 text-center text-sm font-semibold transition',
                         active
                           ? 'border-accent bg-accent-soft text-accent'
                           : 'border-line bg-surface text-muted hover:border-accent/40'
@@ -302,7 +373,7 @@ export function AdminUsers() {
             </div>
             <div>
               <p className="mb-2 text-sm font-semibold text-ink">Role</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {(['USER', 'ADMIN'] as const).map((role) => {
                   const active = form.role === role;
                   return (
@@ -311,7 +382,7 @@ export function AdminUsers() {
                       type="button"
                       onClick={() => setForm({ ...form, role })}
                       className={cn(
-                        'rounded-2xl border px-2 py-2.5 text-center text-sm font-semibold transition',
+                        'min-h-11 w-full rounded-2xl border px-3 py-2.5 text-center text-sm font-semibold transition',
                         active
                           ? 'border-accent bg-accent-soft text-accent'
                           : 'border-line bg-surface text-muted hover:border-accent/40'
@@ -336,7 +407,7 @@ export function AdminUsers() {
       </Modal>
 
       <Modal isOpen={!!deleteUser} onClose={() => setDeleteUser(null)} title="Hapus User" size="sm">
-        <p className="text-muted">
+        <p className="break-words text-muted">
           Hapus user <strong className="text-ink">{deleteUser?.name}</strong> ({deleteUser?.email})? Semua data akan terhapus permanen.
         </p>
         <ModalFooter>

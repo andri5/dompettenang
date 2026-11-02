@@ -72,14 +72,14 @@ export function AdminLegal() {
         baris kosong.
       </p>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActive(tab.key)}
             className={cn(
-              'rounded-xl px-3.5 py-2 text-sm font-semibold transition',
+              'min-h-11 rounded-xl px-3.5 py-2 text-sm font-semibold transition sm:w-auto',
               active === tab.key
                 ? 'bg-violet-100 text-violet-700'
                 : 'bg-surface text-muted hover:bg-mist'
@@ -130,15 +130,16 @@ export function AdminLegal() {
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                rows={14}
-                className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+                rows={8}
+                className="min-h-48 w-full max-w-full rounded-2xl border border-line bg-surface px-4 py-3 text-base text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 sm:min-h-80"
                 placeholder="Tulis isi syarat & ketentuan…&#10;&#10;Pisahkan tiap paragraf dengan baris kosong."
               />
               <p className="mt-1.5 text-xs text-muted">{body.trim().length} karakter</p>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex sm:justify-end">
               <Button
+                className="w-full sm:w-auto"
                 type="button"
                 variant="gradient"
                 size="md"

@@ -40,7 +40,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const isGlass = variant === 'glass';
 
     return (
-      <div className="w-full">
+      <div className="w-full min-w-0">
         {label && (
           <label
             htmlFor={inputId}
@@ -70,7 +70,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-2xl px-4 py-3 text-sm transition-all duration-200 focus:outline-none disabled:cursor-not-allowed sm:text-base',
+              'block w-full min-w-0 max-w-full rounded-2xl px-4 py-3 text-base transition-all duration-200 focus:outline-none disabled:cursor-not-allowed',
               leftIcon ? 'pl-11' : '',
               rightIcon ? 'pr-11' : '',
               props.type === 'date' &&

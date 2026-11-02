@@ -81,14 +81,22 @@ export function AdminTraffic() {
             ))}
           </div>
 
-          <Card padding="md" className="mb-6">
+          <Card padding="md" className="mb-6 overflow-hidden">
             <p className="mb-4 text-sm font-semibold text-ink">Kunjungan harian</p>
-            <div className="h-64">
+            <div className="h-56 w-full min-w-0 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data?.daily ?? []}>
+                <BarChart data={data?.daily ?? []} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value: string) => {
+                      const parts = String(value).split('-');
+                      return parts.length === 3 ? `${parts[2]}/${parts[1]}` : String(value);
+                    }}
+                    interval={0}
+                  />
+                  <YAxis width={28} allowDecimals={false} tick={{ fontSize: 10 }} />
                   <Tooltip />
                   <Bar dataKey="visits" name="Kunjungan" fill="#7c3aed" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -100,30 +108,18 @@ export function AdminTraffic() {
             <div className="border-b border-line px-4 py-3">
               <p className="text-sm font-semibold text-ink">Halaman terpopuler</p>
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line bg-mist/40 text-left">
-                  <th className="px-4 py-3 font-semibold text-muted">Path</th>
-                  <th className="px-4 py-3 font-semibold text-muted">Kunjungan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data?.topPaths ?? []).length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-4 text-muted" colSpan={2}>
-                      Belum ada data kunjungan.
-                    </td>
-                  </tr>
-                ) : (
-                  data!.topPaths.map((row) => (
-                    <tr key={row.path} className="border-b border-line last:border-0">
-                      <td className="px-4 py-3 font-mono text-ink">{row.path}</td>
-                      <td className="px-4 py-3 text-muted">{row.visits.toLocaleString('id-ID')}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            {(data?.topPaths ?? []).length === 0 ? (
+              <p className="px-4 py-4 text-sm text-muted">Belum ada data kunjungan.</p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {data!.topPaths.map((row) => (
+                  <li key={row.path} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <span className="min-w-0 break-all font-mono text-xs text-ink sm:text-sm">{row.path}</span>
+                    <span className="shrink-0 text-sm text-muted">{row.visits.toLocaleString('id-ID')}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </>
       )}
