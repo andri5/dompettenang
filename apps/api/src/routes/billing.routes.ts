@@ -60,7 +60,11 @@ router.post(
       }
       const proofPath = `/uploads/proofs/${file.filename}`;
       const data = await submitProof(userId, id, proofPath);
-      res.json({ success: true, data, message: 'Bukti transfer terkirim. Menunggu verifikasi admin.' });
+      res.json({
+        success: true,
+        data,
+        message: 'Bukti transfer terkirim. Kami email kamu setelah admin memeriksanya.',
+      });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Gagal mengirim bukti';
       res.status(400).json({ success: false, message });
