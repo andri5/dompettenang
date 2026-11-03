@@ -127,7 +127,11 @@ Situs sudah boleh diindeks (`robots.txt` + meta `index,follow`). Google **tidak 
 2. Tambah properti URL: `https://dompet-tenang.web.id`
 3. Verifikasi (meta tag verification sudah ada di situs)
 4. Menu **Sitemaps** → submit: `https://dompet-tenang.web.id/sitemap.xml`
-5. **URL Inspection** → masukkan homepage → **Request indexing**
+5. Kotak **Periksa semua URL** (Inspeksi URL) → minta pengindeksan untuk:
+   - `https://dompet-tenang.web.id/`
+   - `https://dompet-tenang.web.id/cara-catat-pengeluaran-bulanan`
 6. Tunggu beberapa hari–minggu. Cek dengan pencarian: `site:dompet-tenang.web.id`
+
+Sitemap memuat beranda, daftar, masuk, syarat, privasi, dan panduan pengeluaran bulanan. Pratinjau tautan memakai `apps/web/public/og-image.png` (1200×630).
 
 Staging (`staging.dompet-tenang.web.id`) sengaja `noindex` — tidak masuk Google.
