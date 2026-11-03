@@ -56,9 +56,6 @@ test.describe('UI Validation', () => {
     await page.getByLabel('Nama').fill('Tester QA');
     await page.getByLabel('Email').fill('qa@example.com');
     await page.getByLabel('Password', { exact: true }).fill('weak');
-    await page.getByLabel('Konfirmasi').fill('weak');
-    await page.getByRole('button', { name: /laki-laki/i }).click();
-    await page.getByLabel('Tanggal lahir').fill('1995-05-15');
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: /daftar sekarang/i }).click();
 
@@ -74,9 +71,6 @@ test.describe('UI Validation', () => {
     await page.getByLabel('Nama').fill('<script>alert(1)</script>');
     await page.getByLabel('Email').fill('safe@example.com');
     await page.getByLabel('Password', { exact: true }).fill('Strong1!');
-    await page.getByLabel('Konfirmasi').fill('Strong1!');
-    await page.getByRole('button', { name: /laki-laki/i }).click();
-    await page.getByLabel('Tanggal lahir').fill('1995-05-15');
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: /daftar sekarang/i }).click();
 
@@ -86,20 +80,18 @@ test.describe('UI Validation', () => {
     ).toBeVisible();
   });
 
-  test('register: password mismatch', async ({ page }) => {
+  test('register: terms must be accepted', async ({ page }) => {
     await page.goto('/register');
     await disableNativeValidation(page);
     await page.getByLabel('Nama').fill('Tester QA');
     await page.getByLabel('Email').fill('qa2@example.com');
     await page.getByLabel('Password', { exact: true }).fill('Strong1!');
-    await page.getByLabel('Konfirmasi').fill('Strong2!');
-    await page.getByRole('button', { name: /laki-laki/i }).click();
-    await page.getByLabel('Tanggal lahir').fill('1995-05-15');
-    await page.getByRole('checkbox').check();
-    await page.getByRole('button', { name: /daftar sekarang/i }).click();
 
-    await expect(page).toHaveURL(/\/register/);
-    await expect(page.getByText(/tidak cocok/i).first()).toBeVisible();
+    const submit = page.getByRole('button', { name: /daftar sekarang/i });
+    await expect(submit).toBeDisabled();
+
+    await page.getByRole('checkbox').check();
+    await expect(submit).toBeEnabled();
   });
 
   test('forgot password: invalid email', async ({ page }) => {

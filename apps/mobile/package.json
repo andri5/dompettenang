@@ -43,7 +43,7 @@
     "build:apk": "npx eas-cli build -p android --profile release",
     "build:apk:prod-api": "npx eas-cli build -p android --profile release-prod-api",
     "update:production": "npx eas-cli update --channel production --environment production --non-interactive",
-    "builds:open": "echo Open https://expo.dev/accounts/andri5/projects/duitdiary/builds"
+    "builds:open": "echo Open https://expo.dev/accounts/andri5/projects/dompettenang/builds"
   },
   "private": true
 }
