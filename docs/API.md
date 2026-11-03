@@ -1,6 +1,6 @@
 # 🔧 API Documentation
 
-**Last Updated:** October 26, 2026  
+**Last Updated:** November 3, 2026  
 **Base URL:** `http://localhost:3001/api/v1` (production: `https://dompet-tenang.web.id/api/v1`)
 
 Web memakai cookie HttpOnly (`access` + `refresh`). Mobile dan klien lain memakai `Authorization: Bearer`. Login/register tetap mengembalikan token di body JSON.
@@ -27,6 +27,8 @@ Response: 201 Created
   "refreshToken": "refresh_token"
 }
 ```
+
+Wajib: `name`, `email`, `password` (min. 8 karakter, ada huruf dan angka). `gender` (`MALE`/`FEMALE`) dan `birthDate` (`YYYY-MM-DD`) opsional; web tidak mengirim keduanya saat daftar. Jika dikirim, tetap divalidasi.
 
 ### Login
 ```
@@ -198,6 +200,8 @@ Authorization: Bearer {accessToken}
 Membandingkan bulan berjalan sampai hari ini dengan rentang tanggal yang sama di bulan lalu. Butuh plan PRO (atau role ADMIN). Bukan Pro → `403` dengan kode `PRO_REQUIRED`.
 
 Response `data`: `monthLabel`, `previousMonthLabel`, `comparedThroughDay`, `current`, `previous`, `expenseChangePct`, `topCategory`, `highlights`.
+
+UI web menampilkan satu kalimat dari `expenseChangePct` / nominal, caption sampai `comparedThroughDay`, plus kartu pengeluaran dan kategori terbesar. Field `highlights` tetap ada di JSON tetapi tidak dirender di web.
 
 ---
 

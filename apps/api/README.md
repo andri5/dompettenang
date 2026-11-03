@@ -267,7 +267,7 @@ Authorization: Bearer <access_token>
 | POST | `/auth/refresh` | Refresh access token | ❌ |
 | GET | `/auth/me` | Get current user | ✅ |
 
-**Register Request:**
+**Register Request** (wajib `name` / `email` / `password`; `gender` dan `birthDate` opsional):
 ```json
 {
   "name": "John Doe",
