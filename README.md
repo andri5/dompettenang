@@ -16,31 +16,33 @@ Monorepo:
 
 ### Gratis
 
-- **Auth** — Register, login, logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile)
+- **Auth** — Daftar singkat (nama, email, password), login, logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile). Gender dan tanggal lahir opsional di profil
 - **Transaksi** — Pemasukan & pengeluaran, pencarian catatan atau nama kategori, dan saldo berjalan di tiap baris
 - **Pengingat harian** — Banner jika hari ini belum ada catatan; notifikasi lokal setelah pukul 18.00 bila diizinkan
 - **Kategori** — Default + kustom
-- **Dashboard** — Saldo, grafik, breakdown kategori, saran periode berjalan
+- **Dashboard** — Saldo, grafik, breakdown kategori, plus satu kartu **Pemberitahuan** singkat (bukan label AI)
 - **Budget** — Limit pengeluaran bulanan
 - **Struk** — Upload gambar/PDF (akses privat ber-auth)
 - **Export Excel** — Unduh ringkasan + daftar transaksi
-- **Profil** — Foto, gender, tanggal lahir, tema
+- **Profil** — Foto, gender/tanggal lahir (opsional), tema
+- **Panduan publik** — `/cara-catat-pengeluaran-bulanan` (terindeks di sitemap)
 
 ### Pro Lifetime (sekali bayar)
 
 - **Peringatan budget** — Banner di dashboard saat budget total atau kategori mencapai 80% dan 100%. Notifikasi browser sekali per ambang batas per bulan bila diizinkan
-- **Insight bulanan** — Menu `/insight`: satu kalimat perbandingan pengeluaran sampai tanggal yang sama, plus kategori terbesar. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro)
+- **Insight bulanan** — Di dashboard dan menu `/insight`: satu kalimat perbandingan pengeluaran sampai tanggal yang sama, plus kategori terbesar. Endpoint `GET /dashboard/monthly-insight` (403 jika bukan Pro). Kartu Pemberitahuan gratis disembunyikan untuk Pro/ADMIN
 - **Target tabungan** dan **transaksi otomatis**
 - **Export PDF** dan **bagikan ringkasan** dari mobile
 - **Splash panduan Pro** — sekali per akun setelah plan menjadi PRO (tanpa logout paksa)
-- **Upgrade manual** — transfer bank + unggah bukti. Admin menolak wajib memilih alasan: bukti kurang jelas, kode transfer salah, atau nominal/rekening salah. User melihat alasan itu dan mendapat toast saat status jadi ditolak
+- **Upgrade manual** — transfer bank + unggah bukti. Admin mendapat email saat bukti masuk; pembeli mendapat email saat disetujui atau ditolak. Admin menolak wajib memilih alasan: bukti kurang jelas, kode transfer salah, atau nominal/rekening salah
 
 ### Lainnya
 
 - **Legal dinamis** — Syarat & Ketentuan / Privasi dikelola admin
 - **Mobile offline** — Antrian transaksi saat offline, sync saat online
-- **Admin** — Panel web (user, Pro, flags, traffic, activity, legal)
+- **Admin** — Panel web (user, Pro, flags, traffic, activity, legal); menu **Lainnya** di HP + layout kartu/form untuk layar sempit
 - **Responsif** — Sidebar desktop + bottom nav mobile
+- **Cadangan production** — dump Postgres + upload harian (lihat [docs/DEPLOY.md](./docs/DEPLOY.md))
 
 > **Production:** https://dompet-tenang.web.id  
 > **Staging:** https://staging.dompet-tenang.web.id  
@@ -77,7 +79,7 @@ Sesuaikan di `apps/api/.env`:
 - `PORT` — default `3001`
 - `CORS_ORIGIN` / `APP_URL` — biasanya `http://localhost:5173`
 - `JWT_SECRET` & `JWT_REFRESH_SECRET` — wajib kuat di production
-- `SMTP_*` — untuk kirim email reset password (`SMTP_ENABLED=true`)
+- `SMTP_*` — email reset password dan notifikasi Pro (`SMTP_ENABLED=true`)
 - `EXPOSE_PASSWORD_RESET_URL` — hanya development bila SMTP belum aktif
 
 Sesuaikan di `apps/web/.env`:
