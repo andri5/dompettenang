@@ -30,7 +30,9 @@ let workerPromise: Promise<Worker> | null = null;
 async function getWorker(): Promise<Worker> {
   if (!workerPromise) {
     workerPromise = (async () => {
-      const worker = await createWorker('eng');
+      // Writable cache — Docker image runs as non-root `app` (cannot write to /app).
+      const cachePath = process.env.TESS_CACHE_DIR || '/tmp/tesseract-cache';
+      const worker = await createWorker('eng', 1, { cachePath });
       return worker;
     })().catch((err) => {
       workerPromise = null;

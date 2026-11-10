@@ -12,6 +12,11 @@ function handleMulter(upload: ReturnType<typeof receiptUpload.single>) {
   return (req: any, res: any, next: any) => {
     upload(req, res, (err: unknown) => {
       if (err) {
+        const multerErr = err as { code?: string; message?: string };
+        if (multerErr?.code === 'LIMIT_FILE_SIZE') {
+          sendError(res, 'Ukuran file terlalu besar (maks. 10MB)', 413, 'FILE_TOO_LARGE');
+          return;
+        }
         const message = err instanceof Error ? err.message : 'Upload failed';
         sendError(res, message, 400, 'UPLOAD_FAILED');
         return;

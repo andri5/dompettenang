@@ -36,7 +36,7 @@ export async function uploadReceipt(file: File): Promise<UploadReceiptResult> {
   return response.data.data;
 }
 
-/** Upload + OCR scan (first run may be slower while Tesseract loads). */
+/** Upload + OCR scan (may be slow; prefer uploadReceipt then this only as optional). */
 export async function uploadReceiptWithScan(file: File): Promise<UploadReceiptResult> {
   const formData = new FormData();
   formData.append('receipt', file);
@@ -44,10 +44,35 @@ export async function uploadReceiptWithScan(file: File): Promise<UploadReceiptRe
   const response = await api.post<ApiResponse<UploadReceiptResult>>(
     '/uploads/receipt/scan',
     formData,
-    { timeout: 120000 }
+    { timeout: 90000 }
   );
 
   return response.data.data;
+}
+
+/**
+ * Reliable mobile path: plain upload only (must succeed).
+ * OCR is attempted afterward via tryReceiptOcr — never blocks/fails the upload.
+ */
+export async function uploadReceiptReliable(file: File): Promise<UploadReceiptResult> {
+  return uploadReceipt(file);
+}
+
+/** Best-effort OCR after a successful upload. Never throws. */
+export async function tryReceiptOcr(file: File): Promise<ReceiptOcrSuggestion | null> {
+  try {
+    const scanned = await uploadReceiptWithScan(file);
+    return scanned.ocr ?? null;
+  } catch {
+    return {
+      amount: null,
+      date: null,
+      description: null,
+      confidence: null,
+      supported: true,
+      message: 'Struk tersimpan. Scan otomatis gagal — isi form manual.',
+    };
+  }
 }
 
 export async function uploadAvatar(file: File): Promise<{

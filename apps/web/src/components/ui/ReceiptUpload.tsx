@@ -5,12 +5,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileText, ImagePlus, Loader2, Trash2, ExternalLink, ScanText } from 'lucide-react';
 import {
-  uploadReceipt,
-  uploadReceiptWithScan,
+  uploadReceiptReliable,
+  tryReceiptOcr,
   type ReceiptOcrSuggestion,
-  type UploadReceiptResult,
 } from '@/services/upload.service';
 import { compressImageForUpload } from '@/lib/compressImage';
+import { receiptUploadErrorMessage } from '@/lib/uploadErrors';
 import { useAuthenticatedFileUrl } from '@/hooks/useAuthenticatedFileUrl';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
@@ -114,55 +114,33 @@ export function ReceiptUpload({
       preview = prepared.type.startsWith('image/') ? URL.createObjectURL(prepared) : null;
       setLocalPreview(preview);
 
-      let result: UploadReceiptResult;
-      if (shouldScan) {
-        try {
-          result = await uploadReceiptWithScan(prepared);
-        } catch {
-          // Scan/OCR may time out on mobile network — still keep the photo
-          result = await uploadReceipt(prepared);
-          result = {
-            ...result,
-            ocr: {
-              amount: null,
-              date: null,
-              description: null,
-              confidence: null,
-              supported: true,
-              message: 'Struk tersimpan. Scan otomatis gagal — isi form manual.',
-            },
-          };
-        }
-      } else {
-        result = await uploadReceipt(prepared);
-      }
-
+      // 1) Upload must succeed on its own (mobile-safe).
+      const result = await uploadReceiptReliable(prepared);
       onChange(result.url);
+      toast.success('Struk berhasil diunggah');
+      setIsUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
 
-      if (result.ocr) {
-        onOcrResult?.(result.ocr);
-        if (result.ocr.message) {
-          setOcrHint(result.ocr.message);
-        }
-        if (result.ocr.amount || result.ocr.date || result.ocr.description) {
-          toast.success('Struk diunggah. Field diisi dari hasil scan (bisa diubah).');
-        } else if (!result.ocr.supported) {
-          toast.success('Struk diunggah. OCR tidak berlaku untuk PDF — isi form manual.');
+      // 2) OCR is best-effort after upload — never rolls back the receipt.
+      if (shouldScan && prepared.type.startsWith('image/')) {
+        setOcrHint('Memindai struk...');
+        const ocr = await tryReceiptOcr(prepared);
+        if (ocr) {
+          onOcrResult?.(ocr);
+          setOcrHint(ocr.message || null);
+          if (ocr.amount || ocr.date || ocr.description) {
+            toast.success('Field diisi dari hasil scan (bisa diubah).');
+          }
         } else {
-          toast.success('Struk diunggah. Isi form manual jika scan belum lengkap.');
+          setOcrHint('Struk tersimpan. Scan otomatis dilewati — isi form manual.');
         }
-      } else {
-        toast.success('Struk berhasil diunggah');
       }
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || 'Gagal mengunggah struk. Coba lagi.';
-      toast.error(message);
+    } catch (err: unknown) {
+      toast.error(receiptUploadErrorMessage(err));
       if (preview) URL.revokeObjectURL(preview);
       setLocalPreview(null);
       onChange(null);
       setOcrHint(null);
-    } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = '';
     }

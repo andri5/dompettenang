@@ -2,9 +2,9 @@
  * Compress camera/gallery images before upload (mobile photos are often >5MB).
  */
 
-const MAX_EDGE = 1600;
-const JPEG_QUALITY = 0.82;
-const TARGET_BYTES = 1.8 * 1024 * 1024;
+const MAX_EDGE = 1400;
+const JPEG_QUALITY = 0.78;
+const TARGET_BYTES = 1.2 * 1024 * 1024;
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
