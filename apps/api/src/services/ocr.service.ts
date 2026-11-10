@@ -22,6 +22,7 @@ const IMAGE_MIME = new Set([
   'image/webp',
   'image/gif',
   'image/bmp',
+  'image/pjpeg',
 ]);
 
 let workerPromise: Promise<Worker> | null = null;
@@ -190,32 +191,51 @@ export function isOcrImageMime(mimeType: string): boolean {
   return IMAGE_MIME.has(mimeType.toLowerCase());
 }
 
+const OCR_TIMEOUT_MS = 45_000;
+
+function emptyOcr(
+  supported: boolean,
+  message: string
+): ReceiptOcrResult {
+  return {
+    amount: null,
+    date: null,
+    description: null,
+    rawText: '',
+    confidence: null,
+    supported,
+    message,
+  };
+}
+
 /**
  * Run OCR on a local image file path.
+ * Never throws — upload callers can always return the stored file URL.
  */
 export async function recognizeReceiptImage(
   filePath: string,
   mimeType: string
 ): Promise<ReceiptOcrResult> {
-  if (!isOcrImageMime(mimeType)) {
-    return {
-      amount: null,
-      date: null,
-      description: null,
-      rawText: '',
-      confidence: null,
-      supported: false,
-      message: 'OCR saat ini mendukung gambar (JPG/PNG/WEBP/GIF). PDF belum dibaca otomatis.',
-    };
+  const mime = (mimeType || '').toLowerCase();
+  if (!isOcrImageMime(mime) && mime !== 'image/jpg') {
+    return emptyOcr(
+      false,
+      'OCR saat ini mendukung gambar (JPG/PNG/WEBP/GIF). PDF belum dibaca otomatis.'
+    );
   }
 
   try {
     const worker = await getWorker();
-    const {
-      data: { text, confidence },
-    } = await worker.recognize(filePath);
+    const recognized = await Promise.race([
+      worker.recognize(filePath),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('OCR timeout')), OCR_TIMEOUT_MS);
+      }),
+    ]);
 
-    const parsed = parseReceiptText(text || '');
+    const text = recognized.data?.text || '';
+    const confidence = recognized.data?.confidence;
+    const parsed = parseReceiptText(text);
     return {
       ...parsed,
       confidence: typeof confidence === 'number' ? Math.round(confidence) : null,
@@ -227,14 +247,11 @@ export async function recognizeReceiptImage(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'OCR gagal';
-    return {
-      amount: null,
-      date: null,
-      description: null,
-      rawText: '',
-      confidence: null,
-      supported: true,
-      message: `Gagal membaca struk: ${message}`,
-    };
+    return emptyOcr(
+      true,
+      message === 'OCR timeout'
+        ? 'Scan terlalu lama. Struk tetap tersimpan — isi form manual.'
+        : `Gagal membaca struk: ${message}`
+    );
   }
 }

@@ -4,7 +4,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { FileText, ImagePlus, Loader2, Trash2, ExternalLink, ScanText } from 'lucide-react';
-import { uploadReceipt, uploadReceiptWithScan, type ReceiptOcrSuggestion } from '@/services/upload.service';
+import {
+  uploadReceipt,
+  uploadReceiptWithScan,
+  type ReceiptOcrSuggestion,
+  type UploadReceiptResult,
+} from '@/services/upload.service';
+import { compressImageForUpload } from '@/lib/compressImage';
 import { useAuthenticatedFileUrl } from '@/hooks/useAuthenticatedFileUrl';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
@@ -12,8 +18,18 @@ import { Button } from './Button';
 import { ReceiptPreviewModal } from './ReceiptPreviewModal';
 import { FieldTooltip } from './FieldTooltip';
 
-const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,application/pdf';
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPT = 'image/*,image/jpeg,image/png,image/webp,image/gif,application/pdf';
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB (photos are compressed first)
+
+const ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/pjpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+]);
 
 export interface ReceiptUploadProps {
   value?: string | null;
@@ -28,6 +44,17 @@ export interface ReceiptUploadProps {
 
 function isPdf(url: string) {
   return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf');
+}
+
+function isAllowedReceiptFile(file: File): boolean {
+  const mime = (file.type || '').toLowerCase();
+  if (mime && ALLOWED_MIME.has(mime)) return true;
+  if (mime === 'image/heic' || mime === 'image/heif') return false;
+  // Mobile camera sometimes sends empty MIME
+  if (!mime && /\.(jpe?g|png|webp|gif|pdf)$/i.test(file.name || '')) return true;
+  // accept="image/*" may yield generic image/* on some devices
+  if (mime.startsWith('image/') && !mime.includes('heic') && !mime.includes('heif')) return true;
+  return false;
 }
 
 export function ReceiptUpload({
@@ -60,13 +87,17 @@ export function ReceiptUpload({
   const handleFile = async (file: File | undefined) => {
     if (!file || disabled) return;
 
-    if (!ACCEPT.split(',').includes(file.type)) {
-      toast.error('Format harus gambar (JPG, PNG, WEBP, GIF) atau PDF');
+    if (!isAllowedReceiptFile(file)) {
+      toast.error(
+        file.type?.includes('heic') || file.type?.includes('heif')
+          ? 'Format HEIC belum didukung. Ambil foto lewat kamera di halaman ini, atau simpan sebagai JPG.'
+          : 'Format harus gambar (JPG, PNG, WEBP, GIF) atau PDF'
+      );
       return;
     }
 
     if (file.size > MAX_SIZE) {
-      toast.error('Ukuran file maksimal 5MB');
+      toast.error('Ukuran file maksimal 10MB');
       return;
     }
 
@@ -74,15 +105,37 @@ export function ReceiptUpload({
       URL.revokeObjectURL(localPreview);
     }
 
-    const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
-    setLocalPreview(preview);
     setIsUploading(true);
     setOcrHint(null);
 
+    let preview: string | null = null;
     try {
-      const result = shouldScan
-        ? await uploadReceiptWithScan(file)
-        : await uploadReceipt(file);
+      const prepared = await compressImageForUpload(file);
+      preview = prepared.type.startsWith('image/') ? URL.createObjectURL(prepared) : null;
+      setLocalPreview(preview);
+
+      let result: UploadReceiptResult;
+      if (shouldScan) {
+        try {
+          result = await uploadReceiptWithScan(prepared);
+        } catch {
+          // Scan/OCR may time out on mobile network — still keep the photo
+          result = await uploadReceipt(prepared);
+          result = {
+            ...result,
+            ocr: {
+              amount: null,
+              date: null,
+              description: null,
+              confidence: null,
+              supported: true,
+              message: 'Struk tersimpan. Scan otomatis gagal — isi form manual.',
+            },
+          };
+        }
+      } else {
+        result = await uploadReceipt(prepared);
+      }
 
       onChange(result.url);
 
@@ -96,7 +149,7 @@ export function ReceiptUpload({
         } else if (!result.ocr.supported) {
           toast.success('Struk diunggah. OCR tidak berlaku untuk PDF — isi form manual.');
         } else {
-          toast.success('Struk diunggah. Scan selesai, isi form manual jika perlu.');
+          toast.success('Struk diunggah. Isi form manual jika scan belum lengkap.');
         }
       } else {
         toast.success('Struk berhasil diunggah');
@@ -131,7 +184,7 @@ export function ReceiptUpload({
         <span>
           Struk / Bukti <span className="font-medium text-muted">(opsional)</span>
         </span>
-        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 5MB). Untuk gambar, sistem bisa scan OCR dan mengisi nominal/tanggal/keterangan secara otomatis." />
+        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 10MB). Foto dari HP akan dikompres otomatis. Untuk gambar, sistem bisa scan OCR dan mengisi nominal/tanggal/keterangan." />
       </label>
 
       <input
@@ -168,11 +221,11 @@ export function ReceiptUpload({
                   ? 'Mengunggah & memindai...'
                   : 'Mengunggah...'
                 : shouldScan
-                  ? 'Unggah & scan struk'
+                  ? 'Foto / unggah & scan struk'
                   : 'Unggah gambar atau PDF'}
             </p>
             <p className="mt-1 text-xs text-muted">
-              JPG, PNG, WEBP, GIF, PDF · maks. 5MB
+              JPG, PNG, WEBP, GIF, PDF · maks. 10MB
               {shouldScan ? ' · OCR otomatis untuk gambar' : ''}
             </p>
           </div>

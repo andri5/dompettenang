@@ -62,7 +62,8 @@ export const config = {
 
   upload: {
     dir: process.env.UPLOAD_DIR || './uploads',
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
+    // 10MB — phone camera JPEGs are often larger before client-side compress
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10),
   },
 
   // Comma-separated origins supported, e.g. https://a.id,https://www.a.id

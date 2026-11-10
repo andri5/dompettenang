@@ -12,7 +12,16 @@
 	}
 
 	handle /api/* {
-		reverse_proxy api:3001
+		request_body {
+			max_size 12MB
+		}
+		reverse_proxy api:3001 {
+			transport http {
+				read_timeout 5m
+				write_timeout 5m
+				response_header_timeout 5m
+			}
+		}
 	}
 
 	# Static APK / artifacts (mounted at /srv/downloads)
@@ -48,7 +57,16 @@ staging.{$DOMAIN} {
 	}
 
 	handle /api/* {
-		reverse_proxy api-staging:3001
+		request_body {
+			max_size 12MB
+		}
+		reverse_proxy api-staging:3001 {
+			transport http {
+				read_timeout 5m
+				write_timeout 5m
+				response_header_timeout 5m
+			}
+		}
 	}
 
 	handle {

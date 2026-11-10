@@ -59,7 +59,8 @@ export class UploadController {
       }
 
       const url = `/uploads/receipts/${file.filename}`;
-      const ocr = await recognizeReceiptImage(file.path, file.mimetype);
+      // OCR must never block keeping the uploaded file
+      const ocr = await recognizeReceiptImage(file.path, file.mimetype || 'image/jpeg');
 
       sendCreated(
         res,
@@ -81,6 +82,30 @@ export class UploadController {
         ocr.message || 'Receipt uploaded and scanned'
       );
     } catch (error) {
+      // If multer already stored the file, still try to return URL when possible
+      const file = req.file;
+      if (file?.filename) {
+        sendCreated(
+          res,
+          {
+            url: `/uploads/receipts/${file.filename}`,
+            filename: file.filename,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            ocr: {
+              amount: null,
+              date: null,
+              description: null,
+              confidence: null,
+              supported: true,
+              message: 'Struk tersimpan. Scan gagal — isi form manual.',
+            },
+          },
+          'Receipt uploaded (OCR skipped)'
+        );
+        return;
+      }
       const message = error instanceof Error ? error.message : 'Failed to upload/scan receipt';
       sendError(res, message, 400, 'UPLOAD_SCAN_FAILED');
     }
