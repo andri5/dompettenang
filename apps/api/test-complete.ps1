@@ -1,6 +1,6 @@
 # Complete API Test Script
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host " DuitDiary Complete API Test" -ForegroundColor Cyan
+Write-Host " Dompet Tenang Complete API Test" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 $base = "http://localhost:3000/api/v1"

@@ -1,5 +1,5 @@
 /**
- * Ensure shared default categories exist (idempotent).
+ * Ensure shared default categories exist (idempotent + race-safe).
  * Production DBs created via `prisma db push` often skip `db seed`.
  */
 
@@ -27,6 +27,69 @@ const INCOME_DEFAULTS = [
   { name: 'Lainnya', icon: 'sparkles', color: '#10B981' },
 ] as const;
 
+/** Postgres advisory lock key for default-category bootstrap */
+const DEFAULT_CATEGORY_LOCK = 834_201;
+
+async function ensureDefaultCategoryUniqueIndex(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS categories_default_type_name_uidx
+    ON categories (type, name)
+    WHERE user_id IS NULL AND is_default = true
+  `);
+}
+
+/**
+ * Keep one shared default per (type, name); reassign FKs then delete extras.
+ */
+export async function dedupeDefaultCategories(): Promise<number> {
+  const cats = await prisma.category.findMany({
+    where: { userId: null, isDefault: true },
+    orderBy: { createdAt: 'asc' },
+    include: {
+      _count: { select: { expenses: true } },
+    },
+  });
+
+  const groups = new Map<string, typeof cats>();
+  for (const c of cats) {
+    const key = `${c.type}|${c.name}`;
+    const list = groups.get(key) ?? [];
+    list.push(c);
+    groups.set(key, list);
+  }
+
+  let deleted = 0;
+  for (const rows of groups.values()) {
+    if (rows.length < 2) continue;
+
+    rows.sort((a, b) => {
+      if (b._count.expenses !== a._count.expenses) {
+        return b._count.expenses - a._count.expenses;
+      }
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+
+    const keep = rows[0];
+    for (const dup of rows.slice(1)) {
+      await prisma.$transaction([
+        prisma.expense.updateMany({
+          where: { categoryId: dup.id },
+          data: { categoryId: keep.id },
+        }),
+        prisma.categoryBudget.deleteMany({ where: { categoryId: dup.id } }),
+        prisma.recurringTransaction.updateMany({
+          where: { categoryId: dup.id },
+          data: { categoryId: keep.id },
+        }),
+        prisma.category.delete({ where: { id: dup.id } }),
+      ]);
+      deleted += 1;
+    }
+  }
+
+  return deleted;
+}
+
 async function upsertDefault(
   type: 'EXPENSE' | 'INCOME',
   category: { name: string; icon: string; color: string }
@@ -38,17 +101,22 @@ async function upsertDefault(
       userId: null,
       type,
     },
+    orderBy: { createdAt: 'asc' },
   });
 
   if (!existing) {
-    await prisma.category.create({
-      data: {
-        ...category,
-        type,
-        isDefault: true,
-        userId: null,
-      },
-    });
+    try {
+      await prisma.category.create({
+        data: {
+          ...category,
+          type,
+          isDefault: true,
+          userId: null,
+        },
+      });
+    } catch {
+      // Unique index race: another process inserted the same default.
+    }
     return;
   }
 
@@ -61,10 +129,19 @@ async function upsertDefault(
 }
 
 export async function ensureDefaultCategories(): Promise<void> {
-  for (const category of EXPENSE_DEFAULTS) {
-    await upsertDefault('EXPENSE', category);
-  }
-  for (const category of INCOME_DEFAULTS) {
-    await upsertDefault('INCOME', category);
+  await prisma.$executeRaw`SELECT pg_advisory_lock(${DEFAULT_CATEGORY_LOCK})`;
+  try {
+    // Dedupe first — unique index cannot be created while duplicates remain.
+    await dedupeDefaultCategories();
+    await ensureDefaultCategoryUniqueIndex();
+
+    for (const category of EXPENSE_DEFAULTS) {
+      await upsertDefault('EXPENSE', category);
+    }
+    for (const category of INCOME_DEFAULTS) {
+      await upsertDefault('INCOME', category);
+    }
+  } finally {
+    await prisma.$executeRaw`SELECT pg_advisory_unlock(${DEFAULT_CATEGORY_LOCK})`;
   }
 }
