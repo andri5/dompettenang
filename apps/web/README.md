@@ -12,10 +12,22 @@ npm run web
 
 App lokal: http://127.0.0.1:5173/ — API lewat `VITE_API_URL=/api/v1`.
 
-Gratis di web: daftar singkat (nama, email, password), pencarian transaksi, saldo berjalan, pengingat catatan harian, dan satu kartu **Pemberitahuan** di dashboard.
+### Fitur utama (web)
 
-Halaman publik: `/cara-catat-pengeluaran-bulanan` (panduan + CTA daftar).
+**Gratis**
 
-Halaman Pro: `/upgrade`, `/insight`, dashboard (peringatan budget 80%/100% + insight bulanan satu kalimat; tanpa kartu Pemberitahuan).
+- Daftar singkat (nama, email, password), pencarian transaksi, saldo berjalan, pengingat catatan harian
+- Satu kartu **Pemberitahuan** di dashboard (bukan insight Pro)
+- **Struk + OCR** — foto/PDF; gambar dikompres di HP, unggah dulu lalu OCR mengisi nominal/tanggal/keterangan bila berhasil
+- Halaman bantuan `/help`
+- Halaman publik SEO `/cara-catat-pengeluaran-bulanan` (panduan + CTA daftar)
 
-Admin: buka dari menu **Lainnya** di HP. Daftar user/activity dan form edit/Pro/legal disusun vertikal di layar sempit.
+**Pro**
+
+- `/upgrade`, `/insight`, dashboard (peringatan budget 80%/100% + insight bulanan satu kalimat; tanpa kartu Pemberitahuan)
+- Tabungan, transaksi otomatis, export PDF / bagikan ringkasan
+
+**Admin**
+
+- Buka dari menu **Lainnya** di HP
+- Daftar user/activity/feedback dan form edit/Pro/legal disusun vertikal di layar sempit
