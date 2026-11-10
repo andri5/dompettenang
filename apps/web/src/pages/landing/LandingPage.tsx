@@ -162,7 +162,7 @@ export function LandingPage() {
       '@type': 'Organization',
       name: SITE_NAME,
       url: SITE_URL,
-      logo: absoluteUrl('/favicon.svg'),
+      logo: absoluteUrl('/icon-512.png'),
       description:
         'Aplikasi pencatatan keuangan pribadi untuk mengelola pemasukan, pengeluaran, budget, dan target tabungan.',
     },
