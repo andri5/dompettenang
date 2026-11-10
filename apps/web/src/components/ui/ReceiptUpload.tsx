@@ -1,10 +1,10 @@
 /**
- * Dompet Tenang - Receipt file upload (image / PDF)
+ * Dompet Tenang - Receipt file upload (image / PDF) + optional OCR fill
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { FileText, ImagePlus, Loader2, Trash2, ExternalLink } from 'lucide-react';
-import { uploadReceipt } from '@/services/upload.service';
+import { FileText, ImagePlus, Loader2, Trash2, ExternalLink, ScanText } from 'lucide-react';
+import { uploadReceipt, uploadReceiptWithScan, type ReceiptOcrSuggestion } from '@/services/upload.service';
 import { useAuthenticatedFileUrl } from '@/hooks/useAuthenticatedFileUrl';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,10 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 export interface ReceiptUploadProps {
   value?: string | null;
   onChange: (url: string | null) => void;
+  /** Called when OCR finds amount/date/description suggestions */
+  onOcrResult?: (ocr: ReceiptOcrSuggestion) => void;
+  /** Prefer scan endpoint (upload + OCR). Default true when onOcrResult set. */
+  enableOcr?: boolean;
   error?: string;
   disabled?: boolean;
 }
@@ -26,13 +30,22 @@ function isPdf(url: string) {
   return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf');
 }
 
-export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploadProps) {
+export function ReceiptUpload({
+  value,
+  onChange,
+  onOcrResult,
+  enableOcr,
+  error,
+  disabled,
+}: ReceiptUploadProps) {
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [ocrHint, setOcrHint] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const { url: remotePreview } = useAuthenticatedFileUrl(localPreview ? null : value);
+  const shouldScan = enableOcr ?? Boolean(onOcrResult);
 
   const displayUrl = localPreview || remotePreview;
 
@@ -64,11 +77,30 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
     const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
     setLocalPreview(preview);
     setIsUploading(true);
+    setOcrHint(null);
 
     try {
-      const result = await uploadReceipt(file);
+      const result = shouldScan
+        ? await uploadReceiptWithScan(file)
+        : await uploadReceipt(file);
+
       onChange(result.url);
-      toast.success('Struk berhasil diunggah');
+
+      if (result.ocr) {
+        onOcrResult?.(result.ocr);
+        if (result.ocr.message) {
+          setOcrHint(result.ocr.message);
+        }
+        if (result.ocr.amount || result.ocr.date || result.ocr.description) {
+          toast.success('Struk diunggah. Field diisi dari hasil scan (bisa diubah).');
+        } else if (!result.ocr.supported) {
+          toast.success('Struk diunggah. OCR tidak berlaku untuk PDF — isi form manual.');
+        } else {
+          toast.success('Struk diunggah. Scan selesai, isi form manual jika perlu.');
+        }
+      } else {
+        toast.success('Struk berhasil diunggah');
+      }
     } catch (err: any) {
       const message =
         err?.response?.data?.message || 'Gagal mengunggah struk. Coba lagi.';
@@ -76,6 +108,7 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
       if (preview) URL.revokeObjectURL(preview);
       setLocalPreview(null);
       onChange(null);
+      setOcrHint(null);
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -87,6 +120,7 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
       URL.revokeObjectURL(localPreview);
     }
     setLocalPreview(null);
+    setOcrHint(null);
     onChange(null);
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -97,7 +131,7 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
         <span>
           Struk / Bukti <span className="font-medium text-muted">(opsional)</span>
         </span>
-        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 5MB). Bisa di-preview dari daftar transaksi lewat label Struk." />
+        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 5MB). Untuk gambar, sistem bisa scan OCR dan mengisi nominal/tanggal/keterangan secara otomatis." />
       </label>
 
       <input
@@ -122,14 +156,25 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
         >
           {isUploading ? (
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          ) : shouldScan ? (
+            <ScanText className="h-8 w-8 text-accent" />
           ) : (
             <ImagePlus className="h-8 w-8 text-accent" />
           )}
           <div>
             <p className="text-sm font-semibold text-ink">
-              {isUploading ? 'Mengunggah...' : 'Unggah gambar atau PDF'}
+              {isUploading
+                ? shouldScan
+                  ? 'Mengunggah & memindai...'
+                  : 'Mengunggah...'
+                : shouldScan
+                  ? 'Unggah & scan struk'
+                  : 'Unggah gambar atau PDF'}
             </p>
-            <p className="mt-1 text-xs text-muted">JPG, PNG, WEBP, GIF, PDF · maks. 5MB</p>
+            <p className="mt-1 text-xs text-muted">
+              JPG, PNG, WEBP, GIF, PDF · maks. 5MB
+              {shouldScan ? ' · OCR otomatis untuk gambar' : ''}
+            </p>
           </div>
         </button>
       ) : (
@@ -159,11 +204,16 @@ export function ReceiptUpload({ value, onChange, error, disabled }: ReceiptUploa
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
               <p className="truncate text-sm font-semibold text-ink">
                 {isUploading
-                  ? 'Mengunggah struk...'
+                  ? shouldScan
+                    ? 'Memindai struk...'
+                    : 'Mengunggah struk...'
                   : value && isPdf(value)
                     ? 'Dokumen PDF'
                     : 'Gambar struk'}
               </p>
+              {ocrHint && !isUploading && (
+                <p className="text-xs text-muted">{ocrHint}</p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {displayUrl && !isUploading && (
                   <button

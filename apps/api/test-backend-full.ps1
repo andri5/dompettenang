@@ -1,6 +1,6 @@
 # Complete Backend API Test
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host " DuitDiary Backend API Test" -ForegroundColor Cyan
+Write-Host " Dompet Tenang Backend API Test" -ForegroundColor Cyan
 Write-Host " $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
 

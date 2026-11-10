@@ -251,6 +251,21 @@ export function ExpenseFormPage() {
                 onChange={(url) =>
                   setValue('receiptUrl', url, { shouldDirty: true, shouldValidate: true })
                 }
+                onOcrResult={(ocr) => {
+                  if (ocr.amount != null && ocr.amount > 0) {
+                    setValue('amount', ocr.amount, { shouldDirty: true, shouldValidate: true });
+                    setAmountDisplay(formatAmountInput(String(Math.round(ocr.amount))));
+                  }
+                  if (ocr.date) {
+                    setValue('date', ocr.date, { shouldDirty: true, shouldValidate: true });
+                  }
+                  if (ocr.description) {
+                    setValue('description', ocr.description, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }
+                }}
                 error={errors.receiptUrl?.message}
                 disabled={isSubmitting}
               />
