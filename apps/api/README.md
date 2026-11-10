@@ -37,8 +37,18 @@
 | **Zod** | 3.x | Schema validation |
 | **JWT** | - | Authentication tokens |
 | **bcryptjs** | - | Password hashing |
+| **Multer** | - | Receipt / avatar / proof uploads |
+| **Tesseract.js** | 7.x | OCR struk (isi nominal/tanggal/keterangan dari gambar) |
+| **Nodemailer** | - | Reset password + notifikasi Pro |
 
 ---
+
+## Fitur API terkait produk
+
+- Auth singkat, transaksi, kategori (seed default anti-dobel), budget, dashboard + monthly insight (Pro)
+- Upload struk: `POST /api/v1/uploads/receipt` dan `POST /api/v1/uploads/receipt/scan` (OCR gambar; PDF upload-only)
+- Billing Pro manual (bukti transfer + email admin/user), admin flags/legal/feedback
+- Cadangan harian Postgres + uploads (lihat docs root)
 
 ## 🚀 Getting Started
 
