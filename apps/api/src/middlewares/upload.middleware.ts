@@ -19,12 +19,18 @@ for (const dir of [receiptsDir, avatarsDir, proofsDir]) {
 
 const IMAGE_MIME = new Set([
   'image/jpeg',
+  'image/jpg',
+  'image/pjpeg',
   'image/png',
   'image/webp',
   'image/gif',
 ]);
 
 const RECEIPT_MIME = new Set([...IMAGE_MIME, 'application/pdf']);
+
+function looksLikeReceiptName(name: string): boolean {
+  return /\.(jpe?g|png|webp|gif|pdf)$/i.test(name || '');
+}
 
 function makeStorage(destination: string) {
   return multer.diskStorage({
@@ -53,7 +59,13 @@ export const receiptUpload = multer({
     fileSize: config.upload.maxFileSize,
   },
   fileFilter: (_req, file, cb) => {
-    if (!RECEIPT_MIME.has(file.mimetype)) {
+    const mime = (file.mimetype || '').toLowerCase();
+    // Some mobile browsers send empty MIME for camera captures
+    if (!mime && looksLikeReceiptName(file.originalname)) {
+      cb(null, true);
+      return;
+    }
+    if (!RECEIPT_MIME.has(mime)) {
       cb(new Error('Hanya file gambar (JPG, PNG, WEBP, GIF) atau PDF yang diizinkan'));
       return;
     }

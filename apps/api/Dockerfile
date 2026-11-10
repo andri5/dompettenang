@@ -38,7 +38,9 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x ./docker-entrypoint.sh \
   && mkdir -p /app/uploads/avatars /app/uploads/receipts /app/uploads/proofs \
-  && chown -R app:app /app
+  && mkdir -p /tmp/tesseract-cache \
+  && chown -R app:app /app /tmp/tesseract-cache \
+  && chmod -R u+rwX /tmp/tesseract-cache
 
 # Start as root so entrypoint can chown the uploads volume, then drop to `app`.
 USER root

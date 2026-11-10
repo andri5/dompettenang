@@ -1,8 +1,8 @@
-# Test DuitDiary API
+# Test Dompet Tenang API
 # Run this script in PowerShell while server is running in separate terminal
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host " DuitDiary API Test Script" -ForegroundColor Cyan
+Write-Host " Dompet Tenang API Test Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
