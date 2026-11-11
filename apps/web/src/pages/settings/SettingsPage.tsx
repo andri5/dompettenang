@@ -19,6 +19,7 @@ import {
   Send,
   Star,
   Crown,
+  ChevronDown,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
@@ -34,11 +35,6 @@ import { authErrorMessage, AUTH_SAFE } from '@/lib/authErrors';
 import { GENDER_OPTIONS, type Gender } from '@/lib/gender';
 import { hasProAccess } from '@/lib/plan';
 import { feedbackSchema, firstZodMessage } from '@/lib/validations';
-
-const CURRENCIES = [
-  { code: 'IDR' as const, label: 'Rupiah', hint: 'Indonesia', symbol: 'Rp' },
-  { code: 'USD' as const, label: 'US Dollar', hint: 'United States', symbol: '$' },
-] as const;
 
 const themePreview: Record<AppTheme, { from: string; to: string; accent: string }> = {
   neo: { from: '#f3f6f9', to: '#ffffff', accent: '#0f9b8e' },
@@ -57,7 +53,6 @@ export function SettingsPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   const [name, setName] = useState(user?.name || '');
-  const [currency, setCurrency] = useState(user?.currency || 'IDR');
   const [gender, setGender] = useState<Gender | ''>(user?.gender || '');
   const [birthDate, setBirthDate] = useState(user?.birthDate || '');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -69,6 +64,7 @@ export function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState<boolean | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackRating, setFeedbackRating] = useState(0);
@@ -78,8 +74,6 @@ export function SettingsPage() {
   useEffect(() => {
     if (user) {
       setName(user.name);
-      const next = (user.currency || 'IDR').toUpperCase().slice(0, 3);
-      setCurrency(next === 'USD' ? 'USD' : 'IDR');
       setGender(user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : '');
       setBirthDate(user.birthDate || '');
     }
@@ -163,7 +157,6 @@ export function SettingsPage() {
     try {
       const updated = await updateProfile({
         name: name.trim(),
-        currency: currency === 'USD' ? 'USD' : 'IDR',
         ...(gender ? { gender } : {}),
         ...(birthDate ? { birthDate } : {}),
       });
@@ -306,7 +299,7 @@ export function SettingsPage() {
           </div>
           <div className="flex justify-between py-1">
             <span className="text-muted">Versi</span>
-            <span className="font-semibold text-ink">1.0.0</span>
+            <span className="font-semibold text-ink">1.1.0</span>
           </div>
         </div>
       </div>
@@ -314,81 +307,104 @@ export function SettingsPage() {
   );
 
   const passwordCard = (
-    <Card padding="md">
-      <CardHeader>
-        <CardTitle>Ganti Password</CardTitle>
-      </CardHeader>
-      <form onSubmit={handleChangePassword} className="space-y-3">
-        <Input
-          label="Password saat ini"
-          type={showCurrentPassword ? 'text' : 'password'}
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          leftIcon={<Lock className="h-4 w-4" />}
-          rightIcon={
-            <button
-              type="button"
-              className="text-muted transition hover:text-ink"
-              aria-label={showCurrentPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              onClick={() => setShowCurrentPassword((v) => !v)}
-            >
-              {showCurrentPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          }
-          autoComplete="current-password"
+    <Card padding="none" className="overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setPasswordOpen((v) => !v)}
+        className="flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-mist/50 sm:px-5"
+        aria-expanded={passwordOpen}
+        aria-controls="settings-change-password"
+      >
+        <div className="min-w-0 flex-1">
+          <CardTitle>Ganti Password</CardTitle>
+          <p className="mt-0.5 text-sm text-muted">
+            {passwordOpen ? 'Sembunyikan form' : 'Ketuk untuk mengubah password'}
+          </p>
+        </div>
+        <ChevronDown
+          className={cn(
+            'h-5 w-5 flex-shrink-0 text-muted transition',
+            passwordOpen && 'rotate-180'
+          )}
         />
-        <Input
-          label="Password baru"
-          type={showNewPassword ? 'text' : 'password'}
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          leftIcon={<Lock className="h-4 w-4" />}
-          rightIcon={
-            <button
-              type="button"
-              className="text-muted transition hover:text-ink"
-              aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              onClick={() => setShowNewPassword((v) => !v)}
-            >
-              {showNewPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          }
-          autoComplete="new-password"
-        />
-        <Input
-          label="Konfirmasi password baru"
-          type={showConfirmPassword ? 'text' : 'password'}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          leftIcon={<Lock className="h-4 w-4" />}
-          rightIcon={
-            <button
-              type="button"
-              className="text-muted transition hover:text-ink"
-              aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              onClick={() => setShowConfirmPassword((v) => !v)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          }
-          autoComplete="new-password"
-        />
-        <Button type="submit" variant="outline" className="w-full" isLoading={savingPassword}>
-          Ubah Password
-        </Button>
-      </form>
+      </button>
+      {passwordOpen ? (
+        <form
+          id="settings-change-password"
+          onSubmit={handleChangePassword}
+          className="space-y-3 border-t border-line px-4 pb-4 pt-3 sm:px-5 sm:pb-5"
+        >
+          <Input
+            label="Password saat ini"
+            type={showCurrentPassword ? 'text' : 'password'}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            leftIcon={<Lock className="h-4 w-4" />}
+            rightIcon={
+              <button
+                type="button"
+                className="text-muted transition hover:text-ink"
+                aria-label={showCurrentPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                onClick={() => setShowCurrentPassword((v) => !v)}
+              >
+                {showCurrentPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
+            autoComplete="current-password"
+          />
+          <Input
+            label="Password baru"
+            type={showNewPassword ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            leftIcon={<Lock className="h-4 w-4" />}
+            rightIcon={
+              <button
+                type="button"
+                className="text-muted transition hover:text-ink"
+                aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                onClick={() => setShowNewPassword((v) => !v)}
+              >
+                {showNewPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
+            autoComplete="new-password"
+          />
+          <Input
+            label="Konfirmasi password baru"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            leftIcon={<Lock className="h-4 w-4" />}
+            rightIcon={
+              <button
+                type="button"
+                className="text-muted transition hover:text-ink"
+                aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                onClick={() => setShowConfirmPassword((v) => !v)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
+            autoComplete="new-password"
+          />
+          <Button type="submit" variant="outline" className="w-full" isLoading={savingPassword}>
+            Ubah Password
+          </Button>
+        </form>
+      ) : null}
     </Card>
   );
 
@@ -552,40 +568,6 @@ export function SettingsPage() {
                   <div className="min-w-0">
                     <p className="text-sm text-muted">Email</p>
                     <p className="truncate font-semibold text-ink">{user?.email}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium text-ink">Mata uang</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CURRENCIES.map((item) => {
-                      const active = currency === item.code;
-                      return (
-                        <button
-                          key={item.code}
-                          type="button"
-                          onClick={() => setCurrency(item.code)}
-                          className={cn(
-                            'rounded-2xl border px-3 py-3 text-left transition',
-                            active
-                              ? 'border-accent bg-accent-soft shadow-sm shadow-accent/15'
-                              : 'border-line bg-surface text-muted hover:border-accent/40'
-                          )}
-                        >
-                          <p
-                            className={cn(
-                              'font-display text-lg font-bold',
-                              active ? 'text-accent' : 'text-ink'
-                            )}
-                          >
-                            {item.symbol} {item.code}
-                          </p>
-                          <p className={cn('text-xs font-semibold', active ? 'text-accent' : 'text-muted')}>
-                            {item.label}
-                          </p>
-                          <p className="text-[11px] text-muted">{item.hint}</p>
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl bg-mist/70 p-3.5">
