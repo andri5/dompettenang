@@ -41,6 +41,8 @@ import { getCurrentUser } from '@/services/auth.service';
 import { hasProAccess } from '@/lib/plan';
 import { shouldOfferProWelcome } from '@/lib/proWelcome';
 import { ProWelcomeTour } from '@/components/pro/ProWelcomeTour';
+import { shouldOfferBirthday } from '@/lib/birthdayWelcome';
+import { BirthdayPopup } from '@/components/birthday/BirthdayPopup';
 import { DailyLogReminder } from '@/components/layout/DailyLogReminder';
 
 interface MainLayoutProps {
@@ -192,6 +194,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [mobileTransactionOpen, setMobileTransactionOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [proWelcomeOpen, setProWelcomeOpen] = useState(false);
+  const [birthdayOpen, setBirthdayOpen] = useState(false);
   useWatchProPurchaseRejection();
 
   const refreshUserAndMaybeOfferProWelcome = useCallback(async () => {
@@ -212,6 +215,15 @@ export function MainLayout({ children }: MainLayoutProps) {
       setProWelcomeOpen(true);
     }
   }, [user?.id, user?.plan]);
+
+  // Birthday after Pro welcome so two modals never stack.
+  useEffect(() => {
+    if (!user?.id || proWelcomeOpen) return;
+    if (shouldOfferProWelcome(user)) return;
+    if (shouldOfferBirthday(user)) {
+      setBirthdayOpen(true);
+    }
+  }, [user?.id, user?.birthDate, user?.plan, proWelcomeOpen]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -824,6 +836,12 @@ export function MainLayout({ children }: MainLayoutProps) {
         userId={user?.id}
         userName={user?.name}
         onClose={() => setProWelcomeOpen(false)}
+      />
+      <BirthdayPopup
+        isOpen={birthdayOpen}
+        userId={user?.id}
+        userName={user?.name}
+        onClose={() => setBirthdayOpen(false)}
       />
     </div>
   );

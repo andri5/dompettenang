@@ -5,7 +5,7 @@
  * Express.js server initialization and configuration.
  * 
  * @author Dompet Tenang Team
- * @version 1.0.0
+ * @version 1.1.0
  * @see README.md for documentation
  * ============================================
  */
@@ -110,7 +110,7 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: '🚀 Dompet Tenang API — Catat keuanganmu dengan tenang',
-    version: '1.0.0',
+    version: '1.1.0',
     docs: '/api/v1/health',
   });
 });

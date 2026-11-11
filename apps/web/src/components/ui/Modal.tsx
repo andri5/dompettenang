@@ -71,7 +71,7 @@ export function Modal({
                       )}
                       <h2
                         id="modal-title"
-                        className="truncate font-display text-lg font-bold tracking-[-0.03em] text-ink"
+                        className="min-w-0 font-display text-base font-bold leading-snug tracking-[-0.03em] text-ink line-clamp-2 sm:truncate sm:text-lg"
                       >
                         {title}
                       </h2>
