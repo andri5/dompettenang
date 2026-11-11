@@ -213,12 +213,9 @@ const appRoutes = [
     ),
   },
   {
+    // Public — linked from landing footer; logged-in users still see MainLayout inside the page
     path: ROUTES.HELP,
-    element: (
-      <ProtectedRoute>
-        <HelpPage />
-      </ProtectedRoute>
-    ),
+    element: <HelpPage />,
   },
   {
     path: ROUTES.MAINTENANCE,

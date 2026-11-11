@@ -1,5 +1,6 @@
 /**
  * Dompet Tenang - Help / Bantuan Page
+ * Public for landing visitors; MainLayout when logged in.
  */
 
 import { useState } from 'react';
@@ -22,10 +23,12 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MainLayout, PageHeader, PageTransition } from '@/components/layout';
+import { AuthLayout, MainLayout, PageHeader, PageTransition } from '@/components/layout';
+import { SEO } from '@/components/SEO';
 import { Card, Button } from '@/components/ui';
 import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores';
 
 interface HelpSection {
   id: string;
@@ -198,9 +201,27 @@ const helpSections: HelpSection[] = [
   },
 ];
 
-function HelpAccordion({ section, defaultOpen }: { section: HelpSection; defaultOpen?: boolean }) {
+function HelpAccordion({
+  section,
+  defaultOpen,
+  isAuthenticated,
+}: {
+  section: HelpSection;
+  defaultOpen?: boolean;
+  isAuthenticated: boolean;
+}) {
   const [open, setOpen] = useState(!!defaultOpen);
   const Icon = section.icon;
+  const linkTo = section.link
+    ? isAuthenticated
+      ? section.link.to
+      : ROUTES.LOGIN
+    : null;
+  const linkLabel = section.link
+    ? isAuthenticated
+      ? section.link.label
+      : 'Masuk untuk membuka'
+    : null;
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -254,14 +275,14 @@ function HelpAccordion({ section, defaultOpen }: { section: HelpSection; default
                 </div>
               )}
 
-              {section.link && (
-                <Link to={section.link.to} className="inline-flex">
+              {linkTo && linkLabel && (
+                <Link to={linkTo} className="inline-flex">
                   <Button
                     size="sm"
                     variant="outline"
                     rightIcon={<ArrowRight className="h-4 w-4" />}
                   >
-                    {section.link.label}
+                    {linkLabel}
                   </Button>
                 </Link>
               )}
@@ -273,49 +294,100 @@ function HelpAccordion({ section, defaultOpen }: { section: HelpSection; default
   );
 }
 
+function HelpContent({ isAuthenticated }: { isAuthenticated: boolean }) {
+  return (
+    <>
+      <PageHeader
+        eyebrow="Panduan"
+        title="Bantuan"
+        description="Penjelasan singkat tiap fitur penting di Dompet Tenang agar kamu lebih cepat mahir mencatat keuangan."
+      />
+
+      <Card padding="md" className="mb-5 border-accent/20 bg-gradient-to-br from-accent-soft/50 to-surface">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-display text-lg font-bold text-ink">Cara cepat mulai</p>
+            <p className="mt-1 text-sm text-muted">
+              {isAuthenticated
+                ? 'Catat pemasukan → catat pengeluaran → cek Dashboard. Ulangi setiap hari.'
+                : 'Daftar gratis, lalu catat pemasukan dan pengeluaran setiap hari.'}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {isAuthenticated ? (
+              <>
+                <Link to={ROUTES.INCOME_NEW}>
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    + Pemasukan
+                  </Button>
+                </Link>
+                <Link to={ROUTES.EXPENSE_NEW}>
+                  <Button size="sm" variant="gradient" className="w-full sm:w-auto">
+                    + Pengeluaran
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to={ROUTES.LOGIN}>
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    Masuk
+                  </Button>
+                </Link>
+                <Link to={ROUTES.REGISTER}>
+                  <Button size="sm" variant="gradient" className="w-full sm:w-auto">
+                    Daftar gratis
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <div className="space-y-3">
+        {helpSections.map((section, index) => (
+          <HelpAccordion
+            key={section.id}
+            section={section}
+            defaultOpen={index === 0}
+            isAuthenticated={isAuthenticated}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function HelpPage() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   return (
     <PageTransition>
-      <MainLayout>
-        <PageHeader
-          eyebrow="Panduan"
+      <SEO
+        title="Bantuan"
+        description="Panduan fitur Dompet Tenang: transaksi, budget, struk OCR, insight Pro, dan cara mulai mencatat keuangan."
+        canonical="/help"
+      />
+      {isAuthenticated ? (
+        <MainLayout>
+          <HelpContent isAuthenticated />
+        </MainLayout>
+      ) : (
+        <AuthLayout
           title="Bantuan"
-          description="Penjelasan singkat tiap fitur penting di Dompet Tenang agar kamu lebih cepat mahir mencatat keuangan."
-        />
-
-        <Card padding="md" className="mb-5 border-accent/20 bg-gradient-to-br from-accent-soft/50 to-surface">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-display text-lg font-bold text-ink">Cara cepat mulai</p>
-              <p className="mt-1 text-sm text-muted">
-                Catat pemasukan → catat pengeluaran → cek Dashboard. Ulangi setiap hari.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link to={ROUTES.INCOME_NEW}>
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                  + Pemasukan
-                </Button>
+          subtitle="Panduan singkat memakai Dompet Tenang"
+        >
+          <div className="max-h-[75vh] space-y-4 overflow-y-auto pr-1">
+            <HelpContent isAuthenticated={false} />
+            <p className="pt-2 text-center text-xs text-muted">
+              <Link to={ROUTES.HOME} className="font-semibold text-accent hover:underline">
+                ← Kembali ke beranda
               </Link>
-              <Link to={ROUTES.EXPENSE_NEW}>
-                <Button size="sm" variant="gradient" className="w-full sm:w-auto">
-                  + Pengeluaran
-                </Button>
-              </Link>
-            </div>
+            </p>
           </div>
-        </Card>
-
-        <div className="space-y-3">
-          {helpSections.map((section, index) => (
-            <HelpAccordion
-              key={section.id}
-              section={section}
-              defaultOpen={index === 0}
-            />
-          ))}
-        </div>
-      </MainLayout>
+        </AuthLayout>
+      )}
     </PageTransition>
   );
 }
