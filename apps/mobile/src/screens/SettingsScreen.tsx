@@ -577,7 +577,7 @@ export function SettingsScreen({ navigation }: Props) {
               </View>
               <View style={styles.aboutRow}>
                 <Text style={styles.aboutKey}>Versi</Text>
-                <Text style={styles.aboutVal}>1.0.0</Text>
+                <Text style={styles.aboutVal}>1.1.0</Text>
               </View>
             </View>
           </View>
