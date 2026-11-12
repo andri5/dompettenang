@@ -1,5 +1,7 @@
 # Dompet Tenang — Catat Keuangan
 
+**Versi aplikasi: 1.1.0**
+
 Aplikasi pencatatan keuangan pribadi (pemasukan & pengeluaran). Gratis untuk catat, budget, dan export Excel. **Pro Lifetime** menambah peringatan budget, insight bulanan, tabungan, transaksi otomatis, PDF, dan bagikan ringkasan.
 
 ## Project Structure
@@ -16,16 +18,17 @@ Monorepo:
 
 ### Gratis
 
-- **Auth** — Daftar singkat (nama, email, password), login, logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile). Gender dan tanggal lahir opsional di profil
+- **Auth** — Daftar/masuk manual (nama, email, password), logout, lupa/reset password (SMTP + HttpOnly cookie di web; Bearer di mobile). Gender dan tanggal lahir opsional di profil. *(Belum ada login sosial / Google SSO.)*
 - **Transaksi** — Pemasukan & pengeluaran, pencarian catatan atau nama kategori, dan saldo berjalan di tiap baris
 - **Pengingat harian** — Banner jika hari ini belum ada catatan; notifikasi lokal setelah pukul 18.00 bila diizinkan
 - **Kategori** — Default + kustom (ikon/warna; pemasukan vs pengeluaran). Seed kategori default idempotent (anti-dobel)
 - **Dashboard** — Saldo, grafik, breakdown kategori, plus satu kartu **Pemberitahuan** singkat (bukan label AI)
 - **Budget** — Limit pengeluaran bulanan
-- **Struk + OCR** — Unggah gambar/PDF (akses privat ber-auth). Foto dari HP dikompres otomatis; unggah diprioritaskan agar tidak gagal di mobile. Untuk gambar, OCR (Tesseract) bisa mengisi **nominal, tanggal, dan keterangan** secara otomatis (hasil bisa diubah; PDF belum di-OCR)
+- **Struk** — Unggah gambar/PDF bukti transaksi (akses privat ber-auth, maks. 10MB). Foto dari HP dikompres otomatis. Nominal/tanggal diisi manual — **OCR/scan otomatis sudah dihapus**
 - **Export Excel** — Unduh ringkasan + daftar transaksi
-- **Profil** — Foto, gender/tanggal lahir (opsional), tema
-- **Bantuan** — Halaman `/help` di dalam aplikasi
+- **Profil** — Foto, gender/tanggal lahir (opsional), tema; ganti password collapsible di halaman Akun
+- **Ucapan ulang tahun** — Popup sekali per tahun di hari ulang tahun (pakai tanggal lahir profil)
+- **Bantuan** — Halaman `/help` publik (bisa dari landing tanpa login); user login tetap melihat layout aplikasi
 - **Panduan publik (SEO)** — `/cara-catat-pengeluaran-bulanan` (HowTo JSON-LD, sitemap, robots)
 
 ### Pro Lifetime (sekali bayar)
@@ -120,13 +123,26 @@ npm run mobile
 
 ## Tech Stack
 
-**API:** Express, Prisma, Zod, JWT, Nodemailer, cookie-parser, Multer, Helmet, bcrypt, Tesseract.js (OCR struk)  
+**API:** Express, Prisma, Zod, JWT, Nodemailer, cookie-parser, Multer, Helmet, bcrypt  
 
 **Web:** React 19, React Router, TanStack Query, Zustand, React Hook Form, Recharts, Framer Motion, Tailwind CSS v4  
 
 **Mobile:** Expo (React Native), React Navigation, SecureStore, Axios  
 
 **Ops:** Docker Compose + Caddy (staging & production di VPS yang sama, DB terpisah)
+
+## Changelog (ringkas)
+
+### 1.1.0
+
+- Popup ulang tahun; `/help` publik; polish Akun (tanpa pemilih mata uang; ganti password collapsible)
+- Unggah struk mobile lebih andal; brand Dompet Tenang (ikon/OG)
+- **Dihapus:** OCR/scan struk otomatis (Tesseract) — unggah struk tetap, isi form manual
+- Auth tetap **manual** (email + password); Google SSO belum dipakai
+
+### 1.0.0
+
+- Rilis publik Dompet Tenang (Free + Pro Lifetime)
 
 ## Documentation
 

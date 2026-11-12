@@ -1,9 +1,10 @@
 # 🔧 API Documentation
 
-**Last Updated:** November 3, 2026  
+**App version:** 1.1.0  
+**Last Updated:** November 12, 2026  
 **Base URL:** `http://localhost:3001/api/v1` (production: `https://dompet-tenang.web.id/api/v1`)
 
-Web memakai cookie HttpOnly (`access` + `refresh`). Mobile dan klien lain memakai `Authorization: Bearer`. Login/register tetap mengembalikan token di body JSON.
+Web memakai cookie HttpOnly (`access` + `refresh`). Mobile dan klien lain memakai `Authorization: Bearer`. Login/register tetap mengembalikan token di body JSON. Auth saat ini **manual** (email + password); tidak ada endpoint Google OAuth.
 
 ---
 
@@ -284,6 +285,29 @@ Saat bukti masuk, email dikirim ke setiap akun `ADMIN` (nama, email, nominal, ko
   "error": "Internal Server Error",
   "message": "Something went wrong"
 }
+```
+
+---
+
+## Upload Endpoints
+
+### Upload struk / bukti
+```
+POST /uploads/receipt
+Authorization: Bearer {accessToken}
+Content-Type: multipart/form-data
+Field: receipt (file — JPG/PNG/WEBP/GIF/PDF, maks. 10MB)
+```
+
+Response berisi `url` path privat (akses via `GET /uploads/content/receipts/:filename`).  
+**Catatan (1.1.0):** endpoint OCR `POST /uploads/receipt/scan` **sudah dihapus**. Klien hanya unggah file; nominal/tanggal diisi manual di form.
+
+### Upload avatar
+```
+POST /uploads/avatar
+Authorization: Bearer {accessToken}
+Content-Type: multipart/form-data
+Field: avatar
 ```
 
 ---

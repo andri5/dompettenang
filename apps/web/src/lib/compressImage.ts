@@ -51,7 +51,7 @@ export function canCompressImage(file: File): boolean {
 export async function compressImageForUpload(file: File): Promise<File> {
   if (!canCompressImage(file)) return file;
   if (file.size <= TARGET_BYTES && file.size <= 5 * 1024 * 1024) {
-    // Still normalize huge-dimension small-filesize photos for faster OCR
+    // Still normalize huge-dimension small-filesize photos for lighter uploads
     // Continue only if larger than target OR bigger than ~3MB
   }
   if (file.size <= 900 * 1024) return file;

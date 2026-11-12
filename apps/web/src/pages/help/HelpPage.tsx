@@ -114,14 +114,14 @@ const helpSections: HelpSection[] = [
     id: 'struk',
     icon: Paperclip,
     title: 'Upload & Preview Struk',
-    summary: 'Lampirkan bukti transaksi berupa gambar atau PDF (maks. 5MB).',
+    summary: 'Lampirkan bukti transaksi berupa gambar atau PDF (maks. 10MB).',
     points: [
       'Di form tambah/edit, area Struk / Bukti bersifat opsional.',
-      'Format didukung: JPG, PNG, WEBP, GIF, dan PDF.',
+      'Format didukung: JPG, PNG, WEBP, GIF, dan PDF. Foto dari HP dikompres otomatis.',
+      'Isi nominal, tanggal, dan keterangan secara manual di form (tidak ada scan OCR).',
       'Setelah tersimpan, daftar transaksi menampilkan label Struk — klik untuk preview.',
-      'Di form, klik thumbnail atau Lihat juga membuka preview yang sama.',
     ],
-    tip: 'Foto struk dengan cahaya cukup supaya teks tetap terbaca saat di-preview.',
+    tip: 'Foto struk dengan cahaya cukup supaya tetap jelas saat di-preview.',
   },
   {
     id: 'kategori',
@@ -366,7 +366,7 @@ export function HelpPage() {
     <PageTransition>
       <SEO
         title="Bantuan"
-        description="Panduan fitur Dompet Tenang: transaksi, budget, struk OCR, insight Pro, dan cara mulai mencatat keuangan."
+        description="Panduan fitur Dompet Tenang: transaksi, budget, unggah struk, insight Pro, dan cara mulai mencatat keuangan."
         canonical="/help"
       />
       {isAuthenticated ? (

@@ -1,14 +1,10 @@
 /**
- * Dompet Tenang - Receipt file upload (image / PDF) + optional OCR fill
+ * Dompet Tenang - Receipt file upload (image / PDF)
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { FileText, ImagePlus, Loader2, Trash2, ExternalLink, ScanText } from 'lucide-react';
-import {
-  uploadReceiptReliable,
-  tryReceiptOcr,
-  type ReceiptOcrSuggestion,
-} from '@/services/upload.service';
+import { FileText, ImagePlus, Loader2, Trash2, ExternalLink } from 'lucide-react';
+import { uploadReceiptReliable } from '@/services/upload.service';
 import { compressImageForUpload } from '@/lib/compressImage';
 import { receiptUploadErrorMessage } from '@/lib/uploadErrors';
 import { useAuthenticatedFileUrl } from '@/hooks/useAuthenticatedFileUrl';
@@ -34,10 +30,6 @@ const ALLOWED_MIME = new Set([
 export interface ReceiptUploadProps {
   value?: string | null;
   onChange: (url: string | null) => void;
-  /** Called when OCR finds amount/date/description suggestions */
-  onOcrResult?: (ocr: ReceiptOcrSuggestion) => void;
-  /** Prefer scan endpoint (upload + OCR). Default true when onOcrResult set. */
-  enableOcr?: boolean;
   error?: string;
   disabled?: boolean;
 }
@@ -60,19 +52,15 @@ function isAllowedReceiptFile(file: File): boolean {
 export function ReceiptUpload({
   value,
   onChange,
-  onOcrResult,
-  enableOcr,
   error,
   disabled,
 }: ReceiptUploadProps) {
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [ocrHint, setOcrHint] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const { url: remotePreview } = useAuthenticatedFileUrl(localPreview ? null : value);
-  const shouldScan = enableOcr ?? Boolean(onOcrResult);
 
   const displayUrl = localPreview || remotePreview;
 
@@ -106,7 +94,6 @@ export function ReceiptUpload({
     }
 
     setIsUploading(true);
-    setOcrHint(null);
 
     let preview: string | null = null;
     try {
@@ -114,33 +101,15 @@ export function ReceiptUpload({
       preview = prepared.type.startsWith('image/') ? URL.createObjectURL(prepared) : null;
       setLocalPreview(preview);
 
-      // 1) Upload must succeed on its own (mobile-safe).
       const result = await uploadReceiptReliable(prepared);
       onChange(result.url);
       toast.success('Struk berhasil diunggah');
-      setIsUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
-
-      // 2) OCR is best-effort after upload — never rolls back the receipt.
-      if (shouldScan && prepared.type.startsWith('image/')) {
-        setOcrHint('Memindai struk...');
-        const ocr = await tryReceiptOcr(prepared);
-        if (ocr) {
-          onOcrResult?.(ocr);
-          setOcrHint(ocr.message || null);
-          if (ocr.amount || ocr.date || ocr.description) {
-            toast.success('Field diisi dari hasil scan (bisa diubah).');
-          }
-        } else {
-          setOcrHint('Struk tersimpan. Scan otomatis dilewati — isi form manual.');
-        }
-      }
     } catch (err: unknown) {
       toast.error(receiptUploadErrorMessage(err));
       if (preview) URL.revokeObjectURL(preview);
       setLocalPreview(null);
       onChange(null);
-      setOcrHint(null);
+    } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = '';
     }
@@ -151,7 +120,6 @@ export function ReceiptUpload({
       URL.revokeObjectURL(localPreview);
     }
     setLocalPreview(null);
-    setOcrHint(null);
     onChange(null);
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -162,7 +130,7 @@ export function ReceiptUpload({
         <span>
           Struk / Bukti <span className="font-medium text-muted">(opsional)</span>
         </span>
-        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 10MB). Foto dari HP akan dikompres otomatis. Untuk gambar, sistem bisa scan OCR dan mengisi nominal/tanggal/keterangan." />
+        <FieldTooltip content="Unggah foto atau PDF bukti transaksi (maks. 10MB). Foto dari HP akan dikompres otomatis." />
       </label>
 
       <input
@@ -187,25 +155,14 @@ export function ReceiptUpload({
         >
           {isUploading ? (
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          ) : shouldScan ? (
-            <ScanText className="h-8 w-8 text-accent" />
           ) : (
             <ImagePlus className="h-8 w-8 text-accent" />
           )}
           <div>
             <p className="text-sm font-semibold text-ink">
-              {isUploading
-                ? shouldScan
-                  ? 'Mengunggah & memindai...'
-                  : 'Mengunggah...'
-                : shouldScan
-                  ? 'Foto / unggah & scan struk'
-                  : 'Unggah gambar atau PDF'}
+              {isUploading ? 'Mengunggah...' : 'Unggah gambar atau PDF'}
             </p>
-            <p className="mt-1 text-xs text-muted">
-              JPG, PNG, WEBP, GIF, PDF · maks. 10MB
-              {shouldScan ? ' · OCR otomatis untuk gambar' : ''}
-            </p>
+            <p className="mt-1 text-xs text-muted">JPG, PNG, WEBP, GIF, PDF · maks. 10MB</p>
           </div>
         </button>
       ) : (
@@ -235,16 +192,11 @@ export function ReceiptUpload({
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
               <p className="truncate text-sm font-semibold text-ink">
                 {isUploading
-                  ? shouldScan
-                    ? 'Memindai struk...'
-                    : 'Mengunggah struk...'
+                  ? 'Mengunggah struk...'
                   : value && isPdf(value)
                     ? 'Dokumen PDF'
                     : 'Gambar struk'}
               </p>
-              {ocrHint && !isUploading && (
-                <p className="text-xs text-muted">{ocrHint}</p>
-              )}
               <div className="flex flex-wrap gap-2">
                 {displayUrl && !isUploading && (
                   <button
