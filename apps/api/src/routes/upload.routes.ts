@@ -38,17 +38,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/v1/uploads/receipt/scan
- * @desc    Upload receipt and OCR-scan amount/date/merchant (images only)
- * @access  Private
- */
-router.post(
-  '/receipt/scan',
-  handleMulter(receiptUpload.single('receipt')),
-  (req, res) => uploadController.uploadReceiptWithScan(req, res)
-);
-
-/**
  * @route   POST /api/v1/uploads/avatar
  * @desc    Upload profile photo
  * @access  Private

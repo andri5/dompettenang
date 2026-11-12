@@ -1,5 +1,9 @@
 # Deploy Dompet Tenang
 
+Rilis aplikasi saat ini: **1.1.0** (lihat changelog di [README root](../README.md)).
+
+Catatan produk terkait rilis ini: auth tetap email/password (belum Google SSO); unggah struk tetap ada tanpa OCR/scan otomatis.
+
 ## Lingkungan
 
 | | URL | Branch | Approve QA? |

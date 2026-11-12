@@ -1,5 +1,7 @@
 # 📒 Dompet Tenang API
 
+**Versi: 1.1.0**
+
 > Backend API for Dompet Tenang - Aplikasi Catat Harian Pengeluaran
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
@@ -38,15 +40,14 @@
 | **JWT** | - | Authentication tokens |
 | **bcryptjs** | - | Password hashing |
 | **Multer** | - | Receipt / avatar / proof uploads |
-| **Tesseract.js** | 7.x | OCR struk (isi nominal/tanggal/keterangan dari gambar) |
 | **Nodemailer** | - | Reset password + notifikasi Pro |
 
 ---
 
 ## Fitur API terkait produk
 
-- Auth singkat, transaksi, kategori (seed default anti-dobel), budget, dashboard + monthly insight (Pro)
-- Upload struk: `POST /api/v1/uploads/receipt` dan `POST /api/v1/uploads/receipt/scan` (OCR gambar; PDF upload-only)
+- Auth singkat (email + password), transaksi, kategori (seed default anti-dobel), budget, dashboard + monthly insight (Pro)
+- Upload struk: `POST /api/v1/uploads/receipt` (gambar/PDF saja — **endpoint OCR `/receipt/scan` sudah dihapus**)
 - Billing Pro manual (bukti transfer + email admin/user), admin flags/legal/feedback
 - Cadangan harian Postgres + uploads (lihat docs root)
 
