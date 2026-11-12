@@ -1,5 +1,7 @@
 # Dompet Tenang Web
 
+**Versi: 1.1.0**
+
 Frontend React + Vite + TypeScript + Tailwind.
 
 Setup, fitur Free/Pro, dan deploy ada di [README root](../../README.md) dan [docs/DEPLOY.md](../../docs/DEPLOY.md).
@@ -16,10 +18,12 @@ App lokal: http://127.0.0.1:5173/ — API lewat `VITE_API_URL=/api/v1`.
 
 **Gratis**
 
-- Daftar singkat (nama, email, password), pencarian transaksi, saldo berjalan, pengingat catatan harian
+- Daftar/masuk **manual** (email + password) — belum ada Google SSO
+- Pencarian transaksi, saldo berjalan, pengingat catatan harian
 - Satu kartu **Pemberitahuan** di dashboard (bukan insight Pro)
-- **Struk + OCR** — foto/PDF; gambar dikompres di HP, unggah dulu lalu OCR mengisi nominal/tanggal/keterangan bila berhasil
-- Halaman bantuan `/help`
+- **Struk** — unggah foto/PDF (kompres di HP); **tanpa OCR**; isi nominal/tanggal manual
+- `/help` publik dari landing; popup ulang tahun sekali per tahun
+- Akun: tema, profil, ganti password collapsible (tanpa pemilih mata uang)
 - Halaman publik SEO `/cara-catat-pengeluaran-bulanan` (panduan + CTA daftar)
 
 **Pro**
